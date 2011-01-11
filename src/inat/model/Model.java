@@ -3,6 +3,8 @@
  */
 package inat.model;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -113,7 +115,7 @@ public class Model {
 	 * @return a set of {@link Edge}s
 	 */
 	public Set<Edge> getIncomingEdges(Vertex v) {
-		return this.incoming.get(v.getId());
+		return Collections.unmodifiableSet(this.incoming.get(v.getId()));
 	}
 
 	/**
@@ -123,7 +125,7 @@ public class Model {
 	 * @return a set of {@link Edge}s
 	 */
 	public Set<Edge> getOutgoingEdges(Vertex v) {
-		return this.outgoing.get(v.getId());
+		return Collections.unmodifiableSet(this.outgoing.get(v.getId()));
 	}
 
 	/**
@@ -153,6 +155,24 @@ public class Model {
 	 */
 	public PropertyBag getProperties() {
 		return properties;
+	}
+
+	/**
+	 * Returns an unmodifiable view of all vertices in this model.
+	 * 
+	 * @return all vertices
+	 */
+	public Collection<Vertex> getVertices() {
+		return Collections.unmodifiableCollection(this.vertices.values());
+	}
+
+	/**
+	 * returns an unmodifiable view of all edges in this model.
+	 * 
+	 * @return all edges
+	 */
+	public Collection<Edge> getEdges() {
+		return Collections.unmodifiableCollection(this.edges.values());
 	}
 
 	@Override
