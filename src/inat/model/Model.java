@@ -71,8 +71,10 @@ public class Model {
 	 * @param e the edge to remove
 	 */
 	public void putEdge(Edge e) {
-		assert this.vertices.containsKey(e.getTargetId()) : "The target identifier is not a valid vertex.";
-		assert this.vertices.containsKey(e.getOriginId()) : "The origin identifier is not a valid vertex.";
+		assert this.vertices.containsKey(e.getTargetId()) : "The target identifier '" + e.getTargetId()
+				+ "' is not a valid vertex.";
+		assert this.vertices.containsKey(e.getOriginId()) : "The origin identifier '" + e.getOriginId()
+				+ "' is not a valid vertex.";
 
 		this.edges.put(e.getId(), e);
 		this.incoming.get(e.getTargetId()).add(e);

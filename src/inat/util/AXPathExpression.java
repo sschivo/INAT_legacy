@@ -107,6 +107,6 @@ public class AXPathExpression implements XPathExpression {
 
 	@Override
 	public String toString() {
-		return "AXpathExpression[ '" + this.expression + "' ]";
+		return "'" + this.expression + "'";
 	}
 }
