@@ -10,7 +10,6 @@ import inat.util.XmlEnvironment;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /**
@@ -22,7 +21,7 @@ public class BooleanSerializer implements TypeSerializer<Boolean> {
 	/**
 	 * Value pattern.
 	 */
-	private final AXPathExpression expression = XmlEnvironment.hardcodedXPath("./value");
+	private final AXPathExpression expression = XmlEnvironment.hardcodedXPath(".");
 
 	@Override
 	public Boolean deserialize(Node root) throws SerializationException {
@@ -35,10 +34,8 @@ public class BooleanSerializer implements TypeSerializer<Boolean> {
 	}
 
 	@Override
-	public Element serialize(Document doc, Object value) {
-		Element result = doc.createElement("value");
-		result.setTextContent(value.toString());
-		return result;
+	public Node serialize(Document doc, Object value) {
+		return doc.createTextNode(value.toString());
 	}
 
 }

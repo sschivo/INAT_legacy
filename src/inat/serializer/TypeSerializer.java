@@ -6,7 +6,6 @@ package inat.serializer;
 import inat.exceptions.SerializationException;
 
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /**
@@ -25,7 +24,7 @@ public interface TypeSerializer<T> {
 	 * @return an element that describes the value
 	 * @throws SerializationException if the serialization failed
 	 */
-	public Element serialize(Document doc, Object value) throws SerializationException;
+	public Node serialize(Document doc, Object value) throws SerializationException;
 
 	/**
 	 * Deserializes a value from the given XML node.
