@@ -3,6 +3,9 @@
  */
 package inat.analyzer.uppaal;
 
+import java.io.IOException;
+
+import inat.analyzer.AnalysisException;
 import inat.analyzer.ModelAnalyzer;
 import inat.model.Model;
 import inat.analyzer.LevelResult;
@@ -37,25 +40,33 @@ public class UppaalModelAnalyzer implements ModelAnalyzer<LevelResult> {
 	}
 
 	@Override
-	public LevelResult analyze(Model m) {
+	public LevelResult analyze(Model m) throws AnalysisException {
 		// create UPPAAL model
 		final String uppaalModel = this.transformer.transform(m);
 		// create UPPAAL query
 		final String uppaalQuery = "E<> (globalTime > " + 0 + ")";
 
 		// do low-level I/O UPPAAL interaction
-		// FIXME abstract UPPAAL interaction into its own class
-		String output = generateTrace(uppaalModel, uppaalQuery);
+		UppaalInvoker invoker = new UppaalInvoker();
+		String output;
 
-		// analyze the resulting trace
-		LevelResult result = this.resultAnalyzer.analyse(output);
+		try {
+			output = invoker.trace(uppaalModel, uppaalQuery);
+		} catch (IOException e) {
+			throw new AnalysisException("The analysis failed due to an I/O exception while invoking UPPAAL.", e);
+		} catch (InterruptedException e) {
+			throw new AnalysisException(
+					"The analysis failed due to the analysis being interrupted while waiting for UPPAAL.", e);
+		}
 
-		return result;
-	}
+		// if the ouput is null, we have no trace
+		if (output != null) {
+			// analyze the resulting trace
+			LevelResult result = this.resultAnalyzer.analyse(output);
 
-	private String generateTrace(String uppaalModel, String uppaalQuery) {
-		// FIXME: invoke UPPAAL tooling
-		// TODO Auto-generated method stub
-		return "FAIL!";
+			return result;
+		} else {
+			return null;
+		}
 	}
 }

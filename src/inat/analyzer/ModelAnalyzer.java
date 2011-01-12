@@ -19,6 +19,7 @@ public interface ModelAnalyzer<R> {
 	 * 
 	 * @param m the model to analyze
 	 * @return the result of the analysis.
+	 * @throws AnalysisException if the analysis went wrong
 	 */
-	public R analyze(Model m);
+	public R analyze(Model m) throws AnalysisException;
 }

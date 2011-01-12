@@ -50,7 +50,7 @@ public class XMLSerializer {
 	 * @return the document
 	 * @throws SerializationException if the serialization failed
 	 */
-	public Document serialize(Model m) throws SerializationException {
+	public Document serializeModel(Model m) throws SerializationException {
 		Document doc = XmlEnvironment.getDocumentBuilder().newDocument();
 
 		// create root and serialize properties to it
@@ -109,7 +109,7 @@ public class XMLSerializer {
 	 * @return an element describing the property bag
 	 * @throws SerializationException if the serialization failed
 	 */
-	private Element serializeProperties(Document doc, PropertyBag bag) throws SerializationException {
+	public Element serializeProperties(Document doc, PropertyBag bag) throws SerializationException {
 		Element result = doc.createElement("properties");
 
 		// loop over properties
@@ -154,7 +154,7 @@ public class XMLSerializer {
 	 * @return the model
 	 * @throws SerializationException if the deserialization failed
 	 */
-	public Model deserialize(Document d) throws SerializationException {
+	public Model deserializeModel(Document d) throws SerializationException {
 		final AXPathExpression modelProperties = XmlEnvironment.hardcodedXPath("/inat-model/properties");
 		final AXPathExpression vertices = XmlEnvironment.hardcodedXPath("/inat-model/vertices/vertex");
 		final AXPathExpression edges = XmlEnvironment.hardcodedXPath("/inat-model/edges/edge");
@@ -200,7 +200,7 @@ public class XMLSerializer {
 	 * @param properties the bag into which they should be deserialized
 	 * @throws SerializationException if the deserialization failed
 	 */
-	private void deserializerProperties(Node root, PropertyBag properties) throws SerializationException {
+	public void deserializerProperties(Node root, PropertyBag properties) throws SerializationException {
 		// compile XPaths
 		final AXPathExpression props = XmlEnvironment.hardcodedXPath("./property");
 		final AXPathExpression propName = XmlEnvironment.hardcodedXPath("@name");
@@ -231,7 +231,5 @@ public class XMLSerializer {
 		} catch (XPathExpressionException e) {
 			throw new SerializationException("Could not evaluate XPath expression.", e);
 		}
-
 	}
-
 }

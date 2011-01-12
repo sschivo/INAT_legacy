@@ -3,6 +3,9 @@
  */
 package inat.analyzer.uppaal;
 
+import inat.InatBackend;
+import inat.util.XmlConfiguration;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
@@ -13,6 +16,26 @@ import java.io.InputStreamReader;
  * @author B. Wanders
  */
 public class UppaalInvoker {
+	/**
+	 * The configuration key for the leaveFiles property.
+	 */
+	private static final String LEAVE_KEY = "/Inat/UppaalInvoker/leaveFiles";
+
+	/**
+	 * The configuration key for the temporary location property.
+	 */
+	private static final String TEMP_KEY = "/Inat/UppaalInvoker/temporary";
+
+	/**
+	 * The configuration key for the tracer path property.
+	 */
+	private static final String TRACER_KEY = "/Inat/UppaalInvoker/tracer";
+
+	/**
+	 * The configuration key for the verifyta path property.
+	 */
+	private static final String VERIFY_KEY = "/Inat/UppaalInvoker/verifyta";
+
 	/**
 	 * Environment flag to switch UPPAAL into compile-only mode.
 	 */
@@ -43,12 +66,17 @@ public class UppaalInvoker {
 	 * Constructor.
 	 */
 	public UppaalInvoker() {
-		// TODO: read information from singleton config
+		assert InatBackend.isInitialised() : "Can only use the UppaalInvoker if the INAT backend is initialised.";
 
-		// set default temp dir
-		temporaryLocation = new File(System.getProperty("java.io.tmpdir"));
-		this.leaveFiles = false;
+		// get configuration
+		XmlConfiguration configuration = InatBackend.get().configuration();
 
+		this.verifytaPath = configuration.get(VERIFY_KEY);
+		this.tracerPath = configuration.get(TRACER_KEY);
+
+		this.temporaryLocation = new File(configuration.get(TEMP_KEY, System.getProperty("java.io.tmpdir")));
+
+		this.leaveFiles = configuration.has(LEAVE_KEY);
 	}
 
 	/**
@@ -122,8 +150,10 @@ public class UppaalInvoker {
 		}
 
 		File xtrFile = new File(this.temporaryLocation, prefix + "-1.xtr");
-		if (!xtrFile.exists() || !xtrFile.canRead()) {
-			throw new IOException("Expected XTR file was not created.");
+		if (!xtrFile.exists()) {
+			// no XTR file -> no satisfying trace (but the query might still be
+			// answered in the positive, it just does not result in a trace)
+			return null;
 		}
 
 		if (!leaveFiles) {
