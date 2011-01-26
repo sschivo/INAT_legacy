@@ -8,11 +8,17 @@ package inat.model;
  * 
  * @author B. Wanders
  */
-public class Vertex {
+public class Species {
 	/**
 	 * The unique vertex identifier.
 	 */
 	private final String id;
+
+	/**
+	 * The owning model.
+	 */
+	private Model model;
+
 	/**
 	 * The properties of this vertex.
 	 */
@@ -23,21 +29,42 @@ public class Vertex {
 	 * 
 	 * @param id the vertex id
 	 */
-	public Vertex(String id) {
+	public Species(String id) {
 		this.id = id;
 		this.properties = new PropertyBag();
+		this.model = null;
 	}
 
 	/**
+	 * Sets the owning model of this species.
+	 * 
+	 * @param m the owning model
+	 */
+	void setModel(Model m) {
+		this.model = m;
+	}
+
+	/**
+	 * Returns the model in which this reaction is defined.
+	 * 
+	 * @return the model that owns this reaction
+	 */
+	public Model getModel() {
+		return this.model;
+	}
+
+	/**
+	 * Return the properties of this species.
+	 * 
 	 * @return the properties
 	 */
 	public PropertyBag getProperties() {
-		return properties;
+		return this.properties;
 	}
 
 	@Override
 	public String toString() {
-		return "Vertex@" + this.getId() + "[" + this.properties + "]";
+		return "Species@" + this.getId() + "[" + this.properties + "]";
 	}
 
 	/**
@@ -46,6 +73,6 @@ public class Vertex {
 	 * @return the id
 	 */
 	public String getId() {
-		return id;
+		return this.id;
 	}
 }

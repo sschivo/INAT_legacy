@@ -42,22 +42,22 @@ public class AXPathExpression implements XPathExpression {
 
 	@Override
 	public Object evaluate(InputSource source, QName returnType) throws XPathExpressionException {
-		return backing.evaluate(source, returnType);
+		return this.backing.evaluate(source, returnType);
 	}
 
 	@Override
 	public String evaluate(InputSource source) throws XPathExpressionException {
-		return backing.evaluate(source);
+		return this.backing.evaluate(source);
 	}
 
 	@Override
 	public Object evaluate(Object item, QName returnType) throws XPathExpressionException {
-		return backing.evaluate(item, returnType);
+		return this.backing.evaluate(item, returnType);
 	}
 
 	@Override
 	public String evaluate(Object item) throws XPathExpressionException {
-		return backing.evaluate(item);
+		return this.backing.evaluate(item);
 	}
 
 	/**

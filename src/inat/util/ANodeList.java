@@ -30,12 +30,12 @@ public class ANodeList extends AbstractList<Node> implements NodeList {
 
 	@Override
 	public int getLength() {
-		return backing.getLength();
+		return this.backing.getLength();
 	}
 
 	@Override
 	public Node item(int index) {
-		return backing.item(index);
+		return this.backing.item(index);
 	}
 
 	@Override

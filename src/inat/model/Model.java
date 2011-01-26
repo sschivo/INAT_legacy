@@ -6,14 +6,12 @@ package inat.model;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * A model. This model keeps itself consistent, as long as both {@link Vertex}
- * and {@link Edge} implementations keep their {@link #equals(Object)} method
- * based on identity the model is automatically consistent.
+ * A model. This model keeps itself consistent, as long as both {@link Species}
+ * and {@link Reaction} implementations keep their {@link #equals(Object)}
+ * method based on identity the model is automatically consistent.
  * 
  * @author B. Wanders
  */
@@ -21,20 +19,12 @@ public class Model {
 	/**
 	 * The vertices in the model.
 	 */
-	private final Map<String, Vertex> vertices;
+	private final Map<String, Species> species;
 	/**
 	 * The edges in the model.
 	 */
-	private final Map<String, Edge> edges;
+	private final Map<String, Reaction> reactions;
 
-	/**
-	 * The incoming edges on a vertex.
-	 */
-	private final Map<String, Set<Edge>> incoming;
-	/**
-	 * The outgoing edges on a vertex.
-	 */
-	private final Map<String, Set<Edge>> outgoing;
 	/**
 	 * The global properties on the model.
 	 */
@@ -44,12 +34,8 @@ public class Model {
 	 * Constructor.
 	 */
 	public Model() {
-		this.vertices = new HashMap<String, Vertex>();
-		this.edges = new HashMap<String, Edge>();
-
-		this.incoming = new HashMap<String, Set<Edge>>();
-		this.outgoing = new HashMap<String, Set<Edge>>();
-
+		this.species = new HashMap<String, Species>();
+		this.reactions = new HashMap<String, Reaction>();
 		this.properties = new PropertyBag();
 	}
 
@@ -58,11 +44,11 @@ public class Model {
 	 * 
 	 * @param v the vertex to add
 	 */
-	public void putVertex(Vertex v) {
-		if (this.vertices.put(v.getId(), v) == null) {
-			this.incoming.put(v.getId(), new HashSet<Edge>());
-			this.outgoing.put(v.getId(), new HashSet<Edge>());
-		}
+	public void addSpecies(Species v) {
+		assert v.getModel() == null : "Can't add a species that is already part of a model.";
+
+		this.species.put(v.getId(), v);
+		v.setModel(this);
 	}
 
 	/**
@@ -70,15 +56,10 @@ public class Model {
 	 * 
 	 * @param e the edge to remove
 	 */
-	public void putEdge(Edge e) {
-		assert this.vertices.containsKey(e.getTargetId()) : "The target identifier '" + e.getTargetId()
-				+ "' is not a valid vertex.";
-		assert this.vertices.containsKey(e.getOriginId()) : "The origin identifier '" + e.getOriginId()
-				+ "' is not a valid vertex.";
-
-		this.edges.put(e.getId(), e);
-		this.incoming.get(e.getTargetId()).add(e);
-		this.outgoing.get(e.getOriginId()).add(e);
+	public void addReaction(Reaction e) {
+		assert e.getModel() == null : "Can't add a reaction that is already part of a model.";
+		this.reactions.put(e.getId(), e);
+		e.setModel(this);
 	}
 
 	/**
@@ -86,10 +67,10 @@ public class Model {
 	 * 
 	 * @param e the edge to remove
 	 */
-	public void removeEdge(Edge e) {
-		this.edges.remove(e.getId());
-		this.incoming.get(e.getTargetId()).remove(e);
-		this.outgoing.get(e.getOriginId()).remove(e);
+	public void removeReaction(Reaction e) {
+		assert e.getModel() == this : "Can't remove a reaction that is not part of this model.";
+		this.reactions.remove(e.getId());
+		e.setModel(null);
 	}
 
 	/**
@@ -98,56 +79,30 @@ public class Model {
 	 * 
 	 * @param v the vertex to remove
 	 */
-	public void removeVertex(Vertex v) {
-		for (Edge e : this.incoming.remove(v.getId())) {
-			this.edges.remove(e.getId());
-		}
-
-		for (Edge e : this.outgoing.remove(v.getId())) {
-			this.edges.remove(e.getId());
-		}
-
-		this.vertices.remove(v.getId());
-	}
-
-	/**
-	 * Returns all incoming edges for the given vertex.
-	 * 
-	 * @param v the vertex for which all incoming edges are needed
-	 * @return a set of {@link Edge}s
-	 */
-	public Set<Edge> getIncomingEdges(Vertex v) {
-		return Collections.unmodifiableSet(this.incoming.get(v.getId()));
-	}
-
-	/**
-	 * Returns all outgoing edges for the given vertex.
-	 * 
-	 * @param v the vertext for which all outgoing edges are needed
-	 * @return a set of {@link Edge}s
-	 */
-	public Set<Edge> getOutgoingEdges(Vertex v) {
-		return Collections.unmodifiableSet(this.outgoing.get(v.getId()));
+	public void removeSpecies(Species v) {
+		assert v.getModel() == this : "Can't remove a species that is not part of this model.";
+		this.species.remove(v.getId());
+		v.setModel(null);
 	}
 
 	/**
 	 * Returns the edge with the given identifier, or {@code null}.
 	 * 
 	 * @param id the identifier we are looking for
-	 * @return the found {@link Edge}, or {@code null}
+	 * @return the found {@link Reaction}, or {@code null}
 	 */
-	public Edge getEdge(String id) {
-		return this.edges.get(id);
+	public Reaction getReaction(String id) {
+		return this.reactions.get(id);
 	}
 
 	/**
 	 * Returns the vertex with the given identifier, or {@code null}.
 	 * 
 	 * @param id the identifier we are looking for
-	 * @return the found {@link Vertex}, or {@code null}
+	 * @return the found {@link Species}, or {@code null}
 	 */
-	public Vertex getVertex(String id) {
-		return this.vertices.get(id);
+	public Species getSpecies(String id) {
+		return this.species.get(id);
 	}
 
 	/**
@@ -156,7 +111,7 @@ public class Model {
 	 * @return the properties of this model
 	 */
 	public PropertyBag getProperties() {
-		return properties;
+		return this.properties;
 	}
 
 	/**
@@ -164,8 +119,8 @@ public class Model {
 	 * 
 	 * @return all vertices
 	 */
-	public Collection<Vertex> getVertices() {
-		return Collections.unmodifiableCollection(this.vertices.values());
+	public Collection<Species> getSpecies() {
+		return Collections.unmodifiableCollection(this.species.values());
 	}
 
 	/**
@@ -173,8 +128,8 @@ public class Model {
 	 * 
 	 * @return all edges
 	 */
-	public Collection<Edge> getEdges() {
-		return Collections.unmodifiableCollection(this.edges.values());
+	public Collection<Reaction> getReactions() {
+		return Collections.unmodifiableCollection(this.reactions.values());
 	}
 
 	@Override
@@ -182,10 +137,10 @@ public class Model {
 		StringBuilder result = new StringBuilder();
 
 		result.append("Model[\n");
-		for (Vertex v : this.vertices.values()) {
+		for (Species v : this.species.values()) {
 			result.append("  " + v + "\n");
 		}
-		for (Edge e : this.edges.values()) {
+		for (Reaction e : this.reactions.values()) {
 			result.append("  " + e + "\n");
 		}
 		result.append("]");

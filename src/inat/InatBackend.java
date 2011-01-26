@@ -79,7 +79,7 @@ public class InatBackend {
 	 * @return the configuration
 	 */
 	public XmlConfiguration configuration() {
-		return configuration;
+		return this.configuration;
 	}
 
 	/**

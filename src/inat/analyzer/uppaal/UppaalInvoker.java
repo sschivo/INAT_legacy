@@ -115,14 +115,14 @@ public class UppaalInvoker {
 		FileWriter modelFileOut = new FileWriter(modelFile);
 		modelFileOut.append(model);
 		modelFileOut.close();
-		if (!leaveFiles) {
+		if (!this.leaveFiles) {
 			modelFile.deleteOnExit();
 		}
 
 		FileWriter queryFileOut = new FileWriter(queryFile);
 		queryFileOut.append(query);
 		queryFileOut.close();
-		if (!leaveFiles) {
+		if (!this.leaveFiles) {
 			queryFile.deleteOnExit();
 		}
 
@@ -156,7 +156,7 @@ public class UppaalInvoker {
 			return null;
 		}
 
-		if (!leaveFiles) {
+		if (!this.leaveFiles) {
 			xtrFile.deleteOnExit();
 		}
 
@@ -176,7 +176,7 @@ public class UppaalInvoker {
 		}
 
 		File compiledFile = new File(this.temporaryLocation, prefix + ".model");
-		if (!leaveFiles) {
+		if (!this.leaveFiles) {
 			compiledFile.deleteOnExit();
 		}
 

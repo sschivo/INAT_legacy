@@ -28,7 +28,7 @@ public class BooleanSerializer implements TypeSerializer<Boolean> {
 		try {
 			return new Boolean(this.expression.getString(root));
 		} catch (XPathExpressionException e) {
-			throw new SerializationException("Could not deserialize, expression " + expression.toString()
+			throw new SerializationException("Could not deserialize, expression " + this.expression.toString()
 					+ " did not match.", e);
 		}
 	}

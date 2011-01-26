@@ -123,7 +123,7 @@ public class Property {
 	 * @return the name of this property
 	 */
 	public String getName() {
-		return name;
+		return this.name;
 	}
 
 	@Override
@@ -135,8 +135,8 @@ public class Property {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((name == null) ? 0 : name.hashCode());
-		result = prime * result + ((value == null) ? 0 : value.hashCode());
+		result = prime * result + ((this.name == null) ? 0 : this.name.hashCode());
+		result = prime * result + ((this.value == null) ? 0 : this.value.hashCode());
 		return result;
 	}
 
@@ -149,15 +149,15 @@ public class Property {
 		if (getClass() != obj.getClass())
 			return false;
 		Property other = (Property) obj;
-		if (name == null) {
+		if (this.name == null) {
 			if (other.name != null)
 				return false;
-		} else if (!name.equals(other.name))
+		} else if (!this.name.equals(other.name))
 			return false;
-		if (value == null) {
+		if (this.value == null) {
 			if (other.value != null)
 				return false;
-		} else if (!value.equals(other.value))
+		} else if (!this.value.equals(other.value))
 			return false;
 		return true;
 	}

@@ -30,7 +30,7 @@ public class FloatSerializer implements TypeSerializer<Float> {
 			value = this.expression.getString(root);
 			return new Float(value);
 		} catch (XPathExpressionException e) {
-			throw new SerializationException("Could not deserialize, expression " + expression.toString()
+			throw new SerializationException("Could not deserialize, expression " + this.expression.toString()
 					+ " did not match.", e);
 		} catch (NumberFormatException e) {
 			throw new SerializationException("Could not interpret value '" + value + "' as an float.", e);

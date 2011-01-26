@@ -4,11 +4,11 @@
 package inat.serializer;
 
 import inat.exceptions.SerializationException;
-import inat.model.Edge;
+import inat.model.Reaction;
 import inat.model.Model;
 import inat.model.Property;
 import inat.model.PropertyBag;
-import inat.model.Vertex;
+import inat.model.Species;
 import inat.util.AXPathExpression;
 import inat.util.XmlEnvironment;
 
@@ -59,42 +59,32 @@ public class XMLSerializer {
 		root.appendChild(properties);
 
 		// serialize the vertices
-		Element vertices = doc.createElement("vertices");
-		for (Vertex vertex : m.getVertices()) {
+		Element defs = doc.createElement("definitions");
+		for (Species vertex : m.getSpecies()) {
 			// create vertex element and set id and properties
-			Element e = doc.createElement("vertex");
+			Element e = doc.createElement("species");
 			e.setAttribute("id", vertex.getId());
 
 			// append property bag
 			e.appendChild(this.serializeProperties(doc, vertex.getProperties()));
 
-			vertices.appendChild(e);
+			defs.appendChild(e);
 		}
-		root.appendChild(vertices);
+		root.appendChild(defs);
 
 		// serialize the edges
-		Element edges = doc.createElement("edges");
-		for (Edge edge : m.getEdges()) {
+		Element reactions = doc.createElement("reactions");
+		for (Reaction reaction : m.getReactions()) {
 			// create edge element and set id
-			Element e = doc.createElement("edge");
-			e.setAttribute("id", edge.getId());
-
-			// set origin id
-			Element origin = doc.createElement("origin");
-			origin.setTextContent(edge.getOriginId());
-			e.appendChild(origin);
-
-			// set target id
-			Element target = doc.createElement("target");
-			target.setTextContent(edge.getTargetId());
-			e.appendChild(target);
+			Element e = doc.createElement("reaction");
+			e.setAttribute("id", reaction.getId());
 
 			// append property bag
-			e.appendChild(this.serializeProperties(doc, edge.getProperties()));
+			e.appendChild(this.serializeProperties(doc, reaction.getProperties()));
 
-			edges.appendChild(e);
+			reactions.appendChild(e);
 		}
-		root.appendChild(edges);
+		root.appendChild(reactions);
 
 		doc.appendChild(root);
 
@@ -156,12 +146,10 @@ public class XMLSerializer {
 	 */
 	public Model deserializeModel(Document d) throws SerializationException {
 		final AXPathExpression modelProperties = XmlEnvironment.hardcodedXPath("/inat-model/properties");
-		final AXPathExpression vertices = XmlEnvironment.hardcodedXPath("/inat-model/vertices/vertex");
-		final AXPathExpression edges = XmlEnvironment.hardcodedXPath("/inat-model/edges/edge");
+		final AXPathExpression vertices = XmlEnvironment.hardcodedXPath("/inat-model/definitions/species");
+		final AXPathExpression edges = XmlEnvironment.hardcodedXPath("/inat-model/reactions/reaction");
 		final AXPathExpression properties = XmlEnvironment.hardcodedXPath("./properties");
 		final AXPathExpression idAttribute = XmlEnvironment.hardcodedXPath("@id");
-		final AXPathExpression originAttribute = XmlEnvironment.hardcodedXPath("./origin");
-		final AXPathExpression targetAttribute = XmlEnvironment.hardcodedXPath("./target");
 
 		Model m = new Model();
 		try {
@@ -171,18 +159,16 @@ public class XMLSerializer {
 			// deserialize the vertices
 			for (Node root : vertices.getNodes(d.getDocumentElement())) {
 				String id = idAttribute.getString(root);
-				Vertex v = new Vertex(id);
+				Species v = new Species(id);
 				this.deserializerProperties(properties.getNode(root), v.getProperties());
-				m.putVertex(v);
+				m.addSpecies(v);
 			}
 			// deserialize edges
 			for (Node root : edges.getNodes(d.getDocumentElement())) {
 				String id = idAttribute.getString(root);
-				String origin = originAttribute.getString(root);
-				String target = targetAttribute.getString(root);
-				Edge e = new Edge(id, origin, target);
+				Reaction e = new Reaction(id);
 				this.deserializerProperties(properties.getNode(root), e.getProperties());
-				m.putEdge(e);
+				m.addReaction(e);
 			}
 
 		} catch (XPathExpressionException e) {
@@ -220,7 +206,7 @@ public class XMLSerializer {
 					TypeSerializer<?> serializer = this.typeSerializers.get(type);
 					if (serializer == null) {
 						throw new SerializationException("Could not find deserializer for type <" + type
-								+ ">, did you forget to register it?");
+								+ ">, did the developer forget to register it?");
 					}
 
 					// deserialize and set
