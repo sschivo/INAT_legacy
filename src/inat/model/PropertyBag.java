@@ -26,12 +26,19 @@ public class PropertyBag implements Iterable<Property> {
 	}
 
 	/**
-	 * Puts a property into the bag.
+	 * Gets a named property from the bag. If the property did not exist it is
+	 * created.
 	 * 
-	 * @param p the property to put into the bag
+	 * @param name the name of the proeprty to retrieve or create
+	 * 
+	 * @return a named property
 	 */
-	public void put(Property p) {
-		this.properties.put(p.getName(), p);
+	public Property let(String name) {
+		if (!this.has(name)) {
+			this.properties.put(name, new Property(name));
+		}
+
+		return this.get(name);
 	}
 
 	/**

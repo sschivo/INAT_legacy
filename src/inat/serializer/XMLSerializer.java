@@ -4,10 +4,10 @@
 package inat.serializer;
 
 import inat.exceptions.SerializationException;
-import inat.model.Reaction;
 import inat.model.Model;
 import inat.model.Property;
 import inat.model.PropertyBag;
+import inat.model.Reaction;
 import inat.model.Species;
 import inat.util.AXPathExpression;
 import inat.util.XmlEnvironment;
@@ -196,8 +196,7 @@ public class XMLSerializer {
 			for (Node n : props.getNodes(root)) {
 				// determine name of property
 				String name = propName.getString(n);
-				properties.put(new Property(name));
-
+				Object value = null;
 				// if the property has a type, it is non-null
 				if (propType.getBoolean(n)) {
 					String type = propType.getString(n);
@@ -210,9 +209,9 @@ public class XMLSerializer {
 					}
 
 					// deserialize and set
-					Object value = serializer.deserialize(n);
-					properties.get(name).set(value);
+					value = serializer.deserialize(n);
 				}
+				properties.let(name).be(value);
 			}
 		} catch (XPathExpressionException e) {
 			throw new SerializationException("Could not evaluate XPath expression.", e);

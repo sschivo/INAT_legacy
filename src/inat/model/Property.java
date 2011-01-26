@@ -118,6 +118,16 @@ public class Property {
 	}
 
 	/**
+	 * Lets the property be {@code value}.
+	 * 
+	 * @param <T> the type of the value
+	 * @param value the value itself
+	 */
+	public <T> void be(T value) {
+		this.set(value);
+	}
+
+	/**
 	 * Returns the name of this property.
 	 * 
 	 * @return the name of this property
