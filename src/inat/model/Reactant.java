@@ -8,13 +8,13 @@ package inat.model;
  * 
  * @author B. Wanders
  */
-public class Species extends Entity {
+public class Reactant extends Entity {
 	/**
 	 * Constructor.
 	 * 
 	 * @param id the vertex id
 	 */
-	public Species(String id) {
+	public Reactant(String id) {
 		super(id);
 	}
 

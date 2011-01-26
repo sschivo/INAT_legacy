@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A model. This model keeps itself consistent, as long as both {@link Species}
+ * A model. This model keeps itself consistent, as long as both {@link Reactant}
  * and {@link Reaction} implementations keep their {@link #equals(Object)}
  * method based on identity the model is automatically consistent.
  * 
@@ -19,7 +19,7 @@ public class Model {
 	/**
 	 * The vertices in the model.
 	 */
-	private final Map<String, Species> species;
+	private final Map<String, Reactant> reactants;
 	/**
 	 * The edges in the model.
 	 */
@@ -34,7 +34,7 @@ public class Model {
 	 * Constructor.
 	 */
 	public Model() {
-		this.species = new HashMap<String, Species>();
+		this.reactants = new HashMap<String, Reactant>();
 		this.reactions = new HashMap<String, Reaction>();
 		this.properties = new PropertyBag();
 	}
@@ -44,10 +44,10 @@ public class Model {
 	 * 
 	 * @param v the vertex to add
 	 */
-	public void addSpecies(Species v) {
-		assert v.getModel() == null : "Can't add a species that is already part of a model.";
+	public void addReactant(Reactant v) {
+		assert v.getModel() == null : "Can't add a reactant that is already part of a model.";
 
-		this.species.put(v.getId(), v);
+		this.reactants.put(v.getId(), v);
 		v.setModel(this);
 	}
 
@@ -79,9 +79,9 @@ public class Model {
 	 * 
 	 * @param v the vertex to remove
 	 */
-	public void removeSpecies(Species v) {
-		assert v.getModel() == this : "Can't remove a species that is not part of this model.";
-		this.species.remove(v.getId());
+	public void removeReactant(Reactant v) {
+		assert v.getModel() == this : "Can't remove a reactant that is not part of this model.";
+		this.reactants.remove(v.getId());
 		v.setModel(null);
 	}
 
@@ -99,10 +99,10 @@ public class Model {
 	 * Returns the vertex with the given identifier, or {@code null}.
 	 * 
 	 * @param id the identifier we are looking for
-	 * @return the found {@link Species}, or {@code null}
+	 * @return the found {@link Reactant}, or {@code null}
 	 */
-	public Species getSpecies(String id) {
-		return this.species.get(id);
+	public Reactant getReactant(String id) {
+		return this.reactants.get(id);
 	}
 
 	/**
@@ -119,8 +119,8 @@ public class Model {
 	 * 
 	 * @return all vertices
 	 */
-	public Collection<Species> getSpecies() {
-		return Collections.unmodifiableCollection(this.species.values());
+	public Collection<Reactant> getReactants() {
+		return Collections.unmodifiableCollection(this.reactants.values());
 	}
 
 	/**
@@ -137,7 +137,7 @@ public class Model {
 		StringBuilder result = new StringBuilder();
 
 		result.append("Model[\n");
-		for (Species v : this.species.values()) {
+		for (Reactant v : this.reactants.values()) {
 			result.append("  " + v + "\n");
 		}
 		for (Reaction e : this.reactions.values()) {

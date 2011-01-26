@@ -8,7 +8,7 @@ import inat.model.Model;
 import inat.model.Property;
 import inat.model.PropertyBag;
 import inat.model.Reaction;
-import inat.model.Species;
+import inat.model.Reactant;
 import inat.util.AXPathExpression;
 import inat.util.XmlEnvironment;
 
@@ -59,18 +59,18 @@ public class XMLSerializer {
 		root.appendChild(properties);
 
 		// serialize the vertices
-		Element defs = doc.createElement("definitions");
-		for (Species vertex : m.getSpecies()) {
+		Element reactants = doc.createElement("reactants");
+		for (Reactant reactant : m.getReactants()) {
 			// create vertex element and set id and properties
-			Element e = doc.createElement("species");
-			e.setAttribute("id", vertex.getId());
+			Element e = doc.createElement("reactant");
+			e.setAttribute("id", reactant.getId());
 
 			// append property bag
-			e.appendChild(this.serializeProperties(doc, vertex.getProperties()));
+			e.appendChild(this.serializeProperties(doc, reactant.getProperties()));
 
-			defs.appendChild(e);
+			reactants.appendChild(e);
 		}
-		root.appendChild(defs);
+		root.appendChild(reactants);
 
 		// serialize the edges
 		Element reactions = doc.createElement("reactions");
@@ -146,7 +146,7 @@ public class XMLSerializer {
 	 */
 	public Model deserializeModel(Document d) throws SerializationException {
 		final AXPathExpression modelProperties = XmlEnvironment.hardcodedXPath("/inat-model/properties");
-		final AXPathExpression vertices = XmlEnvironment.hardcodedXPath("/inat-model/definitions/species");
+		final AXPathExpression vertices = XmlEnvironment.hardcodedXPath("/inat-model/reactants/reactant");
 		final AXPathExpression edges = XmlEnvironment.hardcodedXPath("/inat-model/reactions/reaction");
 		final AXPathExpression properties = XmlEnvironment.hardcodedXPath("./properties");
 		final AXPathExpression idAttribute = XmlEnvironment.hardcodedXPath("@id");
@@ -159,9 +159,9 @@ public class XMLSerializer {
 			// deserialize the vertices
 			for (Node root : vertices.getNodes(d.getDocumentElement())) {
 				String id = idAttribute.getString(root);
-				Species v = new Species(id);
+				Reactant v = new Reactant(id);
 				this.deserializerProperties(properties.getNode(root), v.getProperties());
-				m.addSpecies(v);
+				m.addReactant(v);
 			}
 			// deserialize edges
 			for (Node root : edges.getNodes(d.getDocumentElement())) {
