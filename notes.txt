@@ -1,5 +1,7 @@
-uppaal translation
 csv command line tool
+configurable composition
+UPPAAL model transformer based on FreeMarker template engine
+create more official model format documentation (both serialized and in-memory)
 --
 model.levels<int>: the number of concentration levels
 
@@ -15,5 +17,3 @@ reaction.reactant<string>: [reaction.type="reaction2"] the affected reactant (Re
 
 reaction.times<table>: a table with reaction timings
 reaction.increment<int>: the delta value
---
-tracer.exe requires cygwin1.dll
