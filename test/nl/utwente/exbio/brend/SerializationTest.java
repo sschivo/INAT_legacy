@@ -3,9 +3,10 @@ package nl.utwente.exbio.brend;
 import inat.InatBackend;
 import inat.exceptions.InatException;
 import inat.model.Model;
+import inat.model.Reactant;
 import inat.model.Reaction;
-import inat.model.Species;
 import inat.serializer.XMLSerializer;
+import inat.util.Table;
 
 import java.io.File;
 import java.io.StringWriter;
@@ -40,10 +41,10 @@ public class SerializationTest {
 
 		Model m1 = new Model();
 
-		m1.addReaction(new Reaction("r0"));
-		m1.addReaction(new Reaction("r1"));
-		m1.addSpecies(new Species("s0"));
-		m1.addSpecies(new Species("s1"));
+		m1.add(new Reaction("r0"));
+		m1.add(new Reaction("r1"));
+		m1.add(new Reactant("s0"));
+		m1.add(new Reactant("s1"));
 
 		m1.getReaction("r0").let("from").be("s0");
 		m1.getReaction("r0").let("to").be("s1");
@@ -52,6 +53,12 @@ public class SerializationTest {
 		r1.let("from").be("s0");
 		r1.let("to").be("s0");
 		r1.let("active").be(true);
+
+		m1.getReactant("s0").let("test").be(new Table(5, 5));
+		Table t = m1.getReactant("s0").get("test").as(Table.class);
+		t.set(3, 3, 1);
+		t.set(4, 4, 2);
+		t.set(3, 4, 5);
 
 		System.out.println("Original: " + m1);
 

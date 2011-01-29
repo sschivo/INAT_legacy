@@ -10,6 +10,7 @@ import inat.model.PropertyBag;
 import inat.model.Reaction;
 import inat.model.Reactant;
 import inat.util.AXPathExpression;
+import inat.util.Table;
 import inat.util.XmlEnvironment;
 
 import java.util.HashMap;
@@ -41,6 +42,7 @@ public class XMLSerializer {
 		this.typeSerializers.put(Boolean.class.getCanonicalName(), new BooleanSerializer());
 		this.typeSerializers.put(Integer.class.getCanonicalName(), new IntegerSerializer());
 		this.typeSerializers.put(Float.class.getCanonicalName(), new FloatSerializer());
+		this.typeSerializers.put(Table.class.getCanonicalName(), new TableSerializer());
 	}
 
 	/**
@@ -161,14 +163,14 @@ public class XMLSerializer {
 				String id = idAttribute.getString(root);
 				Reactant v = new Reactant(id);
 				this.deserializerProperties(properties.getNode(root), v.getProperties());
-				m.addReactant(v);
+				m.add(v);
 			}
 			// deserialize edges
 			for (Node root : edges.getNodes(d.getDocumentElement())) {
 				String id = idAttribute.getString(root);
 				Reaction e = new Reaction(id);
 				this.deserializerProperties(properties.getNode(root), e.getProperties());
-				m.addReaction(e);
+				m.add(e);
 			}
 
 		} catch (XPathExpressionException e) {

@@ -22,5 +22,4 @@ public class Reaction extends Entity {
 	public String toString() {
 		return "Reaction@" + this.getId() + "[" + this.properties + "]";
 	}
-
 }

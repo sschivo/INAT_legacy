@@ -130,8 +130,8 @@ public class UppaalInvoker {
 		ProcessBuilder builder = new ProcessBuilder();
 
 		// step 1: create xtr
-		builder.command(this.verifytaPath, "-t0", "-o2", "-Y", "-f" + prefix, modelFile.getAbsolutePath(), queryFile
-				.getAbsolutePath());
+		builder.command(this.verifytaPath, "-t0", "-o2", "-Y", "-f" + prefix, modelFile.getAbsolutePath(),
+				queryFile.getAbsolutePath());
 		builder.directory(this.temporaryLocation);
 		builder.redirectErrorStream(true);
 		Process xtrProcess = builder.start();
@@ -161,9 +161,7 @@ public class UppaalInvoker {
 		}
 
 		// step 2: compile model
-		builder
-				.command(this.verifytaPath, "-t0", "-o2", "-Y", modelFile.getAbsolutePath(), queryFile
-						.getAbsolutePath());
+		builder.command(this.verifytaPath, "-t0", "-o2", "-Y", modelFile.getAbsolutePath(), queryFile.getAbsolutePath());
 		builder.redirectErrorStream(true);
 		builder.environment().put(UPPAAL_COMPILE_ONLY, "true");
 		Process compilerProcess = builder.start();
@@ -205,7 +203,8 @@ public class UppaalInvoker {
 
 		result = tracerProcess.waitFor();
 		if (result != 0) {
-			throw new IOException("Trace conversion failed:\n" + buffer);
+			throw new IOException("Trace conversion failed because tracer process exitted with non-null value '"
+					+ result + "'.\nOutput buffer so far was: " + buffer);
 		} else {
 			return buffer.toString();
 		}

@@ -23,19 +23,19 @@ public class UppaalModelAnalyzer implements ModelAnalyzer<LevelResult> {
 	/**
 	 * The result analyser that is going to analyze the UPPAAL output.
 	 */
-	private final ResultInterpreter<LevelResult> resultAnalyzer;
+	private final ResultInterpreter<LevelResult> resultInterpreter;
 
 	/**
 	 * Constructor.
 	 * 
-	 * @param resultAnalyzer the analyzer to use when interpreting the UPPAAL
+	 * @param resultInterpreter the analyzer to use when interpreting the UPPAAL
 	 *            output
 	 * @param transformer the model transformer to use when transforming the
 	 *            {@link Model} to an UPPAAL model
 	 */
-	public UppaalModelAnalyzer(ResultInterpreter<LevelResult> resultAnalyzer, ModelTransformer transformer) {
+	public UppaalModelAnalyzer(ResultInterpreter<LevelResult> resultInterpreter, ModelTransformer transformer) {
 		super();
-		this.resultAnalyzer = resultAnalyzer;
+		this.resultInterpreter = resultInterpreter;
 		this.transformer = transformer;
 	}
 
@@ -44,7 +44,7 @@ public class UppaalModelAnalyzer implements ModelAnalyzer<LevelResult> {
 		// create UPPAAL model
 		final String uppaalModel = this.transformer.transform(m);
 		// create UPPAAL query
-		final String uppaalQuery = "E<> (globalTime > " + 0 + ")";
+		final String uppaalQuery = "E<> (globalTime > " + 2000 + ")";
 
 		// do low-level I/O UPPAAL interaction
 		UppaalInvoker invoker = new UppaalInvoker();
@@ -61,8 +61,8 @@ public class UppaalModelAnalyzer implements ModelAnalyzer<LevelResult> {
 
 		// if the ouput is null, we have no trace
 		if (output != null) {
-			// analyze the resulting trace
-			LevelResult result = this.resultAnalyzer.analyse(output);
+			// interpret the resulting trace
+			LevelResult result = this.resultInterpreter.analyse(m, output);
 
 			return result;
 		} else {

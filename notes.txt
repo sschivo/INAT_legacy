@@ -1,0 +1,19 @@
+uppaal translation
+csv command line tool
+--
+model.levels<int>: the number of concentration levels
+
+reactant.name<string>: the name of the reactant
+reactant.initialConcentration<int>: the initial level of concentration
+
+reaction.type<string>: {"reaction1", "reaction2"} the type of the reaction
+
+reaction.reactant<string>: [reaction.type="reaction1"] the single reactant of the reaction (Reaction2.reactant[0])
+
+reaction.catalyst<string>: [reaction.type="reaction2"] the catalyst (Reaction2.reactant[0])
+reaction.reactant<string>: [reaction.type="reaction2"] the affected reactant (Reaction2.reactant[1])
+
+reaction.times<table>: a table with reaction timings
+reaction.increment<int>: the delta value
+--
+tracer.exe requires cygwin1.dll

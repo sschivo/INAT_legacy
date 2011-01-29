@@ -9,7 +9,7 @@ package inat.analyzer;
  * 
  * @author B. Wanders
  */
-public class LevelResult {
+public interface LevelResult {
 	/**
 	 * This method retrieves the level of activation for the given substrate
 	 * 
@@ -17,7 +17,5 @@ public class LevelResult {
 	 * @param time the time index to do a look up for
 	 * @return the level of concentration
 	 */
-	public int getConcentration(String id, int time) {
-		return 0;
-	}
+	public int getConcentration(String id, int time);
 }

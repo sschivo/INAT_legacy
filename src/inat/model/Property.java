@@ -3,6 +3,8 @@
  */
 package inat.model;
 
+import inat.util.Table;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -16,7 +18,8 @@ public class Property {
 	/**
 	 * The array of accepted types.
 	 */
-	private static final Class<?>[] acceptedTypesArray = { String.class, Boolean.class, Integer.class, Float.class };
+	private static final Class<?>[] acceptedTypesArray = { Table.class, String.class, Boolean.class, Integer.class,
+			Float.class };
 
 	/**
 	 * The {@link Set} containing all accepted property types.

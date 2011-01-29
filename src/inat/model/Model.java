@@ -44,7 +44,7 @@ public class Model {
 	 * 
 	 * @param v the vertex to add
 	 */
-	public void addReactant(Reactant v) {
+	public void add(Reactant v) {
 		assert v.getModel() == null : "Can't add a reactant that is already part of a model.";
 
 		this.reactants.put(v.getId(), v);
@@ -56,8 +56,9 @@ public class Model {
 	 * 
 	 * @param e the edge to remove
 	 */
-	public void addReaction(Reaction e) {
+	public void add(Reaction e) {
 		assert e.getModel() == null : "Can't add a reaction that is already part of a model.";
+
 		this.reactions.put(e.getId(), e);
 		e.setModel(this);
 	}
@@ -67,7 +68,7 @@ public class Model {
 	 * 
 	 * @param e the edge to remove
 	 */
-	public void removeReaction(Reaction e) {
+	public void remove(Reaction e) {
 		assert e.getModel() == this : "Can't remove a reaction that is not part of this model.";
 		this.reactions.remove(e.getId());
 		e.setModel(null);
@@ -79,7 +80,7 @@ public class Model {
 	 * 
 	 * @param v the vertex to remove
 	 */
-	public void removeReactant(Reactant v) {
+	public void remove(Reactant v) {
 		assert v.getModel() == this : "Can't remove a reactant that is not part of this model.";
 		this.reactants.remove(v.getId());
 		v.setModel(null);
