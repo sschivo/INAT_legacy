@@ -44,7 +44,7 @@ public class UppaalModelAnalyzer implements ModelAnalyzer<LevelResult> {
 		// create UPPAAL model
 		final String uppaalModel = this.transformer.transform(m);
 		// create UPPAAL query
-		final String uppaalQuery = "E<> (globalTime > " + 2000 + ")";
+		final String uppaalQuery = "E<> (globalTime > " + 500 + ")";
 
 		// do low-level I/O UPPAAL interaction
 		UppaalInvoker invoker = new UppaalInvoker();

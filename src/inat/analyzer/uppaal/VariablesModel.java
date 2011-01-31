@@ -34,6 +34,7 @@ public class VariablesModel implements ModelTransformer {
 		out.append("<declaration>");
 		out.append("\n");
 
+		// output global declarations
 		out.append("// Place global declarations here.");
 		out.append("\n");
 		out.append("clock globalTime;");
@@ -56,17 +57,20 @@ public class VariablesModel implements ModelTransformer {
 		out.append("\n");
 		out.append("\n");
 		for (Reactant r : m.getReactants()) {
-			this.appendReactantVariables(out, m, r);
+			this.appendReactantVariables(out, r);
 		}
-
 		out.append("</declaration>");
+
 		out.append("\n");
 		out.append("\n");
+		// output default templates (no dynamic content here)
 		this.appendTemplates(out);
 
 		out.append("Coord = Coordinator(reaction_happening, reaction_not_happening, update, reset);");
 		out.append("\n");
 		out.append("\n");
+
+		// output the process instantiation for each reactant and reaction
 		for (Reactant r : m.getReactants()) {
 			this.appendReactantProcesses(out, r);
 		}
@@ -74,9 +78,10 @@ public class VariablesModel implements ModelTransformer {
 		for (Reaction r : m.getReactions()) {
 			this.appendReactionProcesses(out, m, r);
 		}
+		out.append("\n");
+		out.append("\n");
 
-		out.append("\n");
-		out.append("\n");
+		// compose the system
 		out.append("system ");
 		for (Reactant r : m.getReactants()) {
 			out.append(r.getId() + "_reactant, ");
@@ -109,6 +114,7 @@ public class VariablesModel implements ModelTransformer {
 	 */
 	private String getReactionName(Reaction r) {
 		if (r.get("type").as(String.class).equals("reaction1")) {
+			// reaction1 is assumed to be a degredation reaction
 			String reactantId = r.get("reactant").as(String.class);
 			return reactantId + "_deg";
 		} else if (r.get("type").as(String.class).equals("reaction2")) {
@@ -125,42 +131,65 @@ public class VariablesModel implements ModelTransformer {
 			String reactantId = r.get("reactant").as(String.class);
 			Table times = r.get("times").as(Table.class);
 			assert times.getColumnCount() == 1 : "Table is (larger than one)-dimensional.";
+			assert times.getRowCount() == m.getProperties().get("level").as(Integer.class) + 1 : "Incorrect number of rows in 'times' table of '"
+					+ r + "'";
 
+			// output times table consants for this reaction
 			out.append("const int " + reactantId + "_t[MAX_LEVELS+1] := {");
 			for (int i = 0; i < times.getRowCount() - 1; i++) {
 				out.append(formatTime(times.get(i, 0)) + ", ");
 			}
 			out.append(formatTime(times.get(times.getRowCount() - 1, 0)) + "};");
 			out.append("\n");
+
+			// output reaction instantiation
 			final String name = getReactionName(r);
 			out.append(name + " = Reaction(" + reactantId + ", " + reactantId + "_nonofficial, " + reactantId + "_t, "
 					+ r.get("increment").as(Integer.class) + ", update, reaction_happening, reaction_not_happening);");
 			out.append("\n");
+
 		} else if (r.get("type").as(String.class).equals("reaction2")) {
 			String r1Id = r.get("catalyst").as(String.class);
 			String r2Id = r.get("reactant").as(String.class);
 
 			Table times = r.get("times").as(Table.class);
 
+			assert times.getRowCount() == m.getProperties().get("levels").as(Integer.class) + 1 : "Incorrect number of rows in 'times' table of '"
+					+ r + "'.";
+			assert times.getColumnCount() == m.getProperties().get("levels").as(Integer.class) + 1 : "Incorrect number of columns in 'times' table of '"
+					+ r + "'.";
+
+			// output times table constant for this reaction
 			out.append("const int " + r1Id + "_" + r2Id + "_r_t[MAX_LEVELS+1][MAX_LEVELS+1] := {");
 			out.append("\n");
 
-			for (int[] column : times) {
+			// for each row
+			for (int row = 0; row < times.getRowCount(); row++) {
 				out.append("\t\t{");
-				for (int j = 0; j < column.length - 1; j++) {
-					out.append(formatTime(column[j]) + ", ");
+
+				// for each column
+				for (int col = 0; col < times.getColumnCount(); col++) {
+					out.append(times.get(row, col));
+
+					// seperate value with a comma if it is not the last one
+					if (col < times.getColumnCount() - 1) {
+						out.append(", ");
+					}
 				}
-				out.append(formatTime(column[column.length - 1]) + "},");
+				out.append("}");
+
+				// end row line with a comma if it is not the last one
+				if (row < times.getRowCount() - 1) {
+					out.append(",");
+				}
 				out.append("\n");
 			}
-			out.append("\t\t{");
-			for (int j = 0; j < times.getRowCount() - 1; j++) {
-				out.append(formatTime(times.getColumn(times.getColumnCount() - 1)[j]) + ", ");
-			}
-			out.append(formatTime(times.get(times.getRowCount() - 1, times.getColumnCount() - 1)) + "}");
-			out.append("\n");
+
 			out.append("};");
 			out.append("\n");
+			out.append("\n");
+
+			// output process instantiation
 			final String name = getReactionName(r);
 			out.append(name + " = Reaction2(" + r1Id + ", " + r2Id + ", " + r2Id + "_nonofficial, " + r1Id + "_" + r2Id
 					+ "_r_t, " + r.get("increment").as(Integer.class)
@@ -171,6 +200,7 @@ public class VariablesModel implements ModelTransformer {
 	}
 
 	private void appendReactantProcesses(StringBuilder out, Reactant r) {
+		// output process instantiation
 		out.append(r.getId() + "_reactant = Reactant(" + r.getId() + ", " + r.getId() + "_nonofficial, update);");
 		out.append("\n");
 		out.append("\n");
@@ -320,7 +350,8 @@ public class VariablesModel implements ModelTransformer {
 		out.append("\n");
 	}
 
-	private void appendReactantVariables(StringBuilder out, Model m, Reactant r) {
+	private void appendReactantVariables(StringBuilder out, Reactant r) {
+		// outputs the global variables necessary for the given reactant
 		out.append("int[0,MAX_LEVELS] " + r.getId() + " := " + r.get("initialConcentration").as(Integer.class) + ";");
 		out.append("\n");
 		out.append("int " + r.getId() + "_nonofficial := " + r.get("initialConcentration").as(Integer.class) + ";");

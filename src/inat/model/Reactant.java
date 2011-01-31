@@ -20,6 +20,6 @@ public class Reactant extends Entity {
 
 	@Override
 	public String toString() {
-		return "Species@" + this.getId() + "[" + this.properties + "]";
+		return "Reactant '" + this.getId() + "'";
 	}
 }

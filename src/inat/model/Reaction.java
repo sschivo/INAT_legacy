@@ -20,6 +20,6 @@ public class Reaction extends Entity {
 
 	@Override
 	public String toString() {
-		return "Reaction@" + this.getId() + "[" + this.properties + "]";
+		return "Reaction '" + this.getId() + "'";
 	}
 }
