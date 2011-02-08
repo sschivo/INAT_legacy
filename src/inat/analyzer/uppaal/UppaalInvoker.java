@@ -130,7 +130,7 @@ public class UppaalInvoker {
 		ProcessBuilder builder = new ProcessBuilder();
 
 		// step 1: create xtr
-		builder.command(this.verifytaPath, "-t0", "-o2", "-Y", "-f" + prefix, modelFile.getAbsolutePath(),
+		builder.command(this.verifytaPath, "-t0", "-o2", "-y", "-f" + prefix, modelFile.getAbsolutePath(),
 				queryFile.getAbsolutePath());
 		builder.directory(this.temporaryLocation);
 		builder.redirectErrorStream(true);

@@ -5,6 +5,8 @@ package inat.analyzer.uppaal;
 
 import java.io.IOException;
 
+import javax.swing.JFrame;
+
 import inat.analyzer.AnalysisException;
 import inat.analyzer.ModelAnalyzer;
 import inat.model.Model;
