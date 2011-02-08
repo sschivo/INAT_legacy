@@ -12,6 +12,11 @@ package inat.exceptions;
 public class InatException extends Exception {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 315015035048039668L;
+
+	/**
 	 * Constructor with detail message and cause.
 	 * 
 	 * @param message the detail message

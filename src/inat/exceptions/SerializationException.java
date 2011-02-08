@@ -14,6 +14,11 @@ import inat.model.Model;
 public class SerializationException extends InatException {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7587296325496020155L;
+
+	/**
 	 * Constructor with detail message and cause.
 	 * 
 	 * @param message the detail message
