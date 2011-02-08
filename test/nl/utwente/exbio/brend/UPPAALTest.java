@@ -48,20 +48,20 @@ public class UPPAALTest {
 		deg.let("type").be("reaction1");
 		deg.let("reactant").be("a");
 		deg.let("increment").be(-1);
-		Table degredationTable = new Table(4 + 1, 1);
-		degredationTable.set(0, 0, -1);
-		degredationTable.set(1, 0, 150);
-		degredationTable.set(2, 0, 130);
-		degredationTable.set(3, 0, 120);
-		degredationTable.set(4, 0, 110);
-		deg.let("times").be(degredationTable);
+		Table deactivationTable = new Table(4 + 1, 1);
+		deactivationTable.set(0, 0, -1);
+		deactivationTable.set(1, 0, 150);
+		deactivationTable.set(2, 0, 130);
+		deactivationTable.set(3, 0, 120);
+		deactivationTable.set(4, 0, 110);
+		deg.let("times").be(deactivationTable);
 		model.add(deg);
 
 		Reaction degb = new Reaction("bDeg");
 		degb.let("type").be("reaction1");
 		degb.let("reactant").be("b");
 		degb.let("increment").be(-1);
-		degb.let("times").be(degredationTable);
+		degb.let("times").be(deactivationTable);
 		model.add(degb);
 
 		Reaction r = new Reaction("foo");
