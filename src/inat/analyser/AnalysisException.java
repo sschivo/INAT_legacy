@@ -1,7 +1,7 @@
 /**
  * 
  */
-package inat.analyzer;
+package inat.analyser;
 
 import inat.exceptions.InatException;
 

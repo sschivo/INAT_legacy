@@ -1,6 +1,6 @@
-package inat.analyzer.uppaal;
+package inat.analyser.uppaal;
 
-import inat.analyzer.LevelResult;
+import inat.analyser.LevelResult;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;

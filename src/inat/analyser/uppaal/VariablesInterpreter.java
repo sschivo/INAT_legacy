@@ -1,7 +1,7 @@
-package inat.analyzer.uppaal;
+package inat.analyser.uppaal;
 
-import inat.analyzer.AnalysisException;
-import inat.analyzer.LevelResult;
+import inat.analyser.AnalysisException;
+import inat.analyser.LevelResult;
 import inat.model.Model;
 import inat.model.Reactant;
 

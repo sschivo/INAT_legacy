@@ -1,11 +1,11 @@
 package nl.utwente.exbio.brend;
 
 import inat.InatBackend;
-import inat.analyzer.LevelResult;
-import inat.analyzer.ModelAnalyzer;
-import inat.analyzer.uppaal.UppaalModelAnalyzer;
-import inat.analyzer.uppaal.VariablesInterpreter;
-import inat.analyzer.uppaal.VariablesModel;
+import inat.analyser.LevelResult;
+import inat.analyser.ModelAnalyser;
+import inat.analyser.uppaal.UppaalModelAnalyser;
+import inat.analyser.uppaal.VariablesInterpreter;
+import inat.analyser.uppaal.VariablesModel;
 import inat.exceptions.InatException;
 import inat.model.Model;
 import inat.model.Reactant;
@@ -83,7 +83,7 @@ public class UPPAALTest {
 		model.add(r);
 
 		// composite the analyser (this should be done from configuration)
-		ModelAnalyzer<LevelResult> analyzer = new UppaalModelAnalyzer(new VariablesInterpreter(), new VariablesModel());
+		ModelAnalyser<LevelResult> analyzer = new UppaalModelAnalyser(new VariablesInterpreter(), new VariablesModel());
 
 		// analyse model
 		LevelResult result = analyzer.analyze(model);

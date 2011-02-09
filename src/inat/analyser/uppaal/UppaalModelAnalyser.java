@@ -1,21 +1,21 @@
 /**
  * 
  */
-package inat.analyzer.uppaal;
+package inat.analyser.uppaal;
 
 import java.io.IOException;
 
-import inat.analyzer.AnalysisException;
-import inat.analyzer.ModelAnalyzer;
+import inat.analyser.AnalysisException;
+import inat.analyser.LevelResult;
+import inat.analyser.ModelAnalyser;
 import inat.model.Model;
-import inat.analyzer.LevelResult;
 
 /**
  * The UPPAAL concentration level analyzer.
  * 
  * @author B. Wanders
  */
-public class UppaalModelAnalyzer implements ModelAnalyzer<LevelResult> {
+public class UppaalModelAnalyser implements ModelAnalyser<LevelResult> {
 	/**
 	 * The transformer that should be used for the given UPPAAL model.
 	 */
@@ -33,7 +33,7 @@ public class UppaalModelAnalyzer implements ModelAnalyzer<LevelResult> {
 	 * @param transformer the model transformer to use when transforming the
 	 *            {@link Model} to an UPPAAL model
 	 */
-	public UppaalModelAnalyzer(ResultInterpreter<LevelResult> resultInterpreter, ModelTransformer transformer) {
+	public UppaalModelAnalyser(ResultInterpreter<LevelResult> resultInterpreter, ModelTransformer transformer) {
 		super();
 		this.resultInterpreter = resultInterpreter;
 		this.transformer = transformer;

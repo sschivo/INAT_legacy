@@ -1,9 +1,9 @@
 /**
  * 
  */
-package inat.analyzer.uppaal;
+package inat.analyser.uppaal;
 
-import inat.analyzer.AnalysisException;
+import inat.analyser.AnalysisException;
 import inat.model.Model;
 
 /**

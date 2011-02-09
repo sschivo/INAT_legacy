@@ -1,7 +1,7 @@
 /**
  * 
  */
-package inat.analyzer.uppaal;
+package inat.analyser.uppaal;
 
 import inat.model.Model;
 

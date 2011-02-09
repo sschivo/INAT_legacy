@@ -1,7 +1,7 @@
 /**
  * 
  */
-package inat.analyzer;
+package inat.analyser;
 
 /**
  * The concentrations result contains information about the analysis of the

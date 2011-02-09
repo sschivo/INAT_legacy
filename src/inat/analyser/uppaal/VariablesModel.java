@@ -1,4 +1,4 @@
-package inat.analyzer.uppaal;
+package inat.analyser.uppaal;
 
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;

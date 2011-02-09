@@ -1,7 +1,7 @@
 /**
  * 
  */
-package inat.analyzer;
+package inat.analyser;
 
 import inat.model.Model;
 
@@ -12,7 +12,7 @@ import inat.model.Model;
  * @author B. Wanders
  * @param <R> the result type
  */
-public interface ModelAnalyzer<R> {
+public interface ModelAnalyser<R> {
 
 	/**
 	 * Analyzes the model and returns the result.
