@@ -90,5 +90,6 @@ public class UPPAALTest {
 
 		// output result
 		System.out.println(result);
+		result.toCSV("ExampleCSV.csv");
 	}
 }

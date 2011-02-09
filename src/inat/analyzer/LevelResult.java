@@ -18,4 +18,6 @@ public interface LevelResult {
 	 * @return the level of concentration
 	 */
 	public int getConcentration(String id, int time);
+	
+	public void toCSV(String fileName);
 }
