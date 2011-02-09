@@ -8,12 +8,9 @@ import inat.model.Reaction;
 import inat.serializer.XMLSerializer;
 import inat.util.Table;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.StringWriter;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Result;
 import javax.xml.transform.Source;
