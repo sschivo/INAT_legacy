@@ -10,9 +10,11 @@ import inat.exceptions.InatException;
 import inat.model.Model;
 import inat.model.Reactant;
 import inat.model.Reaction;
+import inat.serializer.CsvWriter;
 import inat.util.Table;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * The UPPAAL test class.
@@ -26,8 +28,9 @@ public class UPPAALTest {
 	 * 
 	 * @param args the command line arguments
 	 * @throws InatException if the system could not be initialised
+	 * @throws IOException if something goes wrong with the CSV writing
 	 */
-	public static void main(String[] args) throws InatException {
+	public static void main(String[] args) throws InatException, IOException {
 		InatBackend.initialise(new File("inat-configuration.xml"));
 
 		// create model
@@ -90,6 +93,8 @@ public class UPPAALTest {
 
 		// output result
 		System.out.println(result);
-		result.toCSV("ExampleCSV.csv");
+
+		CsvWriter writer = new CsvWriter();
+		writer.writeCsv("ExampleCSV.csv", model, result);
 	}
 }

@@ -145,7 +145,7 @@ public class VariablesModel implements ModelTransformer {
 			String reactantId = r.get("reactant").as(String.class);
 			Table times = r.get("times").as(Table.class);
 			assert times.getColumnCount() == 1 : "Table is (larger than one)-dimensional.";
-			assert times.getRowCount() == m.getProperties().get("level").as(Integer.class) + 1 : "Incorrect number of rows in 'times' table of '"
+			assert times.getRowCount() == m.getProperties().get("levels").as(Integer.class) + 1 : "Incorrect number of rows in 'times' table of '"
 					+ r + "'";
 
 			// output times table consants for this reaction

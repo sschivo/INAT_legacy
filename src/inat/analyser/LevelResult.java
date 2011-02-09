@@ -3,6 +3,9 @@
  */
 package inat.analyser;
 
+import java.util.List;
+import java.util.Set;
+
 /**
  * The concentrations result contains information about the analysis of the
  * activation levels of each substrate in a model.
@@ -18,6 +21,18 @@ public interface LevelResult {
 	 * @return the level of concentration
 	 */
 	public int getConcentration(String id, int time);
-	
-	public void toCSV(String fileName);
+
+	/**
+	 * Determines the reactant ID's of substrates of which result are known.
+	 * 
+	 * @return a set of IDs
+	 */
+	public Set<String> getReactantIds();
+
+	/**
+	 * Returns a list of all time indices at which we have a real data point.
+	 * 
+	 * @return the list of data point time indices
+	 */
+	public List<Integer> getTimeIndices();
 }
