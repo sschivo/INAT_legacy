@@ -8,9 +8,12 @@ import inat.model.Reaction;
 import inat.serializer.XMLSerializer;
 import inat.util.Table;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.StringWriter;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Result;
 import javax.xml.transform.Source;
@@ -88,6 +91,7 @@ public class SerializationTest {
 			TransformerFactory factory = TransformerFactory.newInstance();
 			Transformer transformer = factory.newTransformer();
 			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "3");
 			transformer.transform(source, result);
 			return stringWriter.getBuffer().toString();
 		} catch (TransformerConfigurationException e) {
