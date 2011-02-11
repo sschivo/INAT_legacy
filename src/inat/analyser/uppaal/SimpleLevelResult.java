@@ -38,7 +38,7 @@ public class SimpleLevelResult implements LevelResult {
 		// it is either the level set at the requested moment, or the one set
 		// before that
 		assert !data.headMap(time + 1).isEmpty() : "Can not retrieve data from any moment before the start of time.";
-		int exactTime = data.headMap(time + 1).firstKey();
+		int exactTime = data.headMap(time + 1).lastKey();
 
 		// use exact time to get value
 		return data.get(exactTime);
