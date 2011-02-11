@@ -7,6 +7,7 @@ import inat.analyser.uppaal.UppaalModelAnalyser;
 import inat.analyser.uppaal.VariablesInterpreter;
 import inat.analyser.uppaal.VariablesModel;
 import inat.exceptions.InatException;
+import inat.graph.Graph;
 import inat.model.Model;
 import inat.model.Reactant;
 import inat.model.Reaction;
@@ -96,5 +97,7 @@ public class UPPAALTest {
 
 		CsvWriter writer = new CsvWriter();
 		writer.writeCsv("ExampleCSV.csv", model, result);
+		Graph.plotGraph(new File("ExampleCSV.csv"));
+		Graph.exitOnClose();
 	}
 }
