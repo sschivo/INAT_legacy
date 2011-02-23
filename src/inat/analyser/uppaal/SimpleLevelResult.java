@@ -47,6 +47,8 @@ public class SimpleLevelResult implements LevelResult {
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
+		
+		b.append("Result["+this.getReactantIds()+"] ");
 
 		for (Entry<String, SortedMap<Integer, Integer>> r : this.levels.entrySet()) {
 			b.append(r.getKey() + ": " + r.getValue() + "\n");

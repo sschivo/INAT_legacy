@@ -15,12 +15,23 @@ import javax.swing.event.ChangeListener;
 import cytoscape.Cytoscape;
 import cytoscape.data.CyAttributes;
 
+/**
+ * The Inat result panel.
+ * 
+ * @author Brend Wanders
+ */
 public class InatResultPanel extends JPanel implements ChangeListener {
 
 	private final Model model;
 	private final LevelResult result;
 	private JSlider slider;
 
+	/**
+	 * The panel constructor.
+	 * 
+	 * @param model the model this panel uses
+	 * @param result the results object this panel uses
+	 */
 	public InatResultPanel(Model model, LevelResult result) {
 		super(new BorderLayout(), true);
 		this.model = model;

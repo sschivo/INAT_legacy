@@ -61,6 +61,10 @@ public class UppaalModelAnalyser implements ModelAnalyser<LevelResult> {
 
 		// if the ouput is null, we have no trace
 		if (output != null) {
+			if(output.startsWith("Catched exception:")) {
+				throw new AnalysisException("Tracer did not produce parseable output.");
+			}
+			
 			// interpret the resulting trace
 			LevelResult result = this.resultInterpreter.analyse(m, output);
 

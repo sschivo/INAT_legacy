@@ -1,6 +1,5 @@
 csv command line tool
 configurable composition
-UPPAAL model transformer based on FreeMarker template engine
 create more official model format documentation (both serialized and in-memory)
 --
 model.levels<int>: the number of concentration levels

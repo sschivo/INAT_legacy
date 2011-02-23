@@ -12,10 +12,14 @@ import inat.model.Model;
 import inat.model.Reactant;
 import inat.model.Reaction;
 import inat.serializer.CsvWriter;
+import inat.serializer.XMLSerializer;
 import inat.util.Table;
+import inat.util.XmlEnvironment;
 
 import java.io.File;
 import java.io.IOException;
+
+import org.xml.sax.SAXException;
 
 /**
  * The UPPAAL test class.
@@ -30,8 +34,9 @@ public class UPPAALTest {
 	 * @param args the command line arguments
 	 * @throws InatException if the system could not be initialised
 	 * @throws IOException if something goes wrong with the CSV writing
+	 * @throws SAXException if the XML didn't parse
 	 */
-	public static void main(String[] args) throws InatException, IOException {
+	public static void main(String[] args) throws InatException, IOException, SAXException {
 		InatBackend.initialise(new File("inat-configuration.xml"));
 
 		// create model
@@ -86,6 +91,7 @@ public class UPPAALTest {
 		r.let("times").be(reactionTable);
 		model.add(r);
 
+		model = new XMLSerializer().deserializeModel(XmlEnvironment.parse(new File("Z:/test.xml")));
 		// composite the analyser (this should be done from configuration)
 		ModelAnalyser<LevelResult> analyzer = new UppaalModelAnalyser(new VariablesInterpreter(), new VariablesModel());
 

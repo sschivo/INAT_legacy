@@ -7,22 +7,37 @@ import inat.analyser.ModelAnalyser;
 import inat.analyser.uppaal.UppaalModelAnalyser;
 import inat.analyser.uppaal.VariablesInterpreter;
 import inat.analyser.uppaal.VariablesModel;
+import inat.exceptions.InatException;
 import inat.model.Model;
 import inat.model.Reactant;
 import inat.model.Reaction;
 import inat.serializer.CsvWriter;
+import inat.serializer.XMLSerializer;
 import inat.util.Table;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
+import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.JFrame;
+import javax.swing.AbstractAction;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Result;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
 
 import cytoscape.CyNetwork;
 import cytoscape.Cytoscape;
@@ -33,6 +48,7 @@ import cytoscape.task.TaskMonitor;
 import cytoscape.task.ui.JTaskConfig;
 import cytoscape.task.util.TaskManager;
 import cytoscape.util.CytoscapeAction;
+import cytoscape.view.cytopanels.CytoPanel;
 
 /**
  * The run action runs the network through the INAT analyser.
@@ -96,8 +112,21 @@ public class RunAction extends CytoscapeAction {
 
 				final Model model = this.getInatModel();
 
+				XMLSerializer serializer = new XMLSerializer();
+				Document doc = serializer.serializeModel(model);
+
+				Source source = new DOMSource(doc);
+				FileWriter stringWriter = new FileWriter("Z:/test.xml");
+				Result streamout = new StreamResult(stringWriter);
+				TransformerFactory factory = TransformerFactory.newInstance();
+				Transformer transformer = factory.newTransformer();
+				transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+				transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "3");
+				transformer.transform(source, streamout);
+
 				this.monitor.setStatus("Analyzing model with UPPAAL");
 				this.monitor.setPercentCompleted(-1);
+
 				// composite the analyser (this should be done from
 				// configuration)
 				ModelAnalyser<LevelResult> analyzer = new UppaalModelAnalyser(new VariablesInterpreter(),
@@ -106,16 +135,39 @@ public class RunAction extends CytoscapeAction {
 				// analyse model
 				final LevelResult result = analyzer.analyze(model);
 
+				CsvWriter csvWriter = new CsvWriter();
+				csvWriter.writeCsv("z:/test.csv", model, result);
+				System.out.println("result: " + result);
+
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run() {
-						JFrame frame = new JFrame("Inat result viewer");
-						frame.setLayout(new BorderLayout());
+						final CytoPanel p = Cytoscape.getDesktop().getCytoPanel(SwingConstants.EAST);
+
+						// JFrame frame = new JFrame("Inat result viewer");
+						// frame.setLayout(new BorderLayout());
 						InatResultPanel resultViewer = new InatResultPanel(model, result);
-						frame.add(resultViewer, BorderLayout.CENTER);
-						frame.setLocationRelativeTo(Cytoscape.getDesktop());
-						frame.pack();
-						frame.setSize(new Dimension(800, 600));
-						frame.setVisible(true);
+						// frame.add(resultViewer, BorderLayout.CENTER);
+						// frame.setLocationRelativeTo(Cytoscape.getDesktop());
+						// frame.pack();
+						// frame.setSize(new Dimension(800, 600));
+						// frame.setVisible(true);
+
+						final JPanel container = new JPanel(new BorderLayout(2, 2));
+						container.add(resultViewer, BorderLayout.CENTER);
+						JPanel buttons = new JPanel(new GridLayout(1, 4, 2, 2));
+
+						JButton close = new JButton(new AbstractAction("Close") {
+							@Override
+							public void actionPerformed(ActionEvent e) {
+								p.remove(container);
+							}
+						});
+
+						buttons.add(close);
+						container.add(buttons, BorderLayout.NORTH);
+
+						p.add("INAT Results", container);
+
 					}
 				});
 
@@ -129,7 +181,7 @@ public class RunAction extends CytoscapeAction {
 			this.monitor = monitor;
 		}
 
-		private Model getInatModel() {
+		private Model getInatModel() throws InatException {
 			Map<String, String> nodeNameToId = new HashMap<String, String>();
 			Map<String, String> edgeNameToId = new HashMap<String, String>();
 
@@ -140,7 +192,13 @@ public class RunAction extends CytoscapeAction {
 			final int totalWork = network.getNodeCount() + network.getEdgeCount();
 			int doneWork = 0;
 
-			final int levels = Cytoscape.getNetworkAttributes().getIntegerAttribute(network.getIdentifier(), "levels");
+			final Integer levels = Cytoscape.getNetworkAttributes().getIntegerAttribute(network.getIdentifier(),
+					"levels");
+
+			if (levels == null) {
+				throw new InatException("Network attribute 'levels' is missing.");
+			}
+
 			model.getProperties().let("levels").be(levels);
 
 			// do nodes first
@@ -159,8 +217,15 @@ public class RunAction extends CytoscapeAction {
 				r.let("name").be(node.getIdentifier());
 
 				// set initial concentration level
-				r.let("initialConcentration").be(
-						nodeAttributes.getIntegerAttribute(node.getIdentifier(), "initialConcentration"));
+				final Integer initialConcentration = nodeAttributes.getIntegerAttribute(node.getIdentifier(),
+						"initialConcentration");
+
+				if (initialConcentration == null) {
+					throw new InatException("Node attribute 'initialConcentration' is missing on '"
+							+ node.getIdentifier() + "'");
+				}
+
+				r.let("initialConcentration").be(initialConcentration);
 
 				model.add(r);
 			}
@@ -184,6 +249,12 @@ public class RunAction extends CytoscapeAction {
 					r.let("reactant").be(reactant);
 
 					final List<Integer> times = edgeAttributes.getListAttribute(edge.getIdentifier(), "times");
+
+					if (times.size() != levels + 1) {
+						throw new InatException("Edge attribute 'times' on edge '" + edge.getIdentifier()
+								+ "' is not of the correct size.");
+					}
+
 					final Table timesTable = new Table(levels + 1, 1);
 					for (int j = 0; j < levels + 1; j++) {
 						timesTable.set(j, 0, times.get(j));
@@ -201,6 +272,10 @@ public class RunAction extends CytoscapeAction {
 					r.let("catalyst").be(catalyst);
 
 					final List<Integer> times = edgeAttributes.getListAttribute(edge.getIdentifier(), "times");
+					if (times.size() != (levels + 1) * (levels + 1)) {
+						throw new InatException("Edge attribute 'times' on edge '" + edge.getIdentifier()
+								+ "' is not of the correct size.");
+					}
 					final Table timesTable = new Table(levels + 1, levels + 1);
 					for (int j = 0; j < levels + 1; j++) {
 						for (int k = 0; k < levels + 1; k++) {
@@ -211,9 +286,9 @@ public class RunAction extends CytoscapeAction {
 
 					r.let("increment").be(getIncrement(network, edge));
 
-					model.add(r);
 				}
 
+				model.add(r);
 			}
 
 			return model;
