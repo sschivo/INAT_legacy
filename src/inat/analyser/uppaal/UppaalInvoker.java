@@ -161,7 +161,7 @@ public class UppaalInvoker {
 		}
 
 		// step 2: compile model
-		builder.command(this.verifytaPath, "-t0", "-o2", "-Y", modelFile.getAbsolutePath(), queryFile.getAbsolutePath());
+		builder.command(this.verifytaPath, "-t0", "-o2", "-y", modelFile.getAbsolutePath(), queryFile.getAbsolutePath());
 		builder.redirectErrorStream(true);
 		builder.environment().put(UPPAAL_COMPILE_ONLY, "true");
 		Process compilerProcess = builder.start();
