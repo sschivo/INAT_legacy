@@ -37,7 +37,6 @@ public class InatPlugin extends CytoscapePlugin {
 
 			CytoPanel p = Cytoscape.getDesktop().getCytoPanel(SwingConstants.WEST);
 			p.add("INAT", this.setupPanel(this));
-
 		} catch (InatException e) {
 			// show error panel
 			CytoPanel p = Cytoscape.getDesktop().getCytoPanel(SwingConstants.WEST);
@@ -65,6 +64,9 @@ public class InatPlugin extends CytoscapePlugin {
 
 		JButton runButton = new JButton(new RunAction(plugin));
 		buttons.add(runButton);
+		
+		JButton augmentButton = new JButton(new AugmentAction(plugin));
+		buttons.add(augmentButton);
 
 		panel.add(buttons, BorderLayout.NORTH);
 

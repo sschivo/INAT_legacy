@@ -67,9 +67,9 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 	public void stateChanged(ChangeEvent e) {
 		final int t = this.slider.getValue();
 		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
-		for (String r : result.getReactantIds()) {
-			final String id = model.getReactant(r).get("name").as(String.class);
-			final int level = result.getConcentration(r, t);
+		for (String r : this.result.getReactantIds()) {
+			final String id = this.model.getReactant(r).get("name").as(String.class);
+			final int level = this.result.getConcentration(r, t);
 			nodeAttributes.setAttribute(id, "concentration", level);
 		}
 

@@ -57,12 +57,6 @@ import cytoscape.view.cytopanels.CytoPanel;
  * 
  */
 public class RunAction extends CytoscapeAction {
-
-	/**
-	 * The plugin we were created for
-	 */
-	private final InatPlugin plugin;
-
 	/**
 	 * Constructor.
 	 * 
@@ -70,7 +64,6 @@ public class RunAction extends CytoscapeAction {
 	 */
 	public RunAction(InatPlugin plugin) {
 		super("Analyse network");
-		this.plugin = plugin;
 	}
 
 	@Override
@@ -87,7 +80,7 @@ public class RunAction extends CytoscapeAction {
 		jTaskConfig.setAutoDispose(true);
 
 		// Execute Task in New Thread; pops open JTask Dialog Box.
-		boolean succes = TaskManager.executeTask(task, jTaskConfig);
+		TaskManager.executeTask(task, jTaskConfig);
 	}
 
 	private class RunTask implements Task {
@@ -248,7 +241,9 @@ public class RunAction extends CytoscapeAction {
 					final String reactant = nodeNameToId.get(edge.getTarget().getIdentifier());
 					r.let("reactant").be(reactant);
 
-					final List<Integer> times = edgeAttributes.getListAttribute(edge.getIdentifier(), "times");
+					@SuppressWarnings("unchecked")
+					final List<Integer> times = (List<Integer>) edgeAttributes.getListAttribute(edge.getIdentifier(),
+							"times");
 
 					if (times.size() != levels + 1) {
 						throw new InatException("Edge attribute 'times' on edge '" + edge.getIdentifier()
@@ -271,7 +266,9 @@ public class RunAction extends CytoscapeAction {
 					final String catalyst = nodeNameToId.get(edge.getSource().getIdentifier());
 					r.let("catalyst").be(catalyst);
 
-					final List<Integer> times = edgeAttributes.getListAttribute(edge.getIdentifier(), "times");
+					@SuppressWarnings("unchecked")
+					final List<Integer> times = (List<Integer>) edgeAttributes.getListAttribute(edge.getIdentifier(),
+							"times");
 					if (times.size() != (levels + 1) * (levels + 1)) {
 						throw new InatException("Edge attribute 'times' on edge '" + edge.getIdentifier()
 								+ "' is not of the correct size.");
