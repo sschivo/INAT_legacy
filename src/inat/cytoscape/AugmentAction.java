@@ -6,7 +6,6 @@ import giny.view.NodeView;
 import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
-import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 
 import cytoscape.Cytoscape;
@@ -43,8 +42,10 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 			menu.add(new AbstractAction("[INAT] Edit reactant...") {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					JOptionPane.showMessageDialog(Cytoscape.getDesktop(), "MyNodeMenuItem on node "
-							+ nodeView.getNode().getIdentifier() + " is clicked");
+					NodeDialog dialog = new NodeDialog(nodeView.getNode());
+					dialog.pack();
+					dialog.setLocationRelativeTo(Cytoscape.getDesktop());
+					dialog.setVisible(true);
 				}
 			});
 		}
@@ -56,8 +57,10 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 			menu.add(new AbstractAction("[INAT] Edit reaction...") {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					JOptionPane.showMessageDialog(Cytoscape.getDesktop(), "MyNodeMenuItem on node "
-							+ edgeView.getEdge().getIdentifier() + " is clicked");
+					EdgeDialog dialog = new EdgeDialog(edgeView.getEdge());
+					dialog.pack();
+					dialog.setLocationRelativeTo(Cytoscape.getDesktop());
+					dialog.setVisible(true);
 				}
 			});
 		}
