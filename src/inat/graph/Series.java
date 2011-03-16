@@ -1,7 +1,7 @@
 package inat.graph;
 
-
 import java.awt.*;
+import java.awt.geom.Point2D;
 
 public class Series {
 	protected static int seriesCounter = 0;
@@ -123,7 +123,78 @@ public class Series {
 		if (master != null) {
 			myColor = master.myColor;
 			P[] masterData = master.getData();
+			P vecchio = null;
 			int i = 0;
+			Color c = g.getColor();
+			for (P punto : data) {
+				for (;i<masterData.length && masterData[i].x<punto.x;i++);
+				if (i < masterData.length) {
+					if (i > 0) {
+						float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+						Color c1 = Color.getHSBColor(hsb[0], hsb[1]/3, hsb[2]);
+							  //c2 = Color.getHSBColor(hsb[0], hsb[1]*3/2, hsb[2]);
+						float[] rgb = c1.getRGBComponents(null);
+						Color c3 = new Color(rgb[0], rgb[1], rgb[2], 0.5f);
+						rgb = c.getRGBColorComponents(null);
+						Color c4 = new Color(rgb[0], rgb[1], rgb[2], 0.6f);
+						/*g.setColor(Color.getHSBColor(hsb[0], hsb[1]/4, hsb[2]));
+						g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)),
+								   (int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
+						g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + vecchio.y - minY)),
+								   (int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)));*/
+						/*Polygon grayedError = new Polygon();
+						grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)));
+						grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
+						grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)));
+						grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + vecchio.y - minY)));
+						g.setPaint(new GradientPaint(new Point2D.Float((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY))), c3, new Point2D.Float((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY))), c4));
+						g.fill(grayedError);*/
+						/*Polygon error1 = new Polygon();
+						error1.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY)));
+						error1.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY)));
+						error1.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
+						error1.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)));
+						g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + masterData[i].y) / 2.0 - minY), (int)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y + masterData[i].y - punto.y) / 2.0 - minY));
+						g.setPaint(new GradientPaint((float)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + masterData[i].y) / 2.0 - minY), c, (float)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y + masterData[i].y - punto.y) / 2.0 - minY), c4));
+						g.fill(error1);*/
+						
+						//I would like to make it simpler, so that it does not negatively influence performances, but I have no time..
+						double maxY = Math.max(vecchio.y, punto.y);
+						Point2D.Float A = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i-1].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + maxY - minY))),
+									  B = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i].y + maxY - minY))),
+									  C = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i].y - maxY - minY))),
+									  D = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i-1].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - maxY - minY))),
+									  E = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i-1].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY))),
+									  F = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY))),
+									  I = new Point2D.Float((E.x + F.x) / 2.0f, (E.y + F.y) / 2.0f);
+						float Gx = (A.x*(B.y-A.y)/(B.x-A.x) - A.y + I.x*(B.x-A.x)/(B.y-A.y) + I.y) / ((B.y-A.y)/(B.x-A.x) + (B.x-A.x)/(B.y-A.y)),
+							  Gy = (B.y-A.y)/(B.x-A.x) * (Gx-A.x) + A.y;
+						Point2D.Float G = new Point2D.Float(Gx, Gy);
+						float Hx = (D.x*(C.y-D.y)/(C.x-D.x) - D.y + I.x*(C.x-D.x)/(C.y-D.y) + I.y) / ((C.y-D.y)/(C.x-D.x) + (C.x-D.x)/(C.y-D.y)),
+							  Hy = (C.y-D.y)/(C.x-D.x) * (Gx-D.x) + D.y;
+						Point2D.Float H = new Point2D.Float(Hx, Hy);
+						Polygon error1 = new Polygon();
+						error1.addPoint((int)E.x, (int)E.y);
+						error1.addPoint((int)F.x, (int)F.y);
+						error1.addPoint((int)B.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)));
+						error1.addPoint((int)A.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + vecchio.y - minY)));
+						//g.drawLine((int)I.x, (int)I.y, (int)G.x, (int)G.y);
+						//g.drawLine((int)A.x, (int)A.y, (int)B.x, (int)B.y);
+						g.setPaint(new GradientPaint(I, c4, G, c3));
+						g.fill(error1);
+						Polygon error2 = new Polygon();
+						error2.addPoint((int)E.x, (int)E.y);
+						error2.addPoint((int)F.x, (int)F.y);
+						error2.addPoint((int)C.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
+						error2.addPoint((int)D.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)));
+						g.setPaint(new GradientPaint(I, c4, H, c3));
+						g.fill(error2);
+					}
+				}
+				vecchio = punto;
+			}
+			g.setColor(c);
+			i = 0;
 			for (P punto : data) {
 				for (;i<masterData.length && masterData[i].x<punto.x;i++);
 				if (i < masterData.length) {
@@ -133,7 +204,12 @@ public class Series {
 							(int)(bounds.x + scaleX * (masterData[i].x - minX)) + 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  - punto.y - minY)));
 					g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)) - 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)), 
 							(int)(bounds.x + scaleX * (masterData[i].x - minX)) + 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  + punto.y - minY)));
+					if (i > 0) {
+						g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY)),
+								   (int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY)));
+					}
 				}
+				vecchio = punto;
 			}
 		} else {
 			myColor = g.getColor();

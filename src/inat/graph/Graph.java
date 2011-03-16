@@ -1,4 +1,5 @@
 package inat.graph;
+
 import javax.swing.*;
 
 import java.io.*;
@@ -25,6 +26,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	private static final java.awt.Color BACKGROUND_COLOR = Color.WHITE, FOREGROUND_COLOR = Color.BLACK, DISABLED_COLOR = Color.LIGHT_GRAY;
 	
 	private Vector<Series> data = null;
+	private Vector<String> selectedColumns = null;
 	private Scale scale = null;
 	private String xSeriesName = null;
 	private JPopupMenu popupMenu = null;
@@ -34,9 +36,12 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	private boolean customLegendPosition = false;
 	private boolean movingLegend = false;
 	private int oldLegendX = 0, oldLegendY = 0;
-
+	private final int SCALA = 1;
+	private final int BORDER_X = SCALA * 25, BORDER_Y = SCALA * 25;
+	
 	public Graph() {
 		data = new Vector<Series>();
+		selectedColumns = new Vector<String>();
 		scale = new Scale();
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
@@ -59,8 +64,8 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		popupMenu.add(export);
 		popupMenu.add(clear);
 		popupMenu.add(newInterval);
-		popupMenu.addSeparator();
-		popupMenu.add(close);
+		//popupMenu.addSeparator();
+		//popupMenu.add(close);
 		this.add(popupMenu);
 		customLegendPosition = false;
 		movingLegend = false;
@@ -85,6 +90,48 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	public void changeEnabledSeries(int seriesIdx) {
 		if (seriesIdx < 0 || seriesIdx >= data.size()) return;
 		data.elementAt(seriesIdx).setEnabled(!data.elementAt(seriesIdx).getEnabled());
+	}
+	
+	//an alternative to this is to directly pass the string vector to the parseCSV method
+	public void setEnabledSeries(Vector<String> seriesNames) {
+		for (String seriesName : seriesNames) {
+			for (Series series : data) {
+				if (series.getName().contains(seriesName)) {
+					series.setEnabled(true);
+				} else {
+					series.setEnabled(false);
+				}
+			}
+		}
+	}
+	
+	public void addEnabledSeries(Vector<String> selectedColumns) {
+		this.selectedColumns.addAll(selectedColumns);
+		for (Series s : data) {
+			if (!this.selectedColumns.contains(s.getName())) {
+				s.setEnabled(false);
+			} else {
+				s.setEnabled(true);
+			}
+		}
+	}
+	
+	public Vector<String> getEnabledSeries() {
+		Vector<String> enabledSeries = new Vector<String>();
+		for (Series series : data) {
+			if (series.getEnabled()) {
+				enabledSeries.add(series.getName());
+			}
+		}
+		return enabledSeries;
+	}
+	
+	public Vector<String> getSeriesNames() {
+		Vector<String> seriesNames = new Vector<String>();
+		for (Series series : data) {
+			seriesNames.add(series.getName());
+		}
+		return seriesNames;
 	}
 	
 	public void changeSeriesColor(int seriesIdx) {
@@ -130,14 +177,21 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		return c;
 	}
 	
+	int idxRandom = 0;
 	private Color randomCol() {
-		return colori[0 + random.nextInt(colori.length-1 - 0)];
+		//return colori[0 + random.nextInt(colori.length-1 - 0)];
+		Color c = colori[idxRandom];
+		idxRandom++;
+		if (idxRandom > colori.length-1) {
+			idxRandom = 0;
+		}
+		return c;
 	}
 	
 	public int findSeriesInLegend(int x, int y) {
-		if (x >= 5 && x <= legendBounds.width - 5
-			&& y >= 5 && y <= legendBounds.height - 5) {
-			int seriesIdx = y / 20;
+		if (x >= 5 * SCALA && x <= legendBounds.width - 5 * SCALA
+			&& y >= 5 * SCALA && y <= legendBounds.height - 5 * SCALA) {
+			int seriesIdx = y / (20 * SCALA);
 			int countShownSeries = 0,
 				countExistingSeries = 0;
 			while (countExistingSeries<data.size()) {
@@ -158,12 +212,12 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	public void drawAxes(Graphics2D g, Rectangle bounds) {
 		FontMetrics fm = g.getFontMetrics();
 		g.setPaint(FOREGROUND_COLOR);
-		g.drawLine(bounds.x - 10, bounds.height + bounds.y, bounds.x + bounds.width + 10, bounds.height + bounds.y);
-		g.drawLine(bounds.x, bounds.height + bounds.y + 10, bounds.x, bounds.y - 10);
-		g.drawLine(bounds.x + bounds.width + 10, bounds.y + bounds.height, bounds.x + bounds.width, bounds.y + bounds.height - 5);
-		g.drawLine(bounds.x + bounds.width + 10, bounds.y + bounds.height, bounds.x + bounds.width, bounds.y + bounds.height + 5);
-		g.drawLine(bounds.x, bounds.y - 10, bounds.x - 5, bounds.y);
-		g.drawLine(bounds.x, bounds.y - 10, bounds.x + 5, bounds.y);
+		g.drawLine(bounds.x - 10 * SCALA, bounds.height + bounds.y, bounds.x + bounds.width + 10 * SCALA, bounds.height + bounds.y);
+		g.drawLine(bounds.x, bounds.height + bounds.y + 10 * SCALA, bounds.x, bounds.y - 10 * SCALA);
+		g.drawLine(bounds.x + bounds.width + 10 * SCALA, bounds.y + bounds.height, bounds.x + bounds.width, bounds.y + bounds.height - 5 * SCALA);
+		g.drawLine(bounds.x + bounds.width + 10 * SCALA, bounds.y + bounds.height, bounds.x + bounds.width, bounds.y + bounds.height + 5 * SCALA);
+		g.drawLine(bounds.x, bounds.y - 10 * SCALA, bounds.x - 5 * SCALA, bounds.y);
+		g.drawLine(bounds.x, bounds.y - 10 * SCALA, bounds.x + 5 * SCALA, bounds.y);
 		
 		int xTick = bounds.x,
 		yTick = bounds.y + bounds.height;
@@ -188,15 +242,15 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		}
 		int xStartString = bounds.x + bounds.width;
 		if (xSeriesName != null) {
-			xStartString -= fm.stringWidth(xSeriesName) - 5;
+			xStartString -= fm.stringWidth(xSeriesName) - 5 * SCALA;
 		}
 		for (int i=increase; i<maxX && (xTick + increase * scaleX + fm.stringWidth(new Integer(i).toString())) < xStartString; i+=increase) {
 			xTick = (int) (bounds.x + scaleX * (i - minX));
 			if (xTick < bounds.x) continue;
 			if (xTick > bounds.x + bounds.width) break;
-			g.drawLine(xTick, yTick - 5, xTick, yTick + 5);
+			g.drawLine(xTick, yTick - 5 * SCALA, xTick, yTick + 5 * SCALA);
 			String label = new Integer(i).toString();
-			g.drawString(label, xTick - fm.stringWidth(label)/2, yTick + 3 + fm.getHeight());
+			g.drawString(label, xTick - fm.stringWidth(label)/2, yTick + 3 * SCALA + fm.getHeight());
 		}
 		
 		xTick = bounds.x;
@@ -221,14 +275,16 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 			yTick = (int)(bounds.y + bounds.height - scaleY * (i - minY));
 			if (yTick > bounds.y + bounds.height) continue;
 			if (yTick < bounds.y) break;
-			g.drawLine(xTick - 5, yTick, xTick + 5, yTick);
+			g.drawLine(xTick - 5 * SCALA, yTick, xTick + 5 * SCALA, yTick);
 			String label = new Integer(i).toString();
-			g.drawString(label, xTick - fm.stringWidth(label) - 5, yTick - 3 + fm.getHeight()/2);
+			g.drawString(label, xTick - fm.stringWidth(label) - 5 * SCALA, yTick - 3 * SCALA + fm.getHeight()/2);
 		}
 		
 		if (xSeriesName != null) {
-			g.drawString(xSeriesName, xStartString, bounds.y + bounds.height + 3 + fm.getHeight());
+			g.drawString(xSeriesName, xStartString, bounds.y + bounds.height + 3 * SCALA + fm.getHeight());
 		}
+		
+		
 	}
 	
 	public void drawLegend(Graphics2D g, Rectangle bounds) {
@@ -239,18 +295,18 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		g.draw(bounds);
 		resetCol();
 		Stroke oldStroke = g.getStroke();
-		g.setStroke(new BasicStroke(3));
+		g.setStroke(new BasicStroke(3 * SCALA));
 		int nLegend = 0;
 		for (Series series : data) {
 			if (series.isSlave()) continue;
 			g.setPaint(series.getColor());
-			g.drawLine(bounds.x + 5, bounds.y + 10 + nLegend * 20, bounds.x + 25, bounds.y + 10 + nLegend * 20);
+			g.drawLine(bounds.x + 5 * SCALA, bounds.y + 10 * SCALA + nLegend * 20 * SCALA, bounds.x + 25 * SCALA, bounds.y + 10 * SCALA + nLegend * 20 * SCALA);
 			if (series.getEnabled()) {
 				g.setPaint(FOREGROUND_COLOR);
 			} else {
 				g.setPaint(DISABLED_COLOR);
 			}
-			g.drawString(series.getName(), bounds.x + 30, bounds.y + 15 + nLegend * 20);
+			g.drawString(series.getName(), bounds.x + 30 * SCALA, bounds.y + 15 * SCALA + nLegend * 20 * SCALA);
 			nLegend++;
 		}
 		g.setStroke(oldStroke);
@@ -258,13 +314,20 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	
 	public void paint(Graphics g1) {
 		Graphics2D g = (Graphics2D)g1;
+		Font fintus = g.getFont();
+		Font funtus = new Font(fintus.getName(), fintus.getStyle(), fintus.getSize() * SCALA);
+		g.setFont(funtus);
+		if (!movingLegend) {
+			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		}
 		//g.clearRect(0, 0, this.getWidth(), this.getHeight());
 		g.setPaint(BACKGROUND_COLOR);
-		g.fill(this.getBounds());
+		Rectangle bounds = new Rectangle(this.getBounds());
+		bounds.x = bounds.y = 0; //we don't care where we are inside our containing object: we only need the width and height of the drawing area. The starting x and y are of course 0.
+		g.fill(bounds);
 		FontMetrics fm = g.getFontMetrics();
 		maxLabelLength = 0;
-		Rectangle bounds = new Rectangle(this.getBounds());
-		bounds.setBounds(bounds.x + 20, bounds.y + 20, bounds.width - 40, bounds.height - 40);
+		bounds.setBounds(bounds.x + BORDER_X, bounds.y + BORDER_Y, bounds.width - 2 * BORDER_X, bounds.height - 2 * BORDER_Y);
 		
 		//Assi + freccine: li ho spostati dopo, sennò il disegno del grafico me li sovrascriveva
 		/*g.setPaint(java.awt.Color.BLACK);
@@ -277,7 +340,8 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		
 		resetCol();
 		Stroke oldStroke = g.getStroke();
-		g.setStroke(new BasicStroke(2));
+		g.setStroke(new BasicStroke(2 * SCALA));
+		Stroke fineStroke = new BasicStroke(1 * SCALA);
 		for (int i=0;i<data.size();i++) {
 			Series series = data.elementAt(i);
 			if (!series.isSlave()) {
@@ -300,28 +364,39 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 				}
 			}
 		}
-		g.setStroke(oldStroke);
 		if (legendBounds == null || !customLegendPosition) {
 			int nGraphs = 0;
 			for (Series s : data) {
 				if (!s.isSlave()) nGraphs++;
 			}
-			legendBounds = new Rectangle(bounds.width - 35 - (int)maxLabelLength, bounds.y + 20, 35 + (int)maxLabelLength, 20 * nGraphs);
+			legendBounds = new Rectangle(bounds.width - 35 * SCALA - (int)maxLabelLength, bounds.y + 20 * SCALA, 35 * SCALA + (int)maxLabelLength, 20 * SCALA * nGraphs);
 		}
-		
+		g.setStroke(fineStroke);
 		if (showLegend) {
 			drawLegend(g, legendBounds);
 		}
 		
 		
 		drawAxes(g, bounds);
-		
+
+		g.setStroke(oldStroke);
+		g.setFont(fintus);
 	}
 	
 	public void parseCSV(String fileName) throws FileNotFoundException, IOException {
+		parseCSV(fileName, null);
+	}
+	
+	public void parseCSV(String fileName, Vector<String> selectedColumns) throws FileNotFoundException, IOException {
+		if (selectedColumns != null) {
+			this.selectedColumns.addAll(selectedColumns);
+		}
 		File f = new File(fileName);
 		BufferedReader is = new BufferedReader(new FileReader(f));
 		String firstLine = is.readLine();
+		if (firstLine == null) {
+			throw new IOException("Error: the file " + fileName + " is empty!");
+		}
 		StringTokenizer tritatutto = new StringTokenizer(firstLine, ",");
 		int nColonne = tritatutto.countTokens();
 		String[] graphNames = new String[nColonne - 1];
@@ -361,6 +436,11 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 						s.setMaster(s2);
 					}
 				}
+			}
+			if (this.selectedColumns.size() > 0 && !this.selectedColumns.contains(s.getName())) {
+				s.setEnabled(false);
+			} else {
+				s.setEnabled(true);
 			}
 		}
 		customLegendPosition = false;
@@ -419,14 +499,18 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 
 	public static void main(String[] args) throws Exception {
 		if (args.length < 1) {
-			Graph g = new Graph();
+			/*Graph g = new Graph();
 			JFrame fin = new JFrame("Graph");
 			fin.getContentPane().add(g);
 			fin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			fin.setBounds(250,50,800,800);
 			fin.setVisible(true);
-			g.parseCSV(DEFAULT_CSV_FILE);
-			g.repaint();
+			Vector<String> cols = new Vector<String>();
+			cols.add("MK2_data");
+			g.parseCSV(DEFAULT_CSV_FILE, cols);
+			g.repaint();*/
+			Graph.plotGraph(new File(DEFAULT_CSV_FILE));
+			exitOnClose();
 		} else {
 			Graph.plotGraph(new File(args[0]));
 			exitOnClose();
@@ -515,7 +599,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 					yPresumed = e.getY() - legendBounds.y;
 				int seriesIdx = findSeriesInLegend(xPresumed, yPresumed);
 				if (seriesIdx != -1) {
-					if (xPresumed > 30) {
+					if (xPresumed > 30 * SCALA) {
 						this.changeEnabledSeries(seriesIdx);
 					} else {
 						this.changeSeriesColor(seriesIdx);
