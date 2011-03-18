@@ -58,7 +58,11 @@ public class CsvWriter {
 		bw.write("Time");
 		for (String rid : rids) {
 			// determine official name and output it
-			bw.write(", " + m.getReactant(rid).get("name").as(String.class));
+			String name = m.getReactant(rid).get("alias").as(String.class); //if an alias is set, we prefer it
+			if (name == null) {
+				name = m.getReactant(rid).get("name").as(String.class);
+			}
+			bw.write(", " + name);
 		}
 		bw.newLine();
 
