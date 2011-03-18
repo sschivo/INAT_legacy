@@ -40,11 +40,11 @@ public class UppaalModelAnalyser implements ModelAnalyser<LevelResult> {
 	}
 
 	@Override
-	public LevelResult analyze(Model m) throws AnalysisException {
+	public LevelResult analyze(Model m, int timeTo) throws AnalysisException {
 		// create UPPAAL model
 		final String uppaalModel = this.transformer.transform(m);
 		// create UPPAAL query
-		final String uppaalQuery = "E<> (globalTime > " + 500 + ")";
+		final String uppaalQuery = "E<> (globalTime > " + timeTo + ")";
 
 		// do low-level I/O UPPAAL interaction
 		UppaalInvoker invoker = new UppaalInvoker();
