@@ -22,6 +22,10 @@ import cytoscape.data.CyAttributes;
  */
 public class InatResultPanel extends JPanel implements ChangeListener {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -163756255393221954L;
 	private final Model model;
 	private final LevelResult result;
 	private JSlider slider;
@@ -32,7 +36,7 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 	 * @param model the model this panel uses
 	 * @param result the results object this panel uses
 	 */
-	public InatResultPanel(Model model, LevelResult result) {
+	public InatResultPanel(Model model, LevelResult result, double scale) {
 		super(new BorderLayout(), true);
 		this.model = model;
 		this.result = result;
@@ -55,10 +59,15 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 
 			int i = 0;
 			for (int t : result.getTimeIndices()) {
-				series[i++] = new P(t, result.getConcentration(r, t));
+				series[i++] = new P(t * scale, result.getConcentration(r, t));
+			}
+			
+			String name = model.getReactant(r).get("alias").as(String.class); //if an alias is set, we prefer it
+			if (name == null) {
+				name = model.getReactant(r).get("name").as(String.class);
 			}
 
-			g.addSeries(series, model.getReactant(r).get("name").as(String.class));
+			g.addSeries(series, name);
 		}
 		this.add(g, BorderLayout.CENTER);
 	}

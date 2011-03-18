@@ -11,7 +11,7 @@ import inat.exceptions.InatException;
 import inat.model.Model;
 import inat.model.Reactant;
 import inat.model.Reaction;
-import inat.serializer.CsvWriter;
+//import inat.serializer.CsvWriter;
 import inat.serializer.XMLSerializer;
 import inat.util.Table;
 
@@ -26,6 +26,7 @@ import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -42,7 +43,7 @@ import org.w3c.dom.Document;
 import cytoscape.CyNetwork;
 import cytoscape.Cytoscape;
 import cytoscape.data.CyAttributes;
-import cytoscape.data.Semantics;
+//import cytoscape.data.Semantics;
 import cytoscape.task.Task;
 import cytoscape.task.TaskMonitor;
 import cytoscape.task.ui.JTaskConfig;
@@ -57,6 +58,13 @@ import cytoscape.view.cytopanels.CytoPanel;
  * 
  */
 public class RunAction extends CytoscapeAction {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5018057013811632477L;
+	private int timeTo = 1200;
+	private double scale = 0.2;
+	
 	/**
 	 * Constructor.
 	 * 
@@ -78,6 +86,26 @@ public class RunAction extends CytoscapeAction {
 
 		jTaskConfig.displayStatus(true);
 		jTaskConfig.setAutoDispose(true);
+		
+
+		String inputTime = JOptionPane.showInputDialog("Up to which time (in model seconds)?", timeTo);
+		if (inputTime != null) {
+			try {
+				timeTo = Integer.parseInt(inputTime);
+			} catch (Exception ex) {
+				timeTo = 1200;
+			}
+		}
+		
+		String inputScale = JOptionPane.showInputDialog("Scale (1 model second = ? real seconds)", scale);
+		if (inputScale != null) {
+			try {
+				scale = Double.parseDouble(inputScale);
+			} catch (Exception ex) {
+				scale = 0.2;
+			}
+		}
+		
 
 		// Execute Task in New Thread; pops open JTask Dialog Box.
 		TaskManager.executeTask(task, jTaskConfig);
@@ -100,6 +128,7 @@ public class RunAction extends CytoscapeAction {
 		@Override
 		public void run() {
 			try {
+				
 				this.monitor.setStatus("Creating model representation");
 				this.monitor.setPercentCompleted(0);
 
@@ -109,7 +138,7 @@ public class RunAction extends CytoscapeAction {
 				Document doc = serializer.serializeModel(model);
 
 				Source source = new DOMSource(doc);
-				FileWriter stringWriter = new FileWriter("Z:/test.xml");
+				FileWriter stringWriter = new FileWriter("/tmp/test.xml");
 				Result streamout = new StreamResult(stringWriter);
 				TransformerFactory factory = TransformerFactory.newInstance();
 				Transformer transformer = factory.newTransformer();
@@ -125,12 +154,12 @@ public class RunAction extends CytoscapeAction {
 				ModelAnalyser<LevelResult> analyzer = new UppaalModelAnalyser(new VariablesInterpreter(),
 						new VariablesModel());
 
+				
 				// analyse model
-				final LevelResult result = analyzer.analyze(model);
+				final LevelResult result = analyzer.analyze(model, timeTo);
 
-				CsvWriter csvWriter = new CsvWriter();
-				csvWriter.writeCsv("z:/test.csv", model, result);
-				System.out.println("result: " + result);
+				/*CsvWriter csvWriter = new CsvWriter();
+				csvWriter.writeCsv("/tmp/test.csv", model, result);*/
 
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run() {
@@ -138,7 +167,7 @@ public class RunAction extends CytoscapeAction {
 
 						// JFrame frame = new JFrame("Inat result viewer");
 						// frame.setLayout(new BorderLayout());
-						InatResultPanel resultViewer = new InatResultPanel(model, result);
+						InatResultPanel resultViewer = new InatResultPanel(model, result, scale);
 						// frame.add(resultViewer, BorderLayout.CENTER);
 						// frame.setLocationRelativeTo(Cytoscape.getDesktop());
 						// frame.pack();
@@ -150,6 +179,11 @@ public class RunAction extends CytoscapeAction {
 						JPanel buttons = new JPanel(new GridLayout(1, 4, 2, 2));
 
 						JButton close = new JButton(new AbstractAction("Close") {
+							/**
+							 * 
+							 */
+							private static final long serialVersionUID = 4327349309742276633L;
+
 							@Override
 							public void actionPerformed(ActionEvent e) {
 								p.remove(container);
@@ -208,6 +242,7 @@ public class RunAction extends CytoscapeAction {
 
 				// name the node
 				r.let("name").be(node.getIdentifier());
+				r.let("alias").be(nodeAttributes.getAttribute(node.getIdentifier(), "canonicalName"));
 
 				// set initial concentration level
 				final Integer initialConcentration = nodeAttributes.getIntegerAttribute(node.getIdentifier(),
@@ -269,9 +304,13 @@ public class RunAction extends CytoscapeAction {
 					@SuppressWarnings("unchecked")
 					final List<Integer> times = (List<Integer>) edgeAttributes.getListAttribute(edge.getIdentifier(),
 							"times");
-					if (times.size() != (levels + 1) * (levels + 1)) {
-						throw new InatException("Edge attribute 'times' on edge '" + edge.getIdentifier()
-								+ "' is not of the correct size.");
+					if (times == null || times.size() != (levels + 1) * (levels + 1)) {
+						if (times == null) {
+							throw new InatException("Edge attribute 'times' is missing on edge '" + edge.getIdentifier() + "'.");
+						} else {
+							throw new InatException("Edge attribute 'times' on edge '" + edge.getIdentifier()
+									+ "' is long " + times.size() + ", and so is not of the correct size (which should be " + ((levels+1)*(levels+1)) + ").");
+						}
 					}
 					final Table timesTable = new Table(levels + 1, levels + 1);
 					for (int j = 0; j < levels + 1; j++) {
@@ -292,12 +331,14 @@ public class RunAction extends CytoscapeAction {
 		}
 
 		private int getIncrement(CyNetwork network, Edge edge) {
-			final String interaction = Semantics.getInteractionType(network, edge);
+			/*final String interaction = Semantics.getInteractionType(network, edge);
 			if (interaction.equals("activates")) {
 				return +1;
 			} else {
 				return -1;
-			}
+			}*/
+			CyAttributes edgeAttributes = Cytoscape.getEdgeAttributes();
+			return (Integer) edgeAttributes.getAttribute(edge.getIdentifier(), "increment");
 		}
 	}
 }

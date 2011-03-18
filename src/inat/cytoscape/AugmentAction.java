@@ -22,6 +22,11 @@ import ding.view.NodeContextMenuListener;
 public class AugmentAction extends CytoscapeAction implements NodeContextMenuListener, EdgeContextMenuListener {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4874100514822653655L;
+
+	/**
 	 * Constructor.
 	 * 
 	 * @param plugin the plugin to use
@@ -40,6 +45,11 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 	public void addNodeContextMenuItems(final NodeView nodeView, JPopupMenu menu) {
 		if (menu != null) {
 			menu.add(new AbstractAction("[INAT] Edit reactant...") {
+				/**
+				 * 
+				 */
+				private static final long serialVersionUID = 6233177439944893232L;
+
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					NodeDialog dialog = new NodeDialog(nodeView.getNode());
@@ -55,6 +65,11 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 	public void addEdgeContextMenuItems(final EdgeView edgeView, JPopupMenu menu) {
 		if (menu != null) {
 			menu.add(new AbstractAction("[INAT] Edit reaction...") {
+				/**
+				 * 
+				 */
+				private static final long serialVersionUID = -5725775462053708399L;
+
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					EdgeDialog dialog = new EdgeDialog(edgeView.getEdge());

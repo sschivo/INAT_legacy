@@ -24,6 +24,11 @@ import cytoscape.Cytoscape;
  */
 public class NodeDialog extends JFrame {
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1498730989498413815L;
+
+	/**
 	 * Constructor.
 	 * 
 	 * @param node the node to display for.
@@ -55,6 +60,11 @@ public class NodeDialog extends JFrame {
 
 		JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		controls.add(new JButton(new AbstractAction("Save") {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = -6179643943409321939L;
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				Cytoscape.getNodeAttributes().setAttribute(node.getIdentifier(), "initialConcentration",
@@ -67,6 +77,11 @@ public class NodeDialog extends JFrame {
 		}));
 
 		controls.add(new JButton(new AbstractAction("Cancel") {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = -2038333013177775241L;
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// discard changes
