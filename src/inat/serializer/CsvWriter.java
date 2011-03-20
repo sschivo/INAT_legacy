@@ -2,6 +2,7 @@ package inat.serializer;
 
 import inat.analyser.LevelResult;
 import inat.model.Model;
+import inat.model.Property;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -58,11 +59,11 @@ public class CsvWriter {
 		bw.write("Time");
 		for (String rid : rids) {
 			// determine official name and output it
-			String name = m.getReactant(rid).get("alias").as(String.class); //if an alias is set, we prefer it
+			Property name = m.getReactant(rid).get("alias"); //if an alias is set, we prefer it
 			if (name == null) {
-				name = m.getReactant(rid).get("name").as(String.class);
+				name = m.getReactant(rid).get("name");
 			}
-			bw.write(", " + name);
+			bw.write(", " + name.as(String.class));
 		}
 		bw.newLine();
 
