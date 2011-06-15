@@ -5,6 +5,7 @@ package inat.model;
 
 import inat.util.Table;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -14,7 +15,9 @@ import java.util.Set;
  * 
  * @author B. Wanders
  */
-public class Property {
+public class Property implements Serializable {
+	private static final long serialVersionUID = 5029044740449565050L;
+
 	/**
 	 * The array of accepted types.
 	 */

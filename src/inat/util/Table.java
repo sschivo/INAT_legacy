@@ -1,5 +1,6 @@
 package inat.util;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -11,7 +12,8 @@ import java.util.Iterator;
  * @author Brend Wanders
  * 
  */
-public class Table implements Iterable<int[]> {
+public class Table implements Iterable<int[]>, Serializable {
+	private static final long serialVersionUID = 1098840617529402193L;
 	private int[][] values;
 
 	/**

@@ -3,6 +3,7 @@
  */
 package inat.model;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,7 +16,8 @@ import java.util.Map;
  * 
  * @author B. Wanders
  */
-public class Model {
+public class Model implements Serializable {
+	private static final long serialVersionUID = 9078409933212069999L;
 	/**
 	 * The vertices in the model.
 	 */

@@ -44,6 +44,11 @@ public class LabelledField extends JPanel {
     	return title;
     }
     
+    public void setTitle(String title) {
+    	TitledBorder t = (TitledBorder)getBorder();
+    	t.setTitle(title);
+    }
+    
     public Component getField() {
     	return this.field;
     }

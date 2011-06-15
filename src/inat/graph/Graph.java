@@ -9,7 +9,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 
-public class Graph extends JPanel implements MouseListener, MouseMotionListener, ActionListener, ComponentListener {
+public class Graph extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener, ActionListener, ComponentListener {
 	private static final long serialVersionUID = 8185951065715897260L;
 	private static final String AUTOGRAPH_WINDOW_TITLE = "AutoGraph",
 								OPEN_LABEL = "Add data from CSV...",
@@ -20,24 +20,24 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 								CLOSE_LABEL = "Close",
 								CSV_FILE_EXTENSION = ".csv",
 								CSV_FILE_DESCRIPTION = "CSV file",
-								DEFAULT_CSV_FILE = "/local/schivos/aData1_0-1440_normalized_MK2_JNK1_IKK_with_stddev.csv", //"/local/schivos/aData1_0-1440_times5_normalized_better_onlyMK2_JNK1_IKK_con_stddev.csv",
+								DEFAULT_CSV_FILE = "/local/schivos/Data_0-240_TNF100.csv", //"/local/schivos/aData1_0-1440_normalized_MK2_JNK1_IKK_with_stddev.csv", //"/local/schivos/aData1_0-1440_times5_normalized_better_onlyMK2_JNK1_IKK_con_stddev.csv",
 								CSV_IO_PROBLEM = "Problem reading the CSV file!",
 								GENERIC_ERROR_S = "There has been a problem: ";
 	private static final java.awt.Color BACKGROUND_COLOR = Color.WHITE, FOREGROUND_COLOR = Color.BLACK, DISABLED_COLOR = Color.LIGHT_GRAY;
 	
-	private Vector<Series> data = null;
-	private Vector<String> selectedColumns = null;
-	private Scale scale = null;
-	private String xSeriesName = null;
+	private Vector<Series> data = null; //the Series plotted in the graph
+	private Vector<String> selectedColumns = null; //the names of the Series to be shown (all others are hidden)
+	private Scale scale = null; //contains scale factors
+	private String xSeriesName = null; //the name for the X axis
 	private JPopupMenu popupMenu = null;
 	private boolean showLegend = true;
-	private double maxLabelLength = 0;
+	private double maxLabelLength = 0; //used to compute the width of the legend box
 	private Rectangle legendBounds = null;
 	private boolean customLegendPosition = false;
 	private boolean movingLegend = false;
 	private int oldLegendX = 0, oldLegendY = 0;
-	private final int SCALA = 1;
-	private final int BORDER_X = SCALA * 25, BORDER_Y = SCALA * 25;
+	private int SCALA = 1; //used to implement some kind of "zooming" (see the events related to mouse wheel)
+	private final int BORDER_X = 25, BORDER_Y = 25; //width of the border around the graph area (in pixel). Notice that it is scaled with SCALA, like all other constants for the drawing
 	
 	public Graph() {
 		data = new Vector<Series>();
@@ -46,6 +46,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
 		this.addComponentListener(this);
+		this.addMouseWheelListener(this);
 		popupMenu = new JPopupMenu();
 		JMenuItem open = new JMenuItem(OPEN_LABEL);
 		JMenuItem save = new JMenuItem(SAVE_LABEL);
@@ -72,27 +73,41 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		legendBounds = null;
 	}
 	
-	//reset the scale in order to plot another different graph, and remove all data
+	/*
+	 * Clear the graph. Reset the scale in order to plot another different graph, and remove all data
+	 */
 	public void reset() {
 		data = new Vector<Series>();
 		scale.reset();
 		setXSeriesName(null);
 	}
 	
+	/*
+	 * Add a new Series with title of the kind Series 0, Series 1, ...
+	 */
 	public void addSeries(P[] series) {
 		data.add(new Series(series));
 	}
 	
+	/*
+	 * Add a new series with given title
+	 */
 	public void addSeries(P[] series, String name) {
 		data.add(new Series(series, scale, name));
 	}
 	
+	/*
+	 * Switch the shown/hidden status of the Series at index seriesIdx
+	 */
 	public void changeEnabledSeries(int seriesIdx) {
 		if (seriesIdx < 0 || seriesIdx >= data.size()) return;
 		data.elementAt(seriesIdx).setEnabled(!data.elementAt(seriesIdx).getEnabled());
 	}
 	
-	//an alternative to this is to directly pass the string vector to the parseCSV method
+	/*
+	 * All the Series whose names are in the given are shown, all the others are hidden.
+	 * An alternative to this is to directly pass the string vector to the parseCSV method
+	 */
 	public void setEnabledSeries(Vector<String> seriesNames) {
 		for (String seriesName : seriesNames) {
 			for (Series series : data) {
@@ -105,6 +120,10 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		}
 	}
 	
+	/*
+	 * All the Series whose names are in the given String vector are added to the list of visible Series.
+	 * Any Series whose name is not in the list of visible Series is hidden
+	 */
 	public void addEnabledSeries(Vector<String> selectedColumns) {
 		this.selectedColumns.addAll(selectedColumns);
 		for (Series s : data) {
@@ -116,6 +135,9 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		}
 	}
 	
+	/*
+	 * Get the list of visible Series
+	 */
 	public Vector<String> getEnabledSeries() {
 		Vector<String> enabledSeries = new Vector<String>();
 		for (Series series : data) {
@@ -134,11 +156,17 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		return seriesNames;
 	}
 	
+	/*
+	 * Marks the Series at index seriesIdx to be changed of color next time we repaint
+	 */
 	public void changeSeriesColor(int seriesIdx) {
 		if (seriesIdx < 0 || seriesIdx >= data.size()) return;
 		data.elementAt(seriesIdx).setChangeColor(true);
 	}
 	
+	/*
+	 * The small title for the X axis (most of the times, it is something like "Time")
+	 */
 	public void setXSeriesName(String name) {
 		this.xSeriesName = name;
 	}
@@ -147,6 +175,9 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		return this.xSeriesName;
 	}
 	
+	/*
+	 * The available colors for the Series
+	 */
 	private Color colori[] = {/*Color.RED, Color.BLUE, Color.GREEN, 
 							   Color.ORANGE, Color.CYAN, Color.GRAY, 
 							   Color.MAGENTA, Color.YELLOW, Color.PINK*/
@@ -188,6 +219,9 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		return c;
 	}
 	
+	/*
+	 * Given a point of coordinates (x, y) inside the legend rectangle, find the index of the Series whose name is in the line containing (x, y)
+	 */
 	public int findSeriesInLegend(int x, int y) {
 		if (x >= 5 * SCALA && x <= legendBounds.width - 5 * SCALA
 			&& y >= 5 * SCALA && y <= legendBounds.height - 5 * SCALA) {
@@ -208,7 +242,9 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		}
 	}
 	
-	//draw axes, arrow points, ticks and label X axis with the label found in the first column of the CSV datafile
+	/*
+	 * Draw axes, arrow points, ticks and label X axis with the label found in the first column of the CSV datafile
+	 */
 	public void drawAxes(Graphics2D g, Rectangle bounds) {
 		FontMetrics fm = g.getFontMetrics();
 		g.setPaint(FOREGROUND_COLOR);
@@ -327,7 +363,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		g.fill(bounds);
 		FontMetrics fm = g.getFontMetrics();
 		maxLabelLength = 0;
-		bounds.setBounds(bounds.x + BORDER_X, bounds.y + BORDER_Y, bounds.width - 2 * BORDER_X, bounds.height - 2 * BORDER_Y);
+		bounds.setBounds(bounds.x + BORDER_X * SCALA, bounds.y + BORDER_Y * SCALA, bounds.width - 2 * BORDER_X * SCALA, bounds.height - 2 * BORDER_Y * SCALA);
 		
 		//Assi + freccine: li ho spostati dopo, sennò il disegno del grafico me li sovrascriveva
 		/*g.setPaint(java.awt.Color.BLACK);
@@ -383,10 +419,16 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		g.setFont(fintus);
 	}
 	
+	/*
+	 * Add a new set of Series from a given CSV file, marking all as shown
+	 */
 	public void parseCSV(String fileName) throws FileNotFoundException, IOException {
 		parseCSV(fileName, null);
 	}
 	
+	/*
+	 * Add a new set of Series from a given CSV file, marking the given ones as shown
+	 */
 	public void parseCSV(String fileName, Vector<String> selectedColumns) throws FileNotFoundException, IOException {
 		if (selectedColumns != null) {
 			this.selectedColumns.addAll(selectedColumns);
@@ -446,6 +488,9 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		customLegendPosition = false;
 	}
 	
+	/*
+	 * Export to a CSV file only the Series that are currently visible
+	 */
 	public void exportVisible(String fileName) throws FileNotFoundException, IOException {
 		BufferedWriter out = new BufferedWriter(new FileWriter(fileName));
 		out.write(xSeriesName + ",");
@@ -497,6 +542,9 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		out.close();
 	}
 
+	/*
+	 * Used only for testing purposes
+	 */
 	public static void main(String[] args) throws Exception {
 		if (args.length < 1) {
 			/*Graph g = new Graph();
@@ -517,7 +565,10 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		}
 	}
 
-	
+	/*
+	 * Plot the given CSV file as a graph in a new Graph window
+	 * Notice the "static". Typical usage: Graph.plotGraph("myfile.csv");
+	 */
 	public static void plotGraph(File csvFile) {
 		Graph g = new Graph();
 		g.reset();
@@ -542,7 +593,10 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		fin.setVisible(true);
 	}
 	
-	//you can use this if you want to use the existing window and add a new .csv files to the already shown ones (the plotGraph method substitutes the window)
+	/*
+	 * Add a graph to the existing Graph window.
+	 * You can use this if you want to use the existing window and add a new .csv files to the already shown ones (the plotGraph method substitutes the window)
+	 */
 	public static void addGraph(File csvFile) {
 		JFrame fin = new JFrame(AUTOGRAPH_WINDOW_TITLE);
 		Frame[] listaFinestre = JFrame.getFrames();
@@ -574,6 +628,9 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		fin.setVisible(true);
 	}
 
+	/*
+	 * Set the close event for the Graph window to end also the application
+	 */
 	public static void exitOnClose() {
 		Frame[] listaFinestre = JFrame.getFrames();
 		for (int i=0;i<listaFinestre.length;i++) {
@@ -585,7 +642,14 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		}
 	}
 
-
+	/*
+	 * You can use the left mouse button to move the legend box around the graph
+	 * The middle mouse button can be used anywhere in the graph area to hide/show the legend (showing a hidden legend puts it back to the default place)
+	 * The middle mouse button can be used inside the legend box, on the name of a Series to hide/show that Series
+	 * The middle mouse button can be used inside the legend box, on the line representing the color of a Series to change the color for that series
+	 * The right mouse button can be used to open the menu for other graph options
+	 * The mouse wheel can be used to "zoom" the graph, changing the width of lines and height of fonts (useful for very large/small windows)
+	 */
 	public void mouseClicked(MouseEvent e) {
 		if (e.getButton() == MouseEvent.BUTTON2) {
 			if (!legendBounds.contains(e.getX(), e.getY()) || !showLegend) {
@@ -662,6 +726,28 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		}
 	}
 
+	public void mouseWheelMoved(MouseWheelEvent e) {
+		int notches = e.getWheelRotation();
+		if (notches < 0) {
+			SCALA++;
+		} else {
+			SCALA--;
+		}
+		if (SCALA == 0) SCALA = 1;
+		legendBounds = null;
+		customLegendPosition = false;
+		this.repaint();
+	}
+	
+	/*
+	 * Possible menu options:
+	 * - OPEN: add the set of Series contained in a given CSV file
+	 * - SAVE to PNG: save the content of the window in a PNG image file
+	 * - EXPORT VISIBLE: save the data of all visible Series in a CSV file
+	 * - CLEAR: reset the graph, clearing all drawings and Series
+	 * - INTERVAL: change the minimum and maximum values for X and Y (a rough zooming feature)
+	 * - CLOSE: closes the graph window (when available)
+	 */
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
 		if (source instanceof JMenuItem) {
@@ -693,14 +779,18 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 				this.reset();
 				this.repaint();
 			} else if (menu.getText().equals(INTERVAL_LABEL)) {
-				String val = JOptionPane.showInputDialog(this, "Give the value of minimum X", scale.getMinX());
-				if (val != null) scale.setMinX(new Double(val));
-				val = JOptionPane.showInputDialog(this, "Give the value of maximum X", scale.getMaxX());
-				if (val != null) scale.setMaxX(new Double(val));
-				val = JOptionPane.showInputDialog(this, "Give the value of minimum Y", scale.getMinY());
-				if (val != null) scale.setMinY(new Double(val));
-				val = JOptionPane.showInputDialog(this, "Give the value of maximum Y", scale.getMaxY());
-				if (val != null) scale.setMaxY(new Double(val));
+				String valMinX = JOptionPane.showInputDialog(this, "Give the value of minimum X", scale.getMinX());
+				if (valMinX == null) return;
+				String valMaxX = JOptionPane.showInputDialog(this, "Give the value of maximum X", scale.getMaxX());
+				if (valMaxX == null) return;
+				String valMinY = JOptionPane.showInputDialog(this, "Give the value of minimum Y", scale.getMinY());
+				if (valMinY == null) return;
+				String valMaxY = JOptionPane.showInputDialog(this, "Give the value of maximum Y", scale.getMaxY());
+				if (valMaxY == null) return;
+				scale.setMinX(new Double(valMinX));
+				scale.setMaxX(new Double(valMaxX));
+				scale.setMinY(new Double(valMinY));
+				scale.setMaxY(new Double(valMaxY));
 				this.repaint();
 			} else if (menu.getText().equals(CLOSE_LABEL)) {
 				//findJFrame(this).setVisible(false);

@@ -15,7 +15,7 @@ public class FileUtils {
 		JFileChooser chooser = new JFileChooser(currentDirectory);
 		chooser.setFileFilter(new FileFilter() {
 			public boolean accept(File pathName) {
-				if (pathName.getAbsolutePath().endsWith(fileType)) {
+				if (pathName.getAbsolutePath().endsWith(fileType) || pathName.isDirectory()) {
 					return true;
 				}
 				return false;
@@ -38,7 +38,7 @@ public class FileUtils {
 		JFileChooser chooser = new JFileChooser(currentDirectory);
 		chooser.setFileFilter(new FileFilter() {
 			public boolean accept(File pathName) {
-				if (pathName.getAbsolutePath().endsWith(fileType)) {
+				if (pathName.getAbsolutePath().endsWith(fileType) || pathName.isDirectory()) {
 					return true;
 				}
 				return false;

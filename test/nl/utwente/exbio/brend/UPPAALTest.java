@@ -2,10 +2,7 @@ package nl.utwente.exbio.brend;
 
 import inat.InatBackend;
 import inat.analyser.LevelResult;
-import inat.analyser.ModelAnalyser;
-import inat.analyser.uppaal.UppaalModelAnalyser;
-import inat.analyser.uppaal.VariablesInterpreter;
-import inat.analyser.uppaal.VariablesModel;
+import inat.analyser.uppaal.UppaalModelAnalyserFaster;
 import inat.exceptions.InatException;
 import inat.graph.Graph;
 import inat.model.Model;
@@ -19,6 +16,11 @@ import inat.util.XmlEnvironment;
 import java.io.File;
 import java.io.IOException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 /**
@@ -32,12 +34,13 @@ public class UPPAALTest {
 	 * Program entry point.
 	 * 
 	 * @param args the command line arguments
-	 * @throws InatException if the system could not be initialised
-	 * @throws IOException if something goes wrong with the CSV writing
+	 * @throws Exception 
 	 * @throws SAXException if the XML didn't parse
+	 * @throws ParserConfigurationException 
 	 */
-	public static void main(String[] args) throws InatException, IOException, SAXException {
+	public static void main(String[] args) throws InatException, IOException, SAXException, ParserConfigurationException {
 		InatBackend.initialise(new File("inat-configuration.xml"));
+		System.setProperty("java.security.policy", new File("inat-security.policy").getAbsolutePath());
 
 		// create model
 		Model model = new Model();
@@ -93,10 +96,16 @@ public class UPPAALTest {
 
 		model = new XMLSerializer().deserializeModel(XmlEnvironment.parse(new File("Z:/test.xml")));
 		// composite the analyser (this should be done from configuration)
-		ModelAnalyser<LevelResult> analyzer = new UppaalModelAnalyser(new VariablesInterpreter(), new VariablesModel());
+		//ModelAnalyser<LevelResult> analyzer = new UppaalModelAnalyser(new VariablesInterpreter(), new VariablesModel());
 
 		// analyse model
-		LevelResult result = analyzer.analyze(model);
+		File file = new File("/local/schivos/zioporco.xml");
+		  DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		  DocumentBuilder db = dbf.newDocumentBuilder();
+		  Document doc = db.parse(file);
+		model = new XMLSerializer().deserializeModel(doc);
+		LevelResult result = new UppaalModelAnalyserFaster(null).analyze(model, 1200);
+		//result = new UPPAALClient("ewi1735.ewi.utwente.nl", 1234).analyze(model, 500);
 
 		// output result
 		System.out.println(result);

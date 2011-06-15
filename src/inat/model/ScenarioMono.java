@@ -28,20 +28,21 @@ public class ScenarioMono extends Scenario {
 	//If you want, you can extend Scenario modifying computeFormula in any way you like.
 	//We advise to call super.computeFormula at the end of the extended method, as this
 	//is the "official" complete formula.
-	protected int computeFormula(int reactantLevel, int nLevels) {
+	protected int computeFormula(int reactantLevel) {
 		double param = parameters.get("parameter");
 		double rate = param * reactantLevel;
-		if (rate != 0) {
-			return Math.max(1, (int)Math.round(nLevels / rate)); //We need to put at least 1 because otherwise the reaction will keep happening forever (it is not very nice not to let time pass..)
+		if (rate > 1e-8) {
+			return Math.max(1, (int)Math.round(1 / rate)); //We need to put at least 1 because otherwise the reaction will keep happening forever (it is not very nice not to let time pass..)
 		} else {
 			return Scenario.INFINITE_TIME;
 		}
 	}
 
-	public List<Integer> generateTimes(int dimension, int nLevels) {
+	public List<Integer> generateTimes(int nLevels) {
 		List<Integer> times = new LinkedList<Integer>();
-		for (int i=0;i<dimension;i++) {
-			times.add(computeFormula(i, nLevels));
+		times.add(INFINITE_TIME); //if reactant is already completely inactive, no reaction
+		for (int i=1;i<nLevels;i++) {
+			times.add(computeFormula(i));
 		}
 		return times;
 	}

@@ -3,12 +3,16 @@
  */
 package inat.model;
 
+import java.io.Serializable;
+
 /**
  * A connection between two components in the network.
  * 
  * @author B. Wanders
  */
-public class Reaction extends Entity {
+public class Reaction extends Entity implements Serializable {
+	private static final long serialVersionUID = 6737480973051526963L;
+
 	/**
 	 * Constructor.
 	 * 

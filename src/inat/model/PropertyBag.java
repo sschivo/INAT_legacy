@@ -3,6 +3,7 @@
  */
 package inat.model;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -12,7 +13,8 @@ import java.util.Map;
  * 
  * @author B. Wanders
  */
-public class PropertyBag implements Iterable<Property> {
+public class PropertyBag implements Iterable<Property>, Serializable {
+	private static final long serialVersionUID = -3325378476006458874L;
 	/**
 	 * A map containing the actual properties.
 	 */

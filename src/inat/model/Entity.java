@@ -1,17 +1,19 @@
 package inat.model;
 
+import java.io.Serializable;
+
 /**
  * A base entity in the data model. This class exists to provide a base of
  * functionality for all entities stored within an INAT data model.
  * 
  * @author Brend Wanders
  */
-public abstract class Entity {
-
+public abstract class Entity implements Serializable {
+	private static final long serialVersionUID = 5881406500127638652L;
 	/**
 	 * The unique edge identifier.
 	 */
-	protected final String id;
+	protected String id;
 	/**
 	 * The property bag for this edge.
 	 */
@@ -21,6 +23,10 @@ public abstract class Entity {
 	 */
 	private Model model;
 
+	public Entity() {
+		this.properties = new PropertyBag();
+	}
+	
 	/**
 	 * Constructor with identifier.
 	 * 
@@ -88,6 +94,10 @@ public abstract class Entity {
 	 */
 	public Property let(String name) {
 		return this.properties.let(name);
+	}
+	
+	public void setId(String id) {
+		this.id = id;
 	}
 
 	/**

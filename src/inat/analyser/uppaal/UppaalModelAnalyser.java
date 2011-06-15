@@ -47,16 +47,18 @@ public class UppaalModelAnalyser implements ModelAnalyser<LevelResult> {
 		final String uppaalQuery = "E<> (globalTime > " + timeTo + ")";
 
 		// do low-level I/O UPPAAL interaction
-		UppaalInvoker invoker = new UppaalInvoker();
+		//UppaalInvoker invoker = new UppaalInvoker();
 		String output;
 
 		try {
-			output = invoker.trace(uppaalModel, uppaalQuery);
+			output = new UppaalInvoker().trace(uppaalModel, uppaalQuery);
 		} catch (IOException e) {
 			throw new AnalysisException("The analysis failed due to an I/O exception while invoking UPPAAL.", e);
 		} catch (InterruptedException e) {
 			throw new AnalysisException(
 					"The analysis failed due to the analysis being interrupted while waiting for UPPAAL.", e);
+		} catch (Exception e) {
+			throw new AnalysisException("The analysis failed due to a network error.", e);
 		}
 
 		// if the ouput is null, we have no trace

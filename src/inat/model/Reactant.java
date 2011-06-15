@@ -3,12 +3,16 @@
  */
 package inat.model;
 
+import java.io.Serializable;
+
 /**
  * A vertex is a component in the network.
  * 
  * @author B. Wanders
  */
-public class Reactant extends Entity {
+public class Reactant extends Entity implements Serializable {
+	private static final long serialVersionUID = -8610211944385660028L;
+
 	/**
 	 * Constructor.
 	 * 

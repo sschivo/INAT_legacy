@@ -2,6 +2,7 @@ package inat.analyser.uppaal;
 
 import inat.analyser.LevelResult;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,7 +19,8 @@ import java.util.TreeSet;
  * @author Brend Wanders
  * 
  */
-public class SimpleLevelResult implements LevelResult {
+public class SimpleLevelResult implements LevelResult, Serializable {
+	private static final long serialVersionUID = 5440819034905472745L;
 	Map<String, SortedMap<Integer, Integer>> levels;
 
 	/**
@@ -71,5 +73,10 @@ public class SimpleLevelResult implements LevelResult {
 	@Override
 	public Set<String> getReactantIds() {
 		return Collections.unmodifiableSet(this.levels.keySet());
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return levels.isEmpty();
 	}
 }

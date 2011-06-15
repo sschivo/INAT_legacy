@@ -7,14 +7,23 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.io.File;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JFormattedTextField;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import cytoscape.Cytoscape;
 import cytoscape.CytoscapeInit;
+import cytoscape.data.attr.MultiHashMapListener;
 import cytoscape.plugin.CytoscapePlugin;
 import cytoscape.view.cytopanels.CytoPanel;
 
@@ -25,6 +34,7 @@ import cytoscape.view.cytopanels.CytoPanel;
  */
 public class InatPlugin extends CytoscapePlugin {
 	private final File configurationFile;
+	private static final String SECONDS_PER_POINT = "seconds per point";
 
 	/**
 	 * Mandatory constructor.
@@ -34,6 +44,7 @@ public class InatPlugin extends CytoscapePlugin {
 
 		try {
 			InatBackend.initialise(this.configurationFile);
+			System.setProperty("java.security.policy", CytoscapeInit.getConfigFile("inat-security.policy").getAbsolutePath());
 
 			CytoPanel p = Cytoscape.getDesktop().getCytoPanel(SwingConstants.WEST);
 			p.add("INAT", this.setupPanel(this));
@@ -60,9 +71,105 @@ public class InatPlugin extends CytoscapePlugin {
 		panel.setLayout(new BorderLayout(2, 2));
 
 		// the button container
-		JPanel buttons = new JPanel(new GridLayout(3, 1, 2, 2));
+		JPanel buttons = new JPanel(new GridLayout(5, 1, 2, 2));
+		
+		Box uppaalBox = new Box(BoxLayout.Y_AXIS);
+		final JRadioButton localUppaal = new JRadioButton("Local"),
+					 remoteUppaal = new JRadioButton("Remote");
+		ButtonGroup uppaalGroup = new ButtonGroup();
+		uppaalGroup.add(localUppaal);
+		uppaalGroup.add(remoteUppaal);
+		Box serverBox = new Box(BoxLayout.X_AXIS);
+		final JTextField serverName = new JTextField("ewi1735.ewi.utwente.nl"),
+				   serverPort = new JFormattedTextField("1234");
+		remoteUppaal.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				boolean sel = remoteUppaal.isSelected();
+				serverName.setEnabled(sel);
+				serverPort.setEnabled(sel);
+			}
+		});
+		localUppaal.setSelected(true);
+		remoteUppaal.setSelected(false);
+		serverName.setEnabled(false);
+		serverPort.setEnabled(false);
+		serverBox.add(serverName);
+		serverBox.add(serverPort);
+		uppaalBox.add(localUppaal);
+		uppaalBox.add(remoteUppaal);
+		uppaalBox.add(serverBox);
+		buttons.add(uppaalBox);
+		
+		final JRadioButton normalUppaal = new JRadioButton("Simulation until"),
+						   smcUppaal = new JRadioButton("SMC");
+		ButtonGroup modelCheckingGroup = new ButtonGroup();
+		modelCheckingGroup.add(normalUppaal);
+		modelCheckingGroup.add(smcUppaal);
+		
+		final JFormattedTextField timeTo = new JFormattedTextField(240);
+		final JTextField smcFormula = new JTextField("Pr[<=50](<> MK2 > 50)");
+		timeTo.setToolTipText("Plot activity levels up to this time point (real-life MINUTES).");
+		smcFormula.setToolTipText("Give an answer to this probabilistic query (times in real-life MINUTES).");
+		normalUppaal.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				if (normalUppaal.isSelected()) {
+					timeTo.setEnabled(true);
+					smcFormula.setEnabled(false);
+				} else {
+					timeTo.setEnabled(false);
+					smcFormula.setEnabled(true);
+				}
+			}
+		});
+		normalUppaal.setSelected(true);
+		smcUppaal.setSelected(false);
+		timeTo.setEnabled(true);
+		smcFormula.setEnabled(false);
+		Box modelCheckingBox = new Box(BoxLayout.Y_AXIS);
+		Box normalBox = new Box(BoxLayout.X_AXIS),
+			smcBox = new Box(BoxLayout.X_AXIS);
+		normalBox.add(normalUppaal);
+		normalBox.add(timeTo);
+		smcBox.add(smcUppaal);
+		smcBox.add(smcFormula);
+		modelCheckingBox.add(normalBox);
+		modelCheckingBox.add(smcBox);
+		buttons.add(modelCheckingBox);
+		
+		final JButton changeSecondsPerPointbutton = new JButton();
+		changeSecondsPerPointbutton.setToolTipText("Click here to change the number of seconds to which a single simulation step corresponds");
+		new ChangeSecondsAction(plugin, changeSecondsPerPointbutton);
+		buttons.add(changeSecondsPerPointbutton);
+		Cytoscape.getNetworkAttributes().getMultiHashMap().addDataListener(new MultiHashMapListener() {
 
-		JButton runButton = new JButton(new RunAction(plugin));
+			@Override
+			public void allAttributeValuesRemoved(String arg0, String arg1) {
+				
+			}
+
+			@Override
+			public void attributeValueAssigned(String objectKey, String attributeName,
+					Object[] keyIntoValue, Object oldAttributeValue, Object newAttributeValue) {
+				
+				if (attributeName.equals(SECONDS_PER_POINT)) {
+					if (newAttributeValue != null) {
+						changeSecondsPerPointbutton.setText(newAttributeValue + " seconds/step");
+					} else {
+						changeSecondsPerPointbutton.setText("Choose seconds/step");
+					}
+				}
+			}
+
+			@Override
+			public void attributeValueRemoved(String arg0, String arg1,
+					Object[] arg2, Object arg3) {
+				
+			}
+		});
+
+		JButton runButton = new JButton(new RunAction(plugin, remoteUppaal, serverName, serverPort, smcUppaal, timeTo, smcFormula));
 		buttons.add(runButton);
 		
 		JButton augmentButton = new JButton(new AugmentAction(plugin));

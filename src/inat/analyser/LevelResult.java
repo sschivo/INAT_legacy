@@ -35,4 +35,6 @@ public interface LevelResult {
 	 * @return the list of data point time indices
 	 */
 	public List<Integer> getTimeIndices();
+	
+	public boolean isEmpty();
 }

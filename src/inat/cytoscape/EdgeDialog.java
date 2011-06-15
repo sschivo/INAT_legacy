@@ -1,7 +1,6 @@
 package inat.cytoscape;
 
 import giny.model.Edge;
-
 import inat.model.Scenario;
 import inat.model.ScenarioMono;
 
@@ -13,7 +12,6 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.DecimalFormat;
-import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.Box;
@@ -23,8 +21,12 @@ import javax.swing.JComboBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import cytoscape.Cytoscape;
+import cytoscape.data.CyAttributes;
 
 /**
  * The edge dialog contains the settings of a edge.
@@ -36,7 +38,13 @@ public class EdgeDialog extends JFrame {
 	private static final long serialVersionUID = 6630154220142970079L;
 	private static final String DECIMAL_FORMAT_STRING = "##.####",
 								SAVE = "Save",
-								CANCEL = "Cancel";
+								CANCEL = "Cancel",
+								SCENARIO = "scenario",
+								CANONICAL_NAME = "canonicalName",
+								INCREMENT = "increment",
+								UNCERTAINTY = "uncertainty";
+	
+	private Scenario[] scenarios = Scenario.sixScenarios;
 
 	/**
 	 * Constructor.
@@ -45,6 +53,30 @@ public class EdgeDialog extends JFrame {
 	 */
 	public EdgeDialog(final Edge edge) {
 		super("Reaction '" + edge.getIdentifier() + "'");
+		//super("Reaction " + Cytoscape.getNodeAttributes().getAttribute(edge.getSource().getIdentifier(), "canonicalName") + ((Integer.parseInt(Cytoscape.getEdgeAttributes().getAttribute(edge.getIdentifier(), "increment").toString()) >= 0)?" --> ":" --| ") + Cytoscape.getNodeAttributes().getAttribute(edge.getTarget().getIdentifier(), "canonicalName"));
+		StringBuilder title = new StringBuilder();
+		title.append("Reaction ");
+		CyAttributes nodeAttrib = Cytoscape.getNodeAttributes();
+		CyAttributes edgeAttrib = Cytoscape.getEdgeAttributes();
+		String res;
+		res = nodeAttrib.getStringAttribute(edge.getSource().getIdentifier(), CANONICAL_NAME);
+		if (res != null) {
+			title.append(res);
+			Integer val = edgeAttrib.getIntegerAttribute(edge.getIdentifier(), INCREMENT);
+			if (val == null) {
+				val = 0;
+			}
+			if (val >= 0) {
+				title.append(" --> ");
+			} else {
+				title.append(" --| ");
+			}
+			res = nodeAttrib.getStringAttribute(edge.getTarget().getIdentifier(), CANONICAL_NAME);
+			if (res != null) {
+				title.append(res);
+				this.setTitle(title.toString());
+			}
+		}
 
 		this.setLayout(new BorderLayout(2, 2));
 
@@ -56,7 +88,29 @@ public class EdgeDialog extends JFrame {
 			final ScenarioMono scenario = new ScenarioMono();
 			final Box parameterBox = new Box(BoxLayout.X_AXIS);
 			updateParametersBox(edge, parameterBox, scenario);
-			boxScenario.add(parameterBox);
+			Box allParametersBox = new Box(BoxLayout.Y_AXIS);
+			allParametersBox.add(parameterBox);
+			Integer value;
+			if (Cytoscape.getEdgeAttributes().hasAttribute(edge.getIdentifier(), UNCERTAINTY)) {
+				value = Cytoscape.getEdgeAttributes().getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
+			} else {
+				value = 0;
+			}
+			final JSlider uncertainty = new JSlider(0, 100, value);
+			uncertainty.setPaintTicks(true);
+			uncertainty.setMinorTickSpacing(5);
+			uncertainty.setMajorTickSpacing(10);
+			uncertainty.setPaintLabels(true);
+			final LabelledField incertaintyField = new LabelledField("Uncertainty = " + uncertainty.getValue() + "%", uncertainty);
+			uncertainty.addChangeListener(new ChangeListener() {
+				@Override
+				public void stateChanged(ChangeEvent e) {
+					incertaintyField.setTitle("Uncertainty = " + uncertainty.getValue() + "%");
+					repaint();
+				}
+			});
+			allParametersBox.add(incertaintyField);
+			boxScenario.add(allParametersBox);
 			
 			controls.add(new JButton(new AbstractAction(SAVE) {
 				private static final long serialVersionUID = 1435389753489L;
@@ -73,10 +127,24 @@ public class EdgeDialog extends JFrame {
 							Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), paramName, paramValue);
 						}
 					}
-					int nLevels = Cytoscape.getNetworkAttributes().getIntegerAttribute(Cytoscape.getCurrentNetwork().getIdentifier(),"levels");
-					List<Integer> times = scenario.generateTimes(1 + nLevels, nLevels);
-					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), "times", times);
-					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), "scenario", 0);
+					int uncert = uncertainty.getValue();
+					/*int nLevels = Cytoscape.getNetworkAttributes().getIntegerAttribute(Cytoscape.getCurrentNetwork().getIdentifier(), NUMBER_OF_LEVELS);
+					List<Integer> times = scenario.generateTimes(1 + nLevels);
+					List<Integer> timesL = new ArrayList<Integer>(), timesU = new ArrayList<Integer>();
+					for (Integer i : times) {
+						if (i.equals(VariablesModel.INFINITE_TIME)) {
+							timesL.add(i);
+							timesU.add(i);
+						} else {
+							timesL.add(Math.max(1, (int)(i * (100.0 - uncert) / 100.0))); //we use Math.max because we do not want to put 0 as a time
+							timesU.add(Math.max(1, (int)(i * (100.0 + uncert) / 100.0)));
+						}
+					}
+					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES, times);
+					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES_LOWER, timesL);
+					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES_UPPER, timesU);*/
+					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), SCENARIO, 0);
+					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), UNCERTAINTY, uncert);
 					
 					Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 
@@ -84,84 +152,7 @@ public class EdgeDialog extends JFrame {
 				}
 			}));
 		} else {
-			Scenario[] scenarios = new Scenario[3];
-			
 			final Box boxScenarioParameters = new Box(BoxLayout.X_AXIS);
-			
-			scenarios[0] = new Scenario() {
-				public int computeFormula(int r1Level, int r2Level) {
-					double par = parameters.get("parameter"),
-						   E = r1Level;
-					double rate = par * E;
-					if (rate != 0) {
-						return Math.max(1, (int)Math.round(1 / rate));
-					} else {
-						return Scenario.INFINITE_TIME;
-					}
-				}
-				
-				public String[] listVariableParameters() {
-					return new String[]{"parameter"};
-				}
-				
-				public String toString() {
-					return "Scenario 1-2-3-4";
-				}
-			};
-			scenarios[0].setParameter("parameter", 0.01);
-			
-			scenarios[1] = new Scenario() {
-				public int computeFormula(int r1Level, int r2Level) {
-					double par1 = parameters.get("k2/km"),
-						   Stot = parameters.get("Stot"),
-						   S = Stot - r2Level,
-						   E = r1Level;
-					double rate = par1 * E * S;
-					if (rate != 0) {
-						return Math.max(1, (int)Math.round(1 / rate));
-					} else {
-						return Scenario.INFINITE_TIME;
-					}
-				}
-				
-				public String[] listVariableParameters() {
-					return new String[]{"k2/km", "Stot"};
-				}
-				
-				public String toString() {
-					return "Scenario 5";
-				}
-			};
-			scenarios[1].setParameter("k2/km", 0.001);
-			scenarios[1].setParameter("Stot", 15.0);
-			
-			scenarios[2] = new Scenario() {
-				public int computeFormula(int r1Level, int r2Level) {
-					double k2 = parameters.get("k2"),
-						   E = (double)r1Level,
-						   Stot = parameters.get("Stot"),
-						   S = Stot - r2Level,
-						   km = parameters.get("km");
-					double rate = k2 * E * S / (km + S);
-					if (rate != 0) {
-						return Math.max(1, (int)Math.round(1 / rate));
-					} else {
-						return Scenario.INFINITE_TIME;
-					}
-				}
-				
-				public String[] listVariableParameters() {
-					return new String[]{"k2", "km", "Stot"};
-				}
-				
-				public String toString() {
-					return "Scenario 6";
-				}
-			};
-			scenarios[2].setParameter("k2", 0.01);
-			scenarios[2].setParameter("km", 10.0);
-			scenarios[2].setParameter("Stot", 15.0);
-			
 			final JComboBox comboScenario = new JComboBox(scenarios);
 			comboScenario.setMaximumSize(new Dimension(200, 20));
 			comboScenario.addActionListener(new ActionListener() {
@@ -172,7 +163,7 @@ public class EdgeDialog extends JFrame {
 				}
 			});
 			
-			Integer scenarioIdx = Cytoscape.getEdgeAttributes().getIntegerAttribute(edge.getIdentifier(), "scenario");
+			Integer scenarioIdx = Cytoscape.getEdgeAttributes().getIntegerAttribute(edge.getIdentifier(), SCENARIO);
 			if (scenarioIdx == null) {
 				scenarioIdx = 0;
 			}
@@ -180,7 +171,31 @@ public class EdgeDialog extends JFrame {
 			comboScenario.setSelectedIndex(scenarioIdx);
 			boxScenario.add(comboScenario);
 			boxScenario.add(Box.createGlue());
-			boxScenario.add(boxScenarioParameters);
+			
+			Box boxScenarioAllParameters = new Box(BoxLayout.Y_AXIS);
+			boxScenarioAllParameters.add(boxScenarioParameters);
+			Integer value;
+			if (Cytoscape.getEdgeAttributes().hasAttribute(edge.getIdentifier(), UNCERTAINTY)) {
+				value = Cytoscape.getEdgeAttributes().getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
+			} else {
+				value = 0;
+			}
+			final JSlider uncertainty = new JSlider(0, 100, value);
+			uncertainty.setPaintTicks(true);
+			uncertainty.setMinorTickSpacing(5);
+			uncertainty.setMajorTickSpacing(10);
+			uncertainty.setPaintLabels(true);
+			final LabelledField uncertaintyField = new LabelledField("Uncertainty = " + uncertainty.getValue() + "%", uncertainty);
+			uncertainty.addChangeListener(new ChangeListener() {
+				@Override
+				public void stateChanged(ChangeEvent e) {
+					uncertaintyField.setTitle("Uncertainty = " + uncertainty.getValue() + "%");
+					repaint();
+				}
+			});
+			boxScenarioAllParameters.add(uncertaintyField);
+			boxScenario.add(boxScenarioAllParameters);
+			
 			boxScenario.add(Box.createGlue());
 			
 
@@ -200,9 +215,25 @@ public class EdgeDialog extends JFrame {
 							Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), paramName, paramValue);
 						}
 					}
-					List<Integer> times = selectedScenario.generateTimes(1 + Cytoscape.getNetworkAttributes().getIntegerAttribute(Cytoscape.getCurrentNetwork().getIdentifier(),"levels"));
-					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), "times", times);
-					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), "scenario", comboScenario.getSelectedIndex());
+					int uncert = uncertainty.getValue();
+					
+					/*List<Integer> times = selectedScenario.generateTimes(1 + Cytoscape.getNetworkAttributes().getIntegerAttribute(Cytoscape.getCurrentNetwork().getIdentifier(), NUMBER_OF_LEVELS));
+					List<Integer> timesL = new ArrayList<Integer>(), timesU = new ArrayList<Integer>();
+					for (Integer i : times) {
+						if (i.equals(VariablesModel.INFINITE_TIME)) {
+							timesL.add(i);
+							timesU.add(i);
+						} else {
+							timesL.add(Math.max(1, (int)(i * (100.0 - uncert) / 100.0))); //Math.max is used because we cannot put 0 as a time
+							timesU.add(Math.max(1, (int)(i * (100.0 + uncert) / 100.0)));
+						}
+					}
+					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES_LOWER, timesL);
+					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES_UPPER, timesU);*/
+					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), UNCERTAINTY, uncert);
+					
+					/*Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES, times);*/
+					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), SCENARIO, comboScenario.getSelectedIndex());
 					
 					Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 
@@ -234,7 +265,7 @@ public class EdgeDialog extends JFrame {
 		String[] parameters = selectedScenario.listVariableParameters();
 		for (int i=0;i<parameters.length;i++) {
 			DecimalFormat format = new DecimalFormat(DECIMAL_FORMAT_STRING);
-			format.setMinimumFractionDigits(5);
+			format.setMinimumFractionDigits(8);
 			JFormattedTextField param = new JFormattedTextField(format);
 			Double value = Cytoscape.getEdgeAttributes().getDoubleAttribute(edge.getIdentifier(), parameters[i]);
 			if (value == null) {
