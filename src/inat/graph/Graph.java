@@ -1,13 +1,48 @@
 package inat.graph;
 
-import javax.swing.*;
+import inat.analyser.LevelResult;
 
-import java.io.*;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Stroke;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.*;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.StringTokenizer;
+import java.util.Vector;
+
+import javax.swing.JFrame;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 
 public class Graph extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener, ActionListener, ComponentListener {
 	private static final long serialVersionUID = 8185951065715897260L;
@@ -22,7 +57,10 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 								CSV_FILE_DESCRIPTION = "CSV file",
 								DEFAULT_CSV_FILE = "/local/schivos/Data_0-240_TNF100.csv", //"/local/schivos/aData1_0-1440_normalized_MK2_JNK1_IKK_with_stddev.csv", //"/local/schivos/aData1_0-1440_times5_normalized_better_onlyMK2_JNK1_IKK_con_stddev.csv",
 								CSV_IO_PROBLEM = "Problem reading the CSV file!",
-								GENERIC_ERROR_S = "There has been a problem: ";
+								GENERIC_ERROR_S = "There has been a problem: ",
+																//You can "declare" the maximum y value that you intend to represent with a particular series 
+								MAX_Y_STRING = "Number_of_levels"; //The idea is to take into account these values in order to rescale the y maximum value for all shown graphs when requested
+	private Double maxYValue = null;
 	private static final java.awt.Color BACKGROUND_COLOR = Color.WHITE, FOREGROUND_COLOR = Color.BLACK, DISABLED_COLOR = Color.LIGHT_GRAY;
 	
 	private Vector<Series> data = null; //the Series plotted in the graph
@@ -83,17 +121,30 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	}
 	
 	/*
+	 * This is used to let the graph know that any other graph group/set (such as a csv file)
+	 * added to this same graph and declaring itself a maxYValue will have all its y values
+	 * rescaled with factor maxYValue/hisMaxYValue.
+	 */
+	public void declareMaxYValue(double maxY) { 
+		this.maxYValue = maxY;
+	}
+	
+	/*
 	 * Add a new Series with title of the kind Series 0, Series 1, ...
 	 */
-	public void addSeries(P[] series) {
+	private void addSeries(P[] series) {
 		data.add(new Series(series));
 	}
 	
 	/*
 	 * Add a new series with given title
 	 */
-	public void addSeries(P[] series, String name) {
-		data.add(new Series(series, scale, name));
+	private void addSeries(P[] series, String name) {
+		if (name == null) {
+			addSeries(series);
+		} else {
+			data.add(new Series(series, scale, name));
+		}
 	}
 	
 	/*
@@ -378,28 +429,29 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		Stroke oldStroke = g.getStroke();
 		g.setStroke(new BasicStroke(2 * SCALA));
 		Stroke fineStroke = new BasicStroke(1 * SCALA);
-		for (int i=0;i<data.size();i++) {
-			Series series = data.elementAt(i);
-			if (!series.isSlave()) {
-				if (series.getColor() == null || series.getChangeColor()) {
-					if (!series.getChangeColor()) {
-						g.setPaint(nextCol());
-					} else {
-						g.setPaint(randomCol());
-						series.setChangeColor(false);
-					}
+		for (Series series : data) {
+			if (series.isSlave()) continue; //first plot all masters, then all slaves: this way we are sure that the master has set all it needs and the slave can lazily copy the same settings
+			
+			if (series.getColor() == null || series.getChangeColor()) {
+				if (!series.getChangeColor()) {
+					g.setPaint(nextCol());
 				} else {
-					g.setPaint(series.getColor());
+					g.setPaint(randomCol());
+					series.setChangeColor(false);
 				}
+			} else {
+				g.setPaint(series.getColor());
 			}
 			series.plot(g, bounds);
-			if (!series.isSlave()) {
-				double labelLength = fm.stringWidth(series.getName());
-				if (labelLength > maxLabelLength) {
-					maxLabelLength = labelLength;
-				}
+			if (series.isMaster()) {
+				series.getSlave().plot(g, bounds);
+			}
+			double labelLength = fm.stringWidth(series.getName());
+			if (labelLength > maxLabelLength) {
+				maxLabelLength = labelLength;
 			}
 		}
+		
 		if (legendBounds == null || !customLegendPosition) {
 			int nGraphs = 0;
 			for (Series s : data) {
@@ -420,6 +472,96 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	}
 	
 	/*
+	 * Add a new set of Series from a given LevelResult, marking all as shown
+	 */
+	public void parseLevelResult(LevelResult result, Map<String, String> seriesNameMapping, double xScale) {
+		parseLevelResult(result, seriesNameMapping, xScale, null);
+	}
+	
+	/*
+	 * Add a new set of Series from a given LevelResult, marking the given ones as shown
+	 */
+	public void parseLevelResult(LevelResult result, Map<String, String> seriesNameMapping, double xScale, Vector<String> selectedColumns) {
+		boolean mustRescaleYValues = false; //if we find a column whose name is equal to my constant MAX_Y_STRING, two things can happen:
+											//1. maxYValue == null, then we update its value with the (only) value present in this special column
+											//2. maxYValue != null, then we rescale the y values of all the series we find in this csv file to the value of maxYValue,
+											//   using maxYValue/valueInTheSpecialColumn as scale factor.
+											//The mustRescaleYValues is used to signal the fact that we are in the second case
+		if (selectedColumns != null) {
+			this.selectedColumns.addAll(selectedColumns);
+		}
+		String[] graphNames = result.getReactantIds().toArray(new String[] {""});
+		int nColonne = graphNames.length;
+		Vector<Vector<P>> grafici = new Vector<Vector<P>>(nColonne);
+		xSeriesName = null;
+		for (int i=0;i<nColonne;i++) {
+			graphNames[i] = graphNames[i].replace('\"',' ');
+			if (graphNames[i].toLowerCase().contains(MAX_Y_STRING.toLowerCase()) && maxYValue != null) {
+				mustRescaleYValues = true;
+			}
+			grafici.add(new Vector<P>());
+		}
+		for (double xValue : result.getTimeIndices()) {
+			for (int i=0;i<nColonne;i++) {
+				grafici.elementAt(i).add(new P(xValue * xScale, result.getConcentration(graphNames[i], xValue)));
+			}
+		}
+		
+		if (!mustRescaleYValues) {
+								 //With reference to the two cases listed at the start of the function, this means that we are either in case 1 (and thus we simply need to
+								 // get a value for maxYValue), or we are in a "normal" case, where the MAX_X_STRING was not found as a column header. In both cases,
+								 // we don't need to rescale the y values of all graphs, which will be simply added to the set of existing series.
+			for (int i=0;i<graphNames.length;i++) {
+				P[] grafico = new P[1];
+				grafico = grafici.elementAt(i).toArray(grafico);
+				if (grafico != null && grafico.length > 1) {
+					addSeries(grafico, seriesNameMapping.get(graphNames[i]));
+				} else if (graphNames[i].equals(MAX_Y_STRING)) {
+					//the y value is the value under this column, the x value is ALWAYS FOR EVERY GRAPH the value of the first column on the same line
+					maxYValue = grafico[0].y;
+				}
+			}
+		} else { //We are in case 2
+			int indexForOtherMaxY = -1;
+			double scaleFactor = 0;
+			for (int i=0;i<graphNames.length;i++) {
+				if (graphNames[i].equals(MAX_Y_STRING)) {
+					indexForOtherMaxY = i;
+					scaleFactor = maxYValue / grafici.elementAt(i).elementAt(0).y;
+					break;
+				}
+			}
+			for (int i=0;i<graphNames.length;i++) {
+				if (i == indexForOtherMaxY) continue;
+				P[] grafico = new P[1];
+				grafico = grafici.elementAt(i).toArray(grafico);
+				if (grafico != null && grafico.length > 1) {
+					for (P p : grafico) { //before adding the graph data, we update it by rescaling the y values
+						p.y *= scaleFactor;
+					}
+					addSeries(grafico, seriesNameMapping.get(graphNames[i]));
+				}
+			}
+		}
+		
+		for (Series s : data) {
+			if (s.getName().toLowerCase().trim().endsWith(Series.SLAVE_SUFFIX)) {
+				for (Series s2 : data) {
+					if (s2.getName().trim().equals(s.getName().trim().substring(0, s.getName().toLowerCase().trim().lastIndexOf(Series.SLAVE_SUFFIX)))) {
+						s.setMaster(s2);
+					}
+				}
+			}
+			if (this.selectedColumns.size() > 0 && !this.selectedColumns.contains(s.getName())) {
+				s.setEnabled(false);
+			} else {
+				s.setEnabled(true);
+			}
+		}
+		customLegendPosition = false;
+	}
+	
+	/*
 	 * Add a new set of Series from a given CSV file, marking all as shown
 	 */
 	public void parseCSV(String fileName) throws FileNotFoundException, IOException {
@@ -430,6 +572,11 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	 * Add a new set of Series from a given CSV file, marking the given ones as shown
 	 */
 	public void parseCSV(String fileName, Vector<String> selectedColumns) throws FileNotFoundException, IOException {
+		boolean mustRescaleYValues = false; //if we find a column whose name is equal to my constant MAX_Y_STRING, two things can happen:
+											//1. maxYValue == null, then we update its value with the (only) value present in this special column
+											//2. maxYValue != null, then we rescale the y values of all the series we find in this csv file to the value of maxYValue,
+											//   using maxYValue/valueInTheSpecialColumn as scale factor.
+											//The mustRescaleYValues is used to signal the fact that we are in the second case
 		if (selectedColumns != null) {
 			this.selectedColumns.addAll(selectedColumns);
 		}
@@ -447,6 +594,9 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		for (int i=0;i<graphNames.length;i++) {
 			graphNames[i] = tritatutto.nextToken();
 			graphNames[i] = graphNames[i].replace('\"',' ');
+			if (graphNames[i].toLowerCase().contains(MAX_Y_STRING.toLowerCase()) && maxYValue != null) {
+				mustRescaleYValues = true;
+			}
 			grafici.add(new Vector<P>());
 		}
 		while (true) {
@@ -464,13 +614,44 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 				grafici.elementAt(i).add(new P(xValue, Double.parseDouble(s)));
 			}
 		}
-		for (int i=0;i<graphNames.length;i++) {
-			P[] grafico = new P[1];
-			grafico = grafici.elementAt(i).toArray(grafico);
-			if (grafico != null && grafico.length > 1) {
-				addSeries(grafico, graphNames[i]);
+		
+		if (!mustRescaleYValues) {
+								 //With reference to the two cases listed at the start of the function, this means that we are either in case 1 (and thus we simply need to
+								 // get a value for maxYValue), or we are in a "normal" case, where the MAX_X_STRING was not found as a column header. In both cases,
+								 // we don't need to rescale the y values of all graphs, which will be simply added to the set of existing series.
+			for (int i=0;i<graphNames.length;i++) {
+				P[] grafico = new P[1];
+				grafico = grafici.elementAt(i).toArray(grafico);
+				if (grafico != null && grafico.length > 1) {
+					addSeries(grafico, graphNames[i]);
+				} else if (graphNames[i].equals(MAX_Y_STRING)) {
+					//the y value is the value under this column, the x value is ALWAYS FOR EVERY GRAPH the value of the first column on the same line
+					maxYValue = grafico[0].y;
+				}
+			}
+		} else { //We are in case 2
+			int indexForOtherMaxY = -1;
+			double scaleFactor = 0;
+			for (int i=0;i<graphNames.length;i++) {
+				if (graphNames[i].equals(MAX_Y_STRING)) {
+					indexForOtherMaxY = i;
+					scaleFactor = maxYValue / grafici.elementAt(i).elementAt(0).y;
+					break;
+				}
+			}
+			for (int i=0;i<graphNames.length;i++) {
+				if (i == indexForOtherMaxY) continue;
+				P[] grafico = new P[1];
+				grafico = grafici.elementAt(i).toArray(grafico);
+				if (grafico != null && grafico.length > 1) {
+					for (P p : grafico) { //before adding the graph data, we update it by rescaling the y values
+						p.y *= scaleFactor;
+					}
+					addSeries(grafico, graphNames[i]);
+				}
 			}
 		}
+		
 		for (Series s : data) {
 			if (s.getName().toLowerCase().trim().endsWith(Series.SLAVE_SUFFIX)) {
 				for (Series s2 : data) {
@@ -524,10 +705,10 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 					minX = points[i][indices[i]].x;
 				}
 			}
-			out.write("" + formatter.format(minX) + ",");
+			out.write(formatter.format(minX) + ",");
 			for (int i=0;i<points.length;i++) {
 				if (!finished[i] && points[i][indices[i]].x == minX) {
-					out.write("" + formatter.format(points[i][indices[i]].y) + ",");
+					out.write(formatter.format(points[i][indices[i]].y) + ",");
 					indices[i]++; //this datum has been used, so we can go to the next
 					if (indices[i] == points[i].length) {
 						finished[i] = true;

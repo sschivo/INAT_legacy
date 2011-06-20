@@ -197,6 +197,9 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			cmd[2] += " -t0 -o2 -y -f" + prefix + " \"" + nomeFileModello + "\" \"" + nomeFileQuery + "\"";
 			Runtime rt = Runtime.getRuntime();
 			//t0 = System.currentTimeMillis();
+			if (monitor != null) {
+				monitor.setStatus("Analyzing model with UPPAAL.");
+			}
 			Process proc = rt.exec(cmd);
 			try {
 				proc.waitFor();
@@ -385,7 +388,7 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 		}
 		
 		public LevelResult analyse(Model m, InputStream output, int timeTo) throws Exception {
-			Map<String, SortedMap<Integer, Integer>> levels = new HashMap<String, SortedMap<Integer, Integer>>();
+			Map<String, SortedMap<Double, Double>> levels = new HashMap<String, SortedMap<Double, Double>>();
 
 			BufferedReader br = new BufferedReader(new InputStreamReader(output));
 			String line = null;
@@ -395,7 +398,7 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			Pattern statePattern = Pattern.compile("[A-Za-z0-9_]+[' ']*[=][' ']*[0-9]+");
 			int time = 0;
 			int maxNumberOfLevels = m.getProperties().get("levels").as(Integer.class);
-			HashMap<String, Integer> numberOfLevels = new HashMap<String, Integer>();
+			HashMap<String, Double> numberOfLevels = new HashMap<String, Double>();
 
 			while ((line = br.readLine()) != null) {
 				if (!line.startsWith("State"))
@@ -414,7 +417,7 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 					}
 					if (reactantId.equals("r") || reactantId.equals("r1") || reactantId.equals("r2")) continue; //private variables are not taken into account
 					// put the reactant into the result map
-					levels.put(reactantId, new TreeMap<Integer, Integer>());
+					levels.put(reactantId, new TreeMap<Double, Double>());
 				}
 				break;
 			}
@@ -441,12 +444,12 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 						nLvl = maxNumberOfLevels;
 					}
 				}
-				numberOfLevels.put(r.getId(), nLvl);
+				numberOfLevels.put(r.getId(), (double)nLvl);
 				
 				if (levels.containsKey(r.getId())) {
-					Integer initialLevel = r.get("initialConcentration").as(Integer.class);
-					initialLevel = (int)(initialLevel / (double)nLvl * (double)maxNumberOfLevels); //of course, the initial "concentration" itself needs to be rescaled correctly
-					levels.get(r.getId()).put(0, initialLevel);
+					double initialLevel = r.get("initialConcentration").as(Integer.class);
+					initialLevel = initialLevel / (double)nLvl * (double)maxNumberOfLevels; //of course, the initial "concentration" itself needs to be rescaled correctly
+					levels.get(r.getId()).put(0.0, initialLevel);
 				}
 			}
 
@@ -538,13 +541,13 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 								level = (int)(level / (double)numberOfLevels.get(reactantId) * (double)maxNumberOfLevels);
 							}
 							
-							SortedMap<Integer, Integer> rMap = levels.get(reactantId);
+							SortedMap<Double, Double> rMap = levels.get(reactantId);
 							if (rMap.get(rMap.lastKey()) != level) {
 								if (rMap.lastKey() < time - 1) { //We use this piece to explicitly keep a level constant when it is not varying (i.e., the graph will never contain non-vertical,non-horizontal lines)
-									rMap.put(time - 1, rMap.get(rMap.lastKey()));
+									rMap.put((double)(time - 1), rMap.get(rMap.lastKey()));
 								}
 								
-								rMap.put(time, level);
+								rMap.put((double)time, (double)level);
 							}
 						}
 						oldLine = line;
@@ -557,9 +560,9 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			}
 			if (time < timeTo) { //if the state of the system remains unchanged from a certain time on (and so UPPAAL terminates on that point), but we asked for a later time, we add a final point where all data remain unchanged, so that the user can see the "evolution" up to the requested point
 				for (String reactantName : levels.keySet()) {
-					SortedMap<Integer, Integer> values = levels.get(reactantName);
-					int lastValue = values.get(values.lastKey());
-					values.put(timeTo, lastValue);
+					SortedMap<Double, Double> values = levels.get(reactantName);
+					double lastValue = values.get(values.lastKey());
+					values.put((double)timeTo, lastValue);
 				}
 			}
 			

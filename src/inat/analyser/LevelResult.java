@@ -20,7 +20,7 @@ public interface LevelResult {
 	 * @param time the time index to do a look up for
 	 * @return the level of concentration
 	 */
-	public int getConcentration(String id, int time);
+	public double getConcentration(String id, double time);
 
 	/**
 	 * Determines the reactant ID's of substrates of which result are known.
@@ -34,7 +34,7 @@ public interface LevelResult {
 	 * 
 	 * @return the list of data point time indices
 	 */
-	public List<Integer> getTimeIndices();
+	public List<Double> getTimeIndices();
 	
 	public boolean isEmpty();
 }

@@ -21,26 +21,31 @@ import java.util.TreeSet;
  */
 public class SimpleLevelResult implements LevelResult, Serializable {
 	private static final long serialVersionUID = 5440819034905472745L;
-	Map<String, SortedMap<Integer, Integer>> levels;
+	Map<String, SortedMap<Double, Double>> levels;
 
 	/**
 	 * @param levels the levels to enter
 	 */
-	public SimpleLevelResult(Map<String, SortedMap<Integer, Integer>> levels) {
+	public SimpleLevelResult(Map<String, SortedMap<Double, Double>> levels) {
 		this.levels = levels;
 	}
 
 	@Override
-	public int getConcentration(String id, int time) {
+	public double getConcentration(String id, double time) {
 		assert this.levels.containsKey(id) : "Can not retrieve level for unknown identifier.";
 
-		SortedMap<Integer, Integer> data = this.levels.get(id);
+		SortedMap<Double, Double> data = this.levels.get(id);
 
 		// determine level at requested moment in time:
 		// it is either the level set at the requested moment, or the one set
 		// before that
-		assert !data.headMap(time + 1).isEmpty() : "Can not retrieve data from any moment before the start of time.";
-		int exactTime = data.headMap(time + 1).lastKey();
+		//assert !data.headMap(time + 1).isEmpty() : "Can not retrieve data from any moment before the start of time.";
+		//int exactTime = data.headMap(time + 1).lastKey();
+		double exactTime = -1;
+		for (Double k : data.keySet()) {
+			if (k > time) break;
+			exactTime = k;
+		}
 
 		// use exact time to get value
 		return data.get(exactTime);
@@ -52,7 +57,7 @@ public class SimpleLevelResult implements LevelResult, Serializable {
 		
 		b.append("Result["+this.getReactantIds()+"] ");
 
-		for (Entry<String, SortedMap<Integer, Integer>> r : this.levels.entrySet()) {
+		for (Entry<String, SortedMap<Double, Double>> r : this.levels.entrySet()) {
 			b.append(r.getKey() + ": " + r.getValue() + "\n");
 		}
 
@@ -60,14 +65,14 @@ public class SimpleLevelResult implements LevelResult, Serializable {
 	}
 
 	@Override
-	public List<Integer> getTimeIndices() {
-		SortedSet<Integer> accumulator = new TreeSet<Integer>();
+	public List<Double> getTimeIndices() {
+		SortedSet<Double> accumulator = new TreeSet<Double>();
 
-		for (SortedMap<Integer, Integer> e : this.levels.values()) {
+		for (SortedMap<Double, Double> e : this.levels.values()) {
 			accumulator.addAll(e.keySet());
 		}
 
-		return new ArrayList<Integer>(accumulator);
+		return new ArrayList<Double>(accumulator);
 	}
 
 	@Override

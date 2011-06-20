@@ -63,7 +63,7 @@ public class NodeDialog extends JFrame {
 
 		final JLabel totalLevelsLabel = new JLabel("Total activity levels: " + levels);
 		values.add(totalLevelsLabel);
-		final JSlider totalLevels = new JSlider(1, 150);
+		final JSlider totalLevels = new JSlider(1, 100);
 		totalLevels.setValue(levels);
 		totalLevels.setMajorTickSpacing(20);
 		totalLevels.setMinorTickSpacing(10);

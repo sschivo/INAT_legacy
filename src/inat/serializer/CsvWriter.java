@@ -8,6 +8,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -56,7 +59,7 @@ public class CsvWriter {
 
 		// walk over all reactants
 		Set<String> rids = r.getReactantIds();
-		bw.write("Time");
+		bw.write("Time (min)");
 		for (String rid : rids) {
 			// determine official name and output it
 			Property name = m.getReactant(rid).get("alias"); //if an alias is set, we prefer it
@@ -86,12 +89,13 @@ public class CsvWriter {
 		}
 		bw.close();
 		*/
-		
-		for (int t : r.getTimeIndices()) {
-			bw.write("" + t);
+		DecimalFormat formatter = new DecimalFormat("#.####", new DecimalFormatSymbols(Locale.US));
+        
+		for (double t : r.getTimeIndices()) {
+			bw.write(formatter.format(t));
 			for (String rid : rids) {
 				// determine official name and output it
-				bw.write(", " + r.getConcentration(rid, t));
+				bw.write(", " + formatter.format(r.getConcentration(rid, t)));
 			}
 			bw.newLine();
 		}

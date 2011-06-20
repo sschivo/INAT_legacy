@@ -88,6 +88,14 @@ public class Series {
 		return this.slave != null; 
 	}
 	
+	public Series getSlave() {
+		return this.slave;
+	}
+	
+	public Series getMaster() {
+		return this.master;
+	}
+	
 	//wether to show this series or not
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
@@ -127,6 +135,10 @@ public class Series {
 			int i = 0;
 			Color c = g.getColor();
 			for (P punto : data) {
+				if (punto.y < 1e-7) {
+					vecchio = punto;
+					continue;
+				}
 				for (;i<masterData.length && masterData[i].x<punto.x;i++);
 				if (i < masterData.length) {
 					if (i > 0) {

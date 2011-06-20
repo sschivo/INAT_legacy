@@ -4,6 +4,7 @@ import giny.model.Edge;
 import giny.model.Node;
 import inat.analyser.LevelResult;
 import inat.analyser.SMCResult;
+import inat.analyser.uppaal.ResultAverager;
 import inat.analyser.uppaal.UppaalModelAnalyserFaster;
 import inat.analyser.uppaal.VariablesModel;
 import inat.exceptions.InatException;
@@ -17,6 +18,7 @@ import inat.network.UPPAALClient;
 import inat.util.Table;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.util.HashMap;
@@ -42,7 +44,10 @@ import cytoscape.task.TaskMonitor;
 import cytoscape.task.ui.JTaskConfig;
 import cytoscape.task.util.TaskManager;
 import cytoscape.util.CytoscapeAction;
+import cytoscape.view.CyNetworkView;
 import cytoscape.view.cytopanels.CytoPanel;
+import cytoscape.view.cytopanels.CytoPanelImp;
+import cytoscape.view.cytopanels.CytoPanelState;
 
 /**
  * The run action runs the network through the INAT analyser.
@@ -61,7 +66,7 @@ public class RunAction extends CytoscapeAction {
 	private int timeTo = 1200;
 	private double scale = 0.2;
 	private JRadioButton remoteUppaal, smcUppaal;
-	private JFormattedTextField timeToFormula;
+	private JFormattedTextField timeToFormula, nSimulationRuns;
 	private JTextField serverName, serverPort, smcFormula;
 	
 	/**
@@ -69,13 +74,14 @@ public class RunAction extends CytoscapeAction {
 	 * 
 	 * @param plugin the plugin we should use
 	 */
-	public RunAction(InatPlugin plugin, JRadioButton remoteUppaal, JTextField serverName, JTextField serverPort, JRadioButton smcUppaal, JFormattedTextField timeToFormula, JTextField smcFormula) {
+	public RunAction(InatPlugin plugin, JRadioButton remoteUppaal, JTextField serverName, JTextField serverPort, JRadioButton smcUppaal, JFormattedTextField timeToFormula, JFormattedTextField nSimulationRuns, JTextField smcFormula) {
 		super("Analyse network");
 		this.remoteUppaal = remoteUppaal;
 		this.serverName = serverName;
 		this.serverPort = serverPort;
 		this.smcUppaal = smcUppaal;
 		this.timeToFormula = timeToFormula;
+		this.nSimulationRuns = nSimulationRuns;
 		this.smcFormula = smcFormula;
 	}
 
@@ -221,7 +227,7 @@ public class RunAction extends CytoscapeAction {
 			timeTo = (int)(nMinutesToSimulate * 60.0 / model.getProperties().get(SECONDS_PER_POINT).as(Double.class));
 			scale = (double)nMinutesToSimulate / timeTo;
 			
-			this.monitor.setStatus("Analyzing model with UPPAAL");
+			//this.monitor.setStatus("Analyzing model with UPPAAL");
 			this.monitor.setPercentCompleted(-1);
 
 			// composite the analyser (this should be done from
@@ -233,11 +239,31 @@ public class RunAction extends CytoscapeAction {
 			
 			if (remoteUppaal.isSelected()) {
 				UPPAALClient client = new UPPAALClient(serverName.getText(), Integer.parseInt(serverPort.getText()));
-				result = client.analyze(model, timeTo);
+				int nSims = 1;
+				if (nSimulationRuns.isEnabled()) {
+					try {
+						nSims = Integer.parseInt(nSimulationRuns.getText());
+					} catch (Exception e) {
+						throw new Exception("Unable to understand the number of requested simulations.");
+					}
+				} else {
+					nSims = 1;
+				}
+				result = client.analyze(model, timeTo, nSims);
 			} else {
 				//ModelAnalyser<LevelResult> analyzer = new UppaalModelAnalyser(new VariablesInterpreter(), new VariablesModel());
 				//result = analyzer.analyze(model, timeTo);
-				result = new UppaalModelAnalyserFaster(monitor).analyze(model, timeTo);
+				if (nSimulationRuns.isEnabled()) {
+					int nSims = 0;
+					try {
+						nSims = Integer.parseInt(nSimulationRuns.getText());
+					} catch (Exception e) {
+						throw new Exception("Unable to understand the number of requested simulations.");
+					}
+					result = new ResultAverager(monitor).analyzeAverage(model, timeTo, nSims);
+				} else {
+					result = new UppaalModelAnalyserFaster(monitor).analyze(model, timeTo);
+				}
 			}
 
 			/*CsvWriter csvWriter = new CsvWriter();
@@ -274,6 +300,25 @@ public class RunAction extends CytoscapeAction {
 
 					p.add("INAT Results", container);
 
+					if (p.getState().equals(CytoPanelState.HIDE)) {
+						CytoPanelImp p1 = (CytoPanelImp)Cytoscape.getDesktop().getCytoPanel(SwingConstants.WEST);
+						CyNetworkView p2 = Cytoscape.getCurrentNetworkView();
+						CytoPanelImp p3 = (CytoPanelImp)Cytoscape.getDesktop().getCytoPanel(SwingConstants.SOUTH);
+						Dimension d = Cytoscape.getDesktop().getSize();
+						if (!p1.getState().equals(CytoPanelState.HIDE)) {
+							d.width -= p1.getWidth();
+						}
+						if (p2 != null) {
+							d.width -= Cytoscape.getDesktop().getNetworkViewManager().getInternalFrame(p2).getWidth();
+						}
+						if (!p3.getState().equals(CytoPanelState.HIDE)) {
+							d.height -= p3.getHeight();
+						}
+						((CytoPanelImp)p).setPreferredSize(d);
+						((CytoPanelImp)p).setMaximumSize(d);
+						((CytoPanelImp)p).setSize(d);
+						p.setState(CytoPanelState.DOCK);
+					}
 				}
 			});
 		}

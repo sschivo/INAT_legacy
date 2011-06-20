@@ -26,7 +26,7 @@ public class VariablesInterpreter implements ResultInterpreter<LevelResult> {
 	@Override
 	public LevelResult analyse(Model m, String output) throws AnalysisException {
 		try {
-			Map<String, SortedMap<Integer, Integer>> levels = new HashMap<String, SortedMap<Integer, Integer>>();
+			Map<String, SortedMap<Double, Double>> levels = new HashMap<String, SortedMap<Double, Double>>();
 
 			BufferedReader br = new BufferedReader(new StringReader(output));
 			String line = null;
@@ -50,7 +50,7 @@ public class VariablesInterpreter implements ResultInterpreter<LevelResult> {
 						reactantId = s.substring(0, s.indexOf('='));
 					}
 					// put the reactant into the result map
-					levels.put(reactantId, new TreeMap<Integer, Integer>());
+					levels.put(reactantId, new TreeMap<Double, Double>());
 				}
 				break;
 			}
@@ -58,7 +58,7 @@ public class VariablesInterpreter implements ResultInterpreter<LevelResult> {
 			// add initial concentrations
 			for (Reactant r : m.getReactants()) {
 				if (levels.containsKey(r.getId())) {
-					levels.get(r.getId()).put(0, r.get("initialConcentration").as(Integer.class));
+					levels.get(r.getId()).put(0.0, (double)r.get("initialConcentration").as(Integer.class));
 				}
 			}
 
@@ -102,7 +102,7 @@ public class VariablesInterpreter implements ResultInterpreter<LevelResult> {
 							}
 							// we can determine the level of activation
 							int level = Integer.valueOf(s.substring(s.indexOf("=") + 1).trim());
-							levels.get(reactantId).put(time, level);
+							levels.get(reactantId).put((double)time, (double)level);
 						}
 						oldLine = line;
 					} else if (newTime == time) {

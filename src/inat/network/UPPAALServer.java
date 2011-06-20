@@ -3,6 +3,7 @@ package inat.network;
 import inat.InatBackend;
 import inat.analyser.LevelResult;
 import inat.analyser.SMCResult;
+import inat.analyser.uppaal.ResultAverager;
 import inat.analyser.uppaal.UppaalModelAnalyserFaster;
 import inat.model.Model;
 
@@ -31,9 +32,14 @@ public class UPPAALServer extends UnicastRemoteObject implements iUPPAALServer {
 	}
 	
 	@Override
-	public LevelResult analyze(Model m, int timeTo) throws Exception {
+	public LevelResult analyze(Model m, int timeTo, int nSimulationRuns) throws Exception {
 		System.out.println(df.format(new Date(System.currentTimeMillis())) + " Analysing \"normal\" model with simulation up to " + timeTo);
-		LevelResult result = new UppaalModelAnalyserFaster(null).analyze(m, timeTo);
+		LevelResult result;
+		if (nSimulationRuns > 1) {
+			result = new ResultAverager(null).analyzeAverage(m, timeTo, nSimulationRuns);
+		} else {
+			result = new UppaalModelAnalyserFaster(null).analyze(m, timeTo);
+		}
 		System.out.println(df.format(new Date(System.currentTimeMillis())) + " Done.");
 		System.out.println();
 		return result;
