@@ -32,11 +32,11 @@ public class UPPAALServer extends UnicastRemoteObject implements iUPPAALServer {
 	}
 	
 	@Override
-	public LevelResult analyze(Model m, int timeTo, int nSimulationRuns) throws Exception {
+	public LevelResult analyze(Model m, int timeTo, int nSimulationRuns, boolean computeStdDev) throws Exception {
 		System.out.println(df.format(new Date(System.currentTimeMillis())) + " Analysing \"normal\" model with simulation up to " + timeTo);
 		LevelResult result;
 		if (nSimulationRuns > 1) {
-			result = new ResultAverager(null).analyzeAverage(m, timeTo, nSimulationRuns);
+			result = new ResultAverager(null).analyzeAverage(m, timeTo, nSimulationRuns, computeStdDev);
 		} else {
 			result = new UppaalModelAnalyserFaster(null).analyze(m, timeTo);
 		}

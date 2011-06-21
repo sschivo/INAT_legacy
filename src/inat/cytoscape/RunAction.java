@@ -28,6 +28,7 @@ import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -66,6 +67,7 @@ public class RunAction extends CytoscapeAction {
 	private int timeTo = 1200;
 	private double scale = 0.2;
 	private JRadioButton remoteUppaal, smcUppaal;
+	private JCheckBox computeStdDev;
 	private JFormattedTextField timeToFormula, nSimulationRuns;
 	private JTextField serverName, serverPort, smcFormula;
 	
@@ -74,7 +76,7 @@ public class RunAction extends CytoscapeAction {
 	 * 
 	 * @param plugin the plugin we should use
 	 */
-	public RunAction(InatPlugin plugin, JRadioButton remoteUppaal, JTextField serverName, JTextField serverPort, JRadioButton smcUppaal, JFormattedTextField timeToFormula, JFormattedTextField nSimulationRuns, JTextField smcFormula) {
+	public RunAction(InatPlugin plugin, JRadioButton remoteUppaal, JTextField serverName, JTextField serverPort, JRadioButton smcUppaal, JFormattedTextField timeToFormula, JFormattedTextField nSimulationRuns, JCheckBox computeStdDev, JTextField smcFormula) {
 		super("Analyse network");
 		this.remoteUppaal = remoteUppaal;
 		this.serverName = serverName;
@@ -82,6 +84,7 @@ public class RunAction extends CytoscapeAction {
 		this.smcUppaal = smcUppaal;
 		this.timeToFormula = timeToFormula;
 		this.nSimulationRuns = nSimulationRuns;
+		this.computeStdDev = computeStdDev;
 		this.smcFormula = smcFormula;
 	}
 
@@ -249,7 +252,7 @@ public class RunAction extends CytoscapeAction {
 				} else {
 					nSims = 1;
 				}
-				result = client.analyze(model, timeTo, nSims);
+				result = client.analyze(model, timeTo, nSims, computeStdDev.isSelected());
 			} else {
 				//ModelAnalyser<LevelResult> analyzer = new UppaalModelAnalyser(new VariablesInterpreter(), new VariablesModel());
 				//result = analyzer.analyze(model, timeTo);
@@ -260,7 +263,7 @@ public class RunAction extends CytoscapeAction {
 					} catch (Exception e) {
 						throw new Exception("Unable to understand the number of requested simulations.");
 					}
-					result = new ResultAverager(monitor).analyzeAverage(model, timeTo, nSims);
+					result = new ResultAverager(monitor).analyzeAverage(model, timeTo, nSims, computeStdDev.isSelected());
 				} else {
 					result = new UppaalModelAnalyserFaster(monitor).analyze(model, timeTo);
 				}

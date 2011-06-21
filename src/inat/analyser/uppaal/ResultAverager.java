@@ -19,7 +19,7 @@ public class ResultAverager {
 		this.monitor = monitor;
 	}
 	
-	public SimpleLevelResult analyzeAverage(Model m, int timeTo, int nRuns) throws AnalysisException, Exception {
+	public SimpleLevelResult analyzeAverage(Model m, int timeTo, int nRuns, boolean computeStdDev) throws AnalysisException, Exception {
 		Vector<SimpleLevelResult> results = new Vector<SimpleLevelResult>(nRuns);
 		for (int i=0;i<nRuns;i++) {
 			if (monitor != null) {
@@ -27,7 +27,7 @@ public class ResultAverager {
 			}
 			results.add((SimpleLevelResult)(new UppaalModelAnalyserFaster(monitor).analyze(m, timeTo)));
 		}
-		return average(results, true);
+		return average(results, computeStdDev);
 	}
 	
 	public SimpleLevelResult average(Vector<SimpleLevelResult> results, boolean computeStdDev) throws Exception {

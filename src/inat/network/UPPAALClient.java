@@ -14,8 +14,8 @@ public class UPPAALClient {
 		server = (iUPPAALServer) Naming.lookup("rmi://" + serverHost + ":" + serverPort + "/UPPAALServer");
 	}
 	
-	public LevelResult analyze(Model m, int timeTo, int nSimulationRuns) throws Exception {
-		return server.analyze(m, timeTo, nSimulationRuns);
+	public LevelResult analyze(Model m, int timeTo, int nSimulationRuns, boolean computeStdDev) throws Exception {
+		return server.analyze(m, timeTo, nSimulationRuns, computeStdDev);
 	}
 	
 	public SMCResult analyzeSMC(Model m, String smcQuery) throws Exception {

@@ -124,7 +124,8 @@ public class InatPlugin extends CytoscapePlugin {
 		modelCheckingGroup.add(smcUppaal);
 		
 		final JCheckBox computeAverage = new JCheckBox("Average of");
-		
+		final JCheckBox computeStdDev = new JCheckBox("Show standard deviation as error bars");
+		computeStdDev.setToolTipText(computeStdDev.getText());
 		final JFormattedTextField timeTo = new JFormattedTextField(240);
 		final JFormattedTextField nSimulationRuns = new JFormattedTextField(10);
 		final JTextField smcFormula = new JTextField("Pr[<=50](<> MK2 > 50)");
@@ -138,11 +139,13 @@ public class InatPlugin extends CytoscapePlugin {
 					timeTo.setEnabled(true);
 					computeAverage.setEnabled(true);
 					nSimulationRuns.setEnabled(computeAverage.isSelected());
+					computeStdDev.setEnabled(computeAverage.isSelected());
 					smcFormula.setEnabled(false);
 				} else {
 					timeTo.setEnabled(false);
 					computeAverage.setEnabled(false);
 					nSimulationRuns.setEnabled(false);
+					computeStdDev.setEnabled(false);
 					smcFormula.setEnabled(true);
 				}
 			}
@@ -152,8 +155,10 @@ public class InatPlugin extends CytoscapePlugin {
 			public void stateChanged(ChangeEvent e) {
 				if (computeAverage.isSelected() && normalUppaal.isSelected()) {
 					nSimulationRuns.setEnabled(true);
+					computeStdDev.setEnabled(true);
 				} else {
 					nSimulationRuns.setEnabled(false);
+					computeStdDev.setEnabled(false);
 				}
 			}
 		});
@@ -162,6 +167,8 @@ public class InatPlugin extends CytoscapePlugin {
 		timeTo.setEnabled(true);
 		computeAverage.setEnabled(true);
 		computeAverage.setSelected(false);
+		computeStdDev.setEnabled(false);
+		computeStdDev.setSelected(false);
 		nSimulationRuns.setEnabled(false);
 		smcFormula.setEnabled(false);
 		Box modelCheckingBox = new Box(BoxLayout.Y_AXIS);
@@ -181,6 +188,10 @@ public class InatPlugin extends CytoscapePlugin {
 		averageBox.add(nSimulationRuns);
 		averageBox.add(new JLabel("runs"));
 		normalBox.add(averageBox);
+		Box stdDevBox = new Box(BoxLayout.X_AXIS);
+		stdDevBox.add(computeStdDev);
+		stdDevBox.add(Box.createGlue());
+		normalBox.add(stdDevBox);
 		smcBox.add(smcUppaal);
 		smcBox.add(smcFormula);
 		normalUppaal.setOpaque(true);
@@ -227,7 +238,7 @@ public class InatPlugin extends CytoscapePlugin {
 			}
 		});
 
-		JButton runButton = new JButton(new RunAction(plugin, remoteUppaal, serverName, serverPort, smcUppaal, timeTo, nSimulationRuns, smcFormula));
+		JButton runButton = new JButton(new RunAction(plugin, remoteUppaal, serverName, serverPort, smcUppaal, timeTo, nSimulationRuns, computeStdDev, smcFormula));
 		buttons.add(runButton);
 		
 		JButton augmentButton = new JButton(new AugmentAction(plugin));

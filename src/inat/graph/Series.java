@@ -179,11 +179,23 @@ public class Series {
 									  E = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i-1].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY))),
 									  F = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY))),
 									  I = new Point2D.Float((E.x + F.x) / 2.0f, (E.y + F.y) / 2.0f);
-						float Gx = (A.x*(B.y-A.y)/(B.x-A.x) - A.y + I.x*(B.x-A.x)/(B.y-A.y) + I.y) / ((B.y-A.y)/(B.x-A.x) + (B.x-A.x)/(B.y-A.y)),
-							  Gy = (B.y-A.y)/(B.x-A.x) * (Gx-A.x) + A.y;
+						float Gx, Gy;
+						if (A.y != B.y) {
+							Gx = (A.x*(B.y-A.y)/(B.x-A.x) - A.y + I.x*(B.x-A.x)/(B.y-A.y) + I.y) / ((B.y-A.y)/(B.x-A.x) + (B.x-A.x)/(B.y-A.y));
+							Gy = (B.y-A.y)/(B.x-A.x) * (Gx-A.x) + A.y;
+						} else {
+							Gx = (A.x + B.x) / 2.0f;
+							Gy = A.y;
+						}
 						Point2D.Float G = new Point2D.Float(Gx, Gy);
-						float Hx = (D.x*(C.y-D.y)/(C.x-D.x) - D.y + I.x*(C.x-D.x)/(C.y-D.y) + I.y) / ((C.y-D.y)/(C.x-D.x) + (C.x-D.x)/(C.y-D.y)),
-							  Hy = (C.y-D.y)/(C.x-D.x) * (Gx-D.x) + D.y;
+						float Hx, Hy;
+						if (C.y != D.y) {
+							Hx = (D.x*(C.y-D.y)/(C.x-D.x) - D.y + I.x*(C.x-D.x)/(C.y-D.y) + I.y) / ((C.y-D.y)/(C.x-D.x) + (C.x-D.x)/(C.y-D.y));
+							Hy = (C.y-D.y)/(C.x-D.x) * (Gx-D.x) + D.y;
+						} else {
+							Hx = (C.x + D.x) / 2.0f;
+							Hy = C.y;
+						}
 						Point2D.Float H = new Point2D.Float(Hx, Hy);
 						Polygon error1 = new Polygon();
 						error1.addPoint((int)E.x, (int)E.y);
@@ -210,12 +222,13 @@ public class Series {
 			for (P punto : data) {
 				for (;i<masterData.length && masterData[i].x<punto.x;i++);
 				if (i < masterData.length) {
-					g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)), 
+					//TODO: the commented lines draw the vertical error bars, but if we have a lot of points the thing becomes extremely clumsy
+					/*g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)), 
 							(int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  + punto.y - minY)));
 					g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)) - 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)), 
 							(int)(bounds.x + scaleX * (masterData[i].x - minX)) + 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  - punto.y - minY)));
 					g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)) - 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)), 
-							(int)(bounds.x + scaleX * (masterData[i].x - minX)) + 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  + punto.y - minY)));
+							(int)(bounds.x + scaleX * (masterData[i].x - minX)) + 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  + punto.y - minY)));*/
 					if (i > 0) {
 						g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY)),
 								   (int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY)));
