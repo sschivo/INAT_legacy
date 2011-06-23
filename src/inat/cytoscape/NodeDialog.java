@@ -63,7 +63,7 @@ public class NodeDialog extends JFrame {
 		} else {
 			levels = 15;
 		}
-
+		
 		final JLabel totalLevelsLabel = new JLabel("Total activity levels: " + levels);
 		values.add(totalLevelsLabel);
 		final JSlider totalLevels = new JSlider(1, 100);
