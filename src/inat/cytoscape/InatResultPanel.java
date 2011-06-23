@@ -109,11 +109,12 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 	public void stateChanged(ChangeEvent e) {
 		final int t = this.slider.getValue();
 		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
+		final int levels = this.model.getProperties().get("levels").as(Integer.class); //at this point, all levels have already been rescaled to the maximum (= the number of levels of the model), so we use it as a reference for the number of levels to show on the network nodes 
 		for (String r : this.result.getReactantIds()) {
 			if (this.model.getReactant(r) == null) continue;
 			final String id = this.model.getReactant(r).get("name").as(String.class);
-			final int level = (int)this.result.getConcentration(r, t);
-			nodeAttributes.setAttribute(id, "concentration", level);
+			final double level = this.result.getConcentration(r, t);
+			nodeAttributes.setAttribute(id, "activityRatio", level / levels);
 		}
 
 		Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);

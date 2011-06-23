@@ -24,7 +24,10 @@ import cytoscape.visual.VisualMappingManager;
 import cytoscape.visual.VisualPropertyType;
 import cytoscape.visual.calculators.Calculator;
 import cytoscape.visual.calculators.GenericNodeCustomGraphicCalculator;
+import cytoscape.visual.mappings.BoundaryRangeValues;
+import cytoscape.visual.mappings.ContinuousMapping;
 import cytoscape.visual.mappings.DiscreteMapping;
+import cytoscape.visual.mappings.LinearNumberToColorInterpolator;
 import ding.view.EdgeContextMenuListener;
 import ding.view.NodeContextMenuListener;
 
@@ -141,6 +144,42 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		mapping.putMapValue(true, Color.WHITE);
 		Calculator calco = new GenericNodeCustomGraphicCalculator("Nome del basico calculatore di cui poco mi curo", mapping, VisualPropertyType.NODE_LABEL_COLOR);
 		nac.setCalculator(calco);
+		
+		ContinuousMapping mc = new ContinuousMapping(Color.class, "activityRatio");
+		Color lowerBound = new Color(204, 0, 0), //Color.RED.darker(),
+			  middleBound = new Color(255, 204, 0), //Color.YELLOW.darker(),
+			  upperBuond = new Color(0, 204, 0); //Color.GREEN.darker();
+		mc.addPoint(0.0, new BoundaryRangeValues(lowerBound, lowerBound, lowerBound));
+		mc.addPoint(0.5, new BoundaryRangeValues(middleBound, middleBound, middleBound));
+		mc.addPoint(1.0, new BoundaryRangeValues(upperBuond, upperBuond, upperBuond));
+		mc.setInterpolator(new LinearNumberToColorInterpolator());
+		nac.setCalculator(new GenericNodeCustomGraphicCalculator("Nome del pit", mc, VisualPropertyType.NODE_FILL_COLOR));
+		
+		//Recompute the activityRatio property for all nodes, to make sure that it exists
+		CyNetwork network = Cytoscape.getCurrentNetwork();
+		if (network != null) {
+			CyAttributes nodeAttr = Cytoscape.getNodeAttributes();
+			for (int i : network.getNodeIndicesArray()) {
+				Node n = network.getNode(i);
+				double level = 0;
+				int nLevels = 0;
+				try {
+					level = nodeAttr.getIntegerAttribute(n.getIdentifier(), "initialConcentration");
+				} catch (Exception ex) {
+					level = 0;
+				}
+				try {
+					nLevels = nodeAttr.getIntegerAttribute(n.getIdentifier(), "levels");
+				} catch (Exception ex) {
+					nLevels = 1;
+				}
+				nodeAttr.setAttribute(n.getIdentifier(), "activityRatio", level / nLevels);
+			}
+
+			Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
+		}
+		
+		
 //		//vizMap.applyAppearances();
 //		if (Cytoscape.getNetworkAttributes().hasAttribute(Cytoscape.getCurrentNetwork().getIdentifier(), "levels")) {
 //			int maxNLivelli = Cytoscape.getNetworkAttributes().getIntegerAttribute(Cytoscape.getCurrentNetwork().getIdentifier(), "levels");
@@ -231,7 +270,7 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 							edgeAttr.setAttribute(edge.getIdentifier(), ENABLED, status);
 						}
 					}
-					if (view.getSelectedNodes().isEmpty()) { //if the user wanted to change only one node, here we go
+					if (view.getSelectedNodes().isEmpty()) { //if the user wanted to change only one node (i.e. right click on a node without first selecting one), here we go
 						Node node = nodeView.getNode();
 						boolean status;
 						if (!nodeAttr.hasAttribute(node.getIdentifier(), ENABLED)) {
@@ -297,7 +336,7 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 						}
 						edgeAttr.setAttribute(edge.getIdentifier(), ENABLED, status);
 					}
-					if (view.getSelectedEdges().isEmpty()) { //if the user wanted to change only one edge, here we go
+					if (view.getSelectedEdges().isEmpty()) { //if the user wanted to change only one edge (i.e. right click on an edge without first selecting one), here we go
 						Edge edge = edgeView.getEdge();
 						boolean status;
 						if (!edgeAttr.hasAttribute(edge.getIdentifier(), ENABLED)) {

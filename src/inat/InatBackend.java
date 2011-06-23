@@ -37,6 +37,8 @@ public class InatBackend {
 	private XmlConfiguration configuration;
 
 	private static final String NUMBER_OF_LEVELS = "levels",
+								INITIAL_LEVEL = "initialConcentration",
+								SHOWN_LEVEL = "activityRatio",
 								SECONDS_PER_POINT = "seconds per point",
 								SCENARIO = "scenario";
 		
@@ -69,9 +71,11 @@ public class InatBackend {
 				public void attributeValueAssigned(String objectKey, String attributeName,
 						Object[] keyIntoValue, Object oldAttributeValue, Object newAttributeValue) {
 					
-					if (oldAttributeValue == null) return; //If there was no old value, we can do very little
 					
 					if (attributeName.equals(NUMBER_OF_LEVELS)) { //we are here to listen for #levels changes in order to update the parameters of reactions in which the affected reactant is involved
+						
+						if (oldAttributeValue == null) return; //If there was no old value, we can do very little
+						
 						double newLevel = 0, oldLevel = 0, factor = 0;
 						newLevel = Double.parseDouble(newAttributeValue.toString());
 						oldLevel = Double.parseDouble(oldAttributeValue.toString());
@@ -146,6 +150,19 @@ public class InatBackend {
 							}
 						}
 						Cytoscape.getNetworkAttributes().setAttribute(Cytoscape.getCurrentNetwork().getIdentifier(), NUMBER_OF_LEVELS, maxLevels);
+					} else if (attributeName.equals(INITIAL_LEVEL)) {
+						CyAttributes nodeAttr = Cytoscape.getNodeAttributes();
+						int currentLevel = 0, totalLevels = 0;
+						try {
+							currentLevel = Integer.parseInt(newAttributeValue.toString());
+							totalLevels = nodeAttr.getIntegerAttribute(objectKey, NUMBER_OF_LEVELS);
+						} catch (Exception ex) {
+							currentLevel = 0;
+							totalLevels = 1;
+						}
+						double activityRatio = (double)currentLevel / totalLevels;
+						nodeAttr.setAttribute(objectKey, SHOWN_LEVEL, activityRatio);
+						Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 					}
 				}
 

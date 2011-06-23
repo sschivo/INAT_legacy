@@ -60,7 +60,7 @@ public class ResultAverager {
 					if (computeStdDev) sumSqrs += val * val;
 				}
 				average = sum / nValues;
-				if (computeStdDev) stdDev = Math.sqrt((sumSqrs - 2 * average * sum + nValues * average * average)/ nValues);
+				if (computeStdDev) stdDev = Math.sqrt((nValues * sumSqrs - sum * sum)/ (nValues * (nValues - 1)));
 				result.get(k).put(i, average);
 				if (computeStdDev) result.get(k + "_StdDev").put(i, stdDev);
 			}
@@ -74,7 +74,7 @@ public class ResultAverager {
 				if (computeStdDev) sumSqrs += val * val;
 			}
 			average = sum / nValues;
-			if (computeStdDev) stdDev = Math.sqrt((sumSqrs - 2 * average * sum + nValues * average * average)/ nValues);
+			if (computeStdDev) stdDev = Math.sqrt((nValues * sumSqrs - sum * sum)/ (nValues * (nValues - 1)));
 			result.get(k).put(finalTime, average);
 			if (computeStdDev) result.get(k + "_StdDev").put(finalTime, stdDev);
 		}

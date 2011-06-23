@@ -47,6 +47,9 @@ public class NodeDialog extends JFrame {
 		if (res != null) {
 			this.setTitle("Reactant " + res.toString());
 		}
+		if (!nodeAttributes.hasAttribute(node.getIdentifier(), "initialConcentration")) {
+			nodeAttributes.setAttribute(node.getIdentifier(), "initialConcentration", 0);
+		}
 
 		this.setLayout(new BorderLayout(2, 2));
 
