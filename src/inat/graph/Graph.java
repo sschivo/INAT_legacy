@@ -323,7 +323,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		}
 		if (increase < 1) increase = 1;
 		//questa condizione dice: se le due etichette più lunghe si sovrappongono perché sono troppo vicine..
-		while (increase * scaleX < fm.stringWidth(new Integer((int)maxX).toString())) {
+		while (increase * scaleX < 5 * SCALA + fm.stringWidth(new Integer((int)maxX).toString())) {
 		//if ((maxX - minX + 1) / increase > 20) { //questa invece si limitava a vedere se venivano troppe (in assoluto) tick: ma non sappiamo quanto è largo il grafico!
 			increase = increase * 2;
 		}

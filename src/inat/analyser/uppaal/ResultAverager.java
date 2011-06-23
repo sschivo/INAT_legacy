@@ -21,11 +21,12 @@ public class ResultAverager {
 	
 	public SimpleLevelResult analyzeAverage(Model m, int timeTo, int nRuns, boolean computeStdDev) throws AnalysisException, Exception {
 		Vector<SimpleLevelResult> results = new Vector<SimpleLevelResult>(nRuns);
+		UppaalModelAnalyserFaster analyzer = new UppaalModelAnalyserFaster(monitor);
 		for (int i=0;i<nRuns;i++) {
 			if (monitor != null) {
 				monitor.setPercentCompleted((int)((double)i / nRuns * 100));
 			}
-			results.add((SimpleLevelResult)(new UppaalModelAnalyserFaster(monitor).analyze(m, timeTo)));
+			results.add((SimpleLevelResult)(analyzer.analyze(m, timeTo)));
 		}
 		return average(results, computeStdDev);
 	}

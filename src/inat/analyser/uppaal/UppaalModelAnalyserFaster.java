@@ -393,8 +393,8 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			BufferedReader br = new BufferedReader(new InputStreamReader(output));
 			String line = null;
 			//Pattern globalTimePattern = Pattern.compile("t\\(0\\)-globalTime<[=]?[-]?[0-9]+");
-			Pattern tempoP = Pattern.compile("<[=]?[-]?[0-9]+");
-			//Pattern cronometroPattern = Pattern.compile("Crono[.]metro[' ']*[=][' ']*[-]?[0-9]+");
+			//Pattern tempoP = Pattern.compile("<[=]?[-]?[0-9]+");
+			Pattern cronometroPattern = Pattern.compile("Crono[.]metro[' ']*[=][' ']*[-]?[0-9]+");
 			Pattern statePattern = Pattern.compile("[A-Za-z0-9_]+[' ']*[=][' ']*[0-9]+");
 			int time = 0;
 			int maxNumberOfLevels = m.getProperties().get("levels").as(Integer.class);
@@ -466,7 +466,7 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 				/*if (!line.startsWith("State") || !line.contains("Coord.updated"))
 					continue;*/
 				//Matcher timeMatcher = globalTimePattern.matcher(line);
-				//Matcher timeMatcher = cronometroPattern.matcher(line);
+				Matcher timeMatcher = cronometroPattern.matcher(line);
 				if (oldLine == null)
 					oldLine = line;
 				/*
@@ -478,9 +478,9 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 				 * (the clock telling us the "time of the simulation"). So, we simply look in this part of the line for all the values of
 				 * clock differences, and take the largest one as "as good an approximation as we can get" for the current value of globalTime. 
 				 */
-				if (line.contains("t(0)")) {//timeMatcher.find()) {
-					/*String value = (timeMatcher.group().split("<")[1]);
-					//String value = (timeMatcher.group().split(" = ")[1]);
+				if (timeMatcher.find()) {//line.contains("t(0)")) {
+					//String value = (timeMatcher.group().split("<")[1]);
+					String value = (timeMatcher.group().split(" = ")[1]);
 					int newTime = -1;
 					if (value.substring(0, 1).equals("=")) {
 						if (value.substring(1, 2).equals("-")) {
@@ -494,8 +494,8 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 						} else {
 							newTime = Integer.parseInt(value.substring(0, value.length())) + 1;
 						}
-					}*/
-					String parteCoiTempi = line.substring(line.indexOf("t(0)"));
+					}
+					/*String parteCoiTempi = line.substring(line.indexOf("t(0)"));
 					Matcher tempoM = tempoP.matcher(parteCoiTempi);
 					int max = 0;
 					while (tempoM.find()) {
@@ -518,7 +518,7 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 						}
 						if (tempo > max) max = tempo;
 					}
-					int newTime = max;
+					int newTime = max;*/
 					if (time < newTime) {
 						time = newTime;
 						// we now know the time

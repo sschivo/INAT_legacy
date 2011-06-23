@@ -137,8 +137,8 @@ public class VariablesModel implements ModelTransformer {
 				out.append(getReactionName(r) + ", ");
 			}
 		}
-		//out.append("Coord, Crono;");
-		out.append("Coord;");
+		out.append("Coord, Crono;");
+		//out.append("Coord;");
 
 		out.append(newLine);
 		out.append(newLine);
@@ -337,7 +337,7 @@ public class VariablesModel implements ModelTransformer {
 			tra.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			tra.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
 			outString = new StringWriter();
-			document = documentBuilder.parse(new ByteArrayInputStream(("<template><name>crono</name><declaration>int metro;</declaration><location id=\"id0\" x=\"0\" y=\"0\"><label kind=\"invariant\" x=\"-176\" y=\"-24\">globalTime&lt;=metro+1</label></location><init ref=\"id0\"/><transition><source ref=\"id0\"/><target ref=\"id0\"/><label kind=\"guard\" x=\"56\" y=\"-24\">globalTime&gt;=metro</label><label kind=\"assignment\" x=\"56\" y=\"0\">metro:=metro+1</label><nail x=\"56\" y=\"-48\"/><nail x=\"56\" y=\"48\"/></transition></template>").getBytes()));
+			document = documentBuilder.parse(new ByteArrayInputStream(("<template><name>crono</name><declaration>int[0, 1073741821] metro := 0;</declaration><location id=\"id0\" x=\"0\" y=\"0\"><label kind=\"invariant\" x=\"-176\" y=\"-24\">globalTime&lt;=metro+1</label></location><init ref=\"id0\"/><transition><source ref=\"id0\"/><target ref=\"id0\"/><label kind=\"guard\" x=\"56\" y=\"-24\">globalTime&gt;=metro</label><label kind=\"assignment\" x=\"56\" y=\"0\">metro:=metro+1</label><nail x=\"56\" y=\"-48\"/><nail x=\"56\" y=\"48\"/></transition></template>").getBytes()));
 			tra.transform(new DOMSource(document), new StreamResult(outString));
 			out.append(outString.toString());
 			out.append(newLine);
