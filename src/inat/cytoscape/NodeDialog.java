@@ -4,7 +4,9 @@ import giny.model.Node;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
-import java.awt.GridLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -15,6 +17,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -43,9 +46,14 @@ public class NodeDialog extends JFrame {
 		super("Reactant '" + node.getIdentifier() + "'");
 		CyAttributes networkAttributes = Cytoscape.getNetworkAttributes(),
 					 nodeAttributes = Cytoscape.getNodeAttributes();
+		this.setTitle("Edit reactant");
 		Object res = nodeAttributes.getAttribute(node.getIdentifier(), "canonicalName");
+		String name;
 		if (res != null) {
-			this.setTitle("Reactant " + res.toString());
+			//this.setTitle("Reactant " + res.toString());
+			name = res.toString();
+		} else {
+			name = null;
 		}
 		if (!nodeAttributes.hasAttribute(node.getIdentifier(), "initialConcentration")) {
 			nodeAttributes.setAttribute(node.getIdentifier(), "initialConcentration", 0);
@@ -53,7 +61,8 @@ public class NodeDialog extends JFrame {
 
 		this.setLayout(new BorderLayout(2, 2));
 
-		JPanel values = new JPanel(new GridLayout(2, 2, 2, 2));
+		//JPanel values = new JPanel(new GridLayout(3, 2, 2, 2));
+		JPanel values = new JPanel(new GridBagLayout());
 		
 		int levels;
 		if (nodeAttributes.hasAttribute(node.getIdentifier(), "levels")) {
@@ -64,8 +73,13 @@ public class NodeDialog extends JFrame {
 			levels = 15;
 		}
 		
+		JLabel nameLabel = new JLabel("Reactant name:");
+		final JTextField nameField = new JTextField(name);
+		values.add(nameLabel, new GridBagConstraints(0, 0, 1, 1, 0.3, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+		values.add(nameField, new GridBagConstraints(1, 0, 1, 1, 1, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+		
 		final JLabel totalLevelsLabel = new JLabel("Total activity levels: " + levels);
-		values.add(totalLevelsLabel);
+		values.add(totalLevelsLabel, new GridBagConstraints(0, 1, 1, 1, 0.3, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
 		final JSlider totalLevels = new JSlider(1, 100);
 		totalLevels.setValue(levels);
 		totalLevels.setMajorTickSpacing(20);
@@ -78,14 +92,14 @@ public class NodeDialog extends JFrame {
 			labelTable.put(totalLevels.getMaximum(), new JLabel("" + totalLevels.getMaximum()));
 			totalLevels.setLabelTable(labelTable);
 		}
-		values.add(totalLevels);
+		values.add(totalLevels, new GridBagConstraints(1, 1, 1, 1, 1, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
 		
 		
 		final JSlider initialConcentration = new JSlider(0, levels);
 		initialConcentration.setValue(nodeAttributes.getIntegerAttribute(node.getIdentifier(), "initialConcentration"));
 		
 		final JLabel initialConcentrationLabel = new JLabel("Initial activity level: " + initialConcentration.getValue());
-		values.add(initialConcentrationLabel);
+		values.add(initialConcentrationLabel, new GridBagConstraints(0, 2, 1, 1, 0.3, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
 
 
 		initialConcentration.setMajorTickSpacing(levels / 5);
@@ -94,7 +108,7 @@ public class NodeDialog extends JFrame {
 		initialConcentration.setPaintLabels(true);
 		initialConcentration.setPaintTicks(true);
 
-		values.add(initialConcentration);
+		values.add(initialConcentration, new GridBagConstraints(1, 2, 1, 1, 1, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
 
 		this.add(values, BorderLayout.CENTER);
 
@@ -150,6 +164,10 @@ public class NodeDialog extends JFrame {
 						initialConcentration.getValue());
 				
 				nodeAttributes.setAttribute(node.getIdentifier(), "levels", totalLevels.getValue());
+				
+				if (nameField.getText() != null && nameField.getText().length() > 0) {
+					nodeAttributes.setAttribute(node.getIdentifier(), "canonicalName", nameField.getText());
+				}
 
 				Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 
