@@ -63,7 +63,8 @@ public class RunAction extends CytoscapeAction {
 								SCENARIO = "scenario",
 								CANONICAL_NAME = "canonicalName",
 								UNCERTAINTY = "uncertainty",
-								ENABLED = "enabled";
+								ENABLED = "enabled",
+								GROUP = "group";
 	private int timeTo = 1200;
 	private double scale = 0.2;
 	private JRadioButton remoteUppaal, smcUppaal;
@@ -404,6 +405,7 @@ public class RunAction extends CytoscapeAction {
 				r.let(REACTANT_NAME).be(node.getIdentifier());
 				r.let(REACTANT_ALIAS).be(nodeAttributes.getAttribute(node.getIdentifier(), CANONICAL_NAME));
 				r.let(NUMBER_OF_LEVELS).be(nodeAttributes.getAttribute(node.getIdentifier(), NUMBER_OF_LEVELS));
+				r.let(GROUP).be(nodeAttributes.getAttribute(node.getIdentifier(), GROUP));
 				if (nodeAttributes.hasAttribute(node.getIdentifier(), ENABLED)) {
 					r.let(ENABLED).be(nodeAttributes.getAttribute(node.getIdentifier(), ENABLED));
 				} else {

@@ -8,6 +8,9 @@ import inat.util.Table;
 
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Vector;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -28,8 +31,10 @@ import org.w3c.dom.Document;
 public class VariablesModel implements ModelTransformer {
 
 	public static final int INFINITE_TIME = -1;
-	public static final String ENABLED = "enabled";
+	public static final String ENABLED = "enabled",
+							   GROUP = "group";
 	protected static String newLine = System.getProperty("line.separator");
+	Map<String, Vector<Reactant>> groups = null;
 
 	@Override
 	public String transform(Model m) {
@@ -107,8 +112,13 @@ public class VariablesModel implements ModelTransformer {
 		// output the process instantiation for each reactant and reaction
 		for (Reactant r : m.getReactants()) {
 			if (r.get(ENABLED).as(Boolean.class)) {
-				this.appendReactantProcesses(out, r);
+				if (r.get(GROUP) == null || r.get(GROUP).isNull() || r.get(GROUP).as(String.class).length() < 1) {
+					this.appendReactantProcesses(out, r);
+				}
 			}
+		}
+		for (String group : groups.keySet()) {
+			this.appendReactantGroupProcess(out, group);
 		}
 		out.append(newLine);
 		int reactionIndex = 0;
@@ -129,8 +139,13 @@ public class VariablesModel implements ModelTransformer {
 		out.append("system ");
 		for (Reactant r : m.getReactants()) {
 			if (r.get(ENABLED).as(Boolean.class)) {
-				out.append(r.getId() + "_reactant, ");
+				if (r.get(GROUP) == null || r.get(GROUP).isNull() || r.get(GROUP).as(String.class).length() < 1) {
+					out.append(r.getId() + "_reactant, ");
+				}
 			}
+		}
+		for (String group : groups.keySet()) {
+			out.append(group + "_group, ");
 		}
 		for (Reaction r : m.getReactions()) {
 			if (r.get(ENABLED).as(Boolean.class)) {
@@ -326,6 +341,16 @@ public class VariablesModel implements ModelTransformer {
 		out.append(newLine);
 		out.append(newLine);
 	}
+	
+	protected void appendReactantGroupProcess(StringBuilder out, String group) {
+		out.append(group + "_group = Reactant_group_" + group + "(");
+		for (Reactant r : groups.get(group)) {
+			out.append(r.getId() + ", " + r.getId() + "_nonofficial, ");
+		}
+		out.append("update);");
+		out.append(newLine);
+		out.append(newLine);
+	}
 
 	protected void appendTemplates(StringBuilder out, Model m) {
 		try {
@@ -355,8 +380,21 @@ public class VariablesModel implements ModelTransformer {
 				out.append(newLine);
 				out.append(newLine);
 			}
+			
+			groups = new HashMap<String, Vector<Reactant>>();
 			for (Reactant r : m.getReactants()) {
 				if (!r.get(ENABLED).as(Boolean.class)) continue;
+				if (r.get(GROUP) != null && !r.get(GROUP).isNull() && r.get(GROUP).as(String.class).length() > 0) { //you simply have to set equal values for the GROUP property, and the Reactant will be output just for that group, as we see below
+					String group = r.get(GROUP).as(String.class);
+					if (groups.containsKey(group)) {
+						groups.get(group).add(r);
+					} else {
+						Vector<Reactant> v = new Vector<Reactant>();
+						v.add(r);
+						groups.put(group, v);
+					}
+					continue;
+				}
 				outString = new StringWriter();
 				document = documentBuilder.parse(new ByteArrayInputStream(("<template><name>Reactant_" + r.getId() + "</name><parameter>int[0," + r.get("levels").as(Integer.class) + "] &amp;official, int &amp;nonofficial, broadcast chan &amp;update</parameter><location id=\"id10\" x=\"-416\" y=\"-104\"></location><init ref=\"id10\"/><transition><source ref=\"id10\"/><target ref=\"id10\"/><label kind=\"guard\" x=\"-536\" y=\"-248\">nonofficial&gt;" + r.get("levels").as(Integer.class) + "</label><label kind=\"synchronisation\" x=\"-536\" y=\"-232\">update?</label><label kind=\"assignment\" x=\"-536\" y=\"-216\">official := " + r.get("levels").as(Integer.class) + ", nonofficial := " + r.get("levels").as(Integer.class) + "</label><nail x=\"-168\" y=\"-200\"/><nail x=\"-168\" y=\"-256\"/><nail x=\"-544\" y=\"-256\"/><nail x=\"-544\" y=\"-192\"/><nail x=\"-416\" y=\"-192\"/></transition><transition><source ref=\"id10\"/><target ref=\"id10\"/><label kind=\"guard\" x=\"-496\" y=\"-48\">nonofficial&lt;0</label><label kind=\"synchronisation\" x=\"-496\" y=\"-32\">update?</label><label kind=\"assignment\" x=\"-496\" y=\"-16\">official := 0, nonofficial := 0</label><nail x=\"-416\" y=\"-56\"/><nail x=\"-504\" y=\"-56\"/><nail x=\"-504\" y=\"8\"/><nail x=\"-288\" y=\"8\"/><nail x=\"-288\" y=\"-24\"/></transition><transition><source ref=\"id10\"/><target ref=\"id10\"/><label kind=\"guard\" x=\"-680\" y=\"-176\">nonofficial&gt;=0\n&amp;&amp; nonofficial&lt;=" + r.get("levels").as(Integer.class) + "</label><label kind=\"synchronisation\" x=\"-680\" y=\"-144\">update?</label><label kind=\"assignment\" x=\"-680\" y=\"-128\">official := nonofficial</label><nail x=\"-688\" y=\"-104\"/><nail x=\"-688\" y=\"-184\"/><nail x=\"-464\" y=\"-184\"/></transition></template>").getBytes()));
 				tra.transform(new DOMSource(document), new StreamResult(outString));
@@ -364,6 +402,48 @@ public class VariablesModel implements ModelTransformer {
 				out.append(newLine);
 				out.append(newLine);
 			}
+			
+			if (!groups.isEmpty()) { //compose the Reactant for this group
+				for (String group : groups.keySet()) {
+					Vector<Reactant> v = groups.get(group);
+					outString = new StringWriter();
+					StringBuilder templateString = new StringBuilder();
+					templateString.append("<template><name>Reactant_group_" + group + "</name><parameter>");
+					for (int i=0; i<v.size();i++) {
+						Reactant r = v.elementAt(i);
+						templateString.append("int[0," + r.get("levels").as(Integer.class) + "] &amp;official" + (i + 1) + ", int &amp;unofficial" + (i + 1) + ", ");
+					}
+					templateString.append("broadcast chan &amp;update</parameter><declaration>void updateAll(");
+					for (int i=0; i<v.size() - 1;i++) {
+						Reactant r = v.elementAt(i);
+						templateString.append("int[0," + r.get("levels").as(Integer.class) + "] &amp;official" + (i + 1) + ", int &amp;unofficial" + (i + 1) + ", ");
+					}
+					templateString.append("int[0," + v.lastElement().get("levels").as(Integer.class) + "] &amp;official" + v.size() + ", int &amp;unofficial" + v.size() + ") {\n\tint i;\n\tint sum := 0;\n");
+					for (int i=0; i<v.size();i++) {
+						templateString.append("\tif (unofficial" + (i + 1) + " &lt; 0) unofficial" + (i + 1) + " := 0;\n\tsum := sum + unofficial" + (i + 1) + ";\n");
+					}
+					//TODO: v.firstElement().get("levels").as(Integer.class) is the number of levels of the "grouped" reactant
+					templateString.append("\n\twhile (sum &gt; " + v.firstElement().get("levels").as(Integer.class) + ") {\n\t\tsum := 0;\n");
+					for (int i=0; i<v.size(); i++) {
+						templateString.append("\t\tif (unofficial" + (i + 1) + " &gt; 0) unofficial" + (i + 1) + "--;\n\t\tsum := sum + unofficial" + (i + 1) + ";\n");
+					}
+					templateString.append("\t}\n");
+					for (int i=0; i<v.size(); i++) {
+						templateString.append("\tofficial" + (i + 1) + " := unofficial" + (i + 1) + ";\n");
+					}
+					templateString.append("}</declaration><location id=\"id5\" x=\"16\" y=\"88\"></location><init ref=\"id5\"/><transition><source ref=\"id5\"/><target ref=\"id5\"/><label kind=\"synchronisation\" x=\"-24\" y=\"-88\">update?</label><label kind=\"assignment\" x=\"-144\" y=\"-64\">updateAll(");
+					for (int i=0; i<v.size() - 1;i++) {
+						templateString.append("official" + (i + 1) + ", unofficial" + (i + 1) + ", ");
+					}
+					templateString.append("official" + v.size() + ", unofficial" + v.size() + ")</label><nail x=\"72\" y=\"-40\"/><nail x=\"-48\" y=\"-40\"/></transition></template>");
+					document = documentBuilder.parse(new ByteArrayInputStream(templateString.toString().getBytes()));
+					tra.transform(new DOMSource(document), new StreamResult(outString));
+					out.append(outString.toString());
+					out.append(newLine);
+					out.append(newLine);
+				}
+			}
+			
 			outString = new StringWriter();
 			document = documentBuilder.parse(new ByteArrayInputStream("<template><name>Coordinator</name><parameter>chan &amp;reaction_happening[N_REACTIONS], broadcast chan &amp;update, chan &amp;update_done[N_REACTIONS]</parameter><location id=\"id11\" x=\"-328\" y=\"-136\"><name x=\"-338\" y=\"-166\">updated</name></location><location id=\"id12\" x=\"-152\" y=\"-136\"><committed/></location><init ref=\"id11\"/><transition><source ref=\"id11\"/><target ref=\"id11\"/><label kind=\"select\" x=\"-552\" y=\"-152\">i : int[0,N_REACTIONS-1]</label><label kind=\"synchronisation\" x=\"-552\" y=\"-136\">update_done[i]!</label><nail x=\"-392\" y=\"-176\"/><nail x=\"-392\" y=\"-96\"/></transition><transition><source ref=\"id12\"/><target ref=\"id11\"/><label kind=\"synchronisation\" x=\"-312\" y=\"-80\">update!</label><nail x=\"-152\" y=\"-64\"/><nail x=\"-328\" y=\"-64\"/></transition><transition><source ref=\"id12\"/><target ref=\"id12\"/><label kind=\"select\" x=\"-80\" y=\"-160\">i : int[0,N_REACTIONS-1]</label><label kind=\"synchronisation\" x=\"-80\" y=\"-144\">reaction_happening[i]?</label><nail x=\"-88\" y=\"-176\"/><nail x=\"-88\" y=\"-104\"/></transition><transition><source ref=\"id11\"/><target ref=\"id12\"/><label kind=\"select\" x=\"-320\" y=\"-248\">i : int[0, N_REACTIONS-1]</label><label kind=\"synchronisation\" x=\"-320\" y=\"-232\">reaction_happening[i]?</label><nail x=\"-328\" y=\"-216\"/><nail x=\"-152\" y=\"-216\"/></transition></template>".getBytes()));
 			tra.transform(new DOMSource(document), new StreamResult(outString));
