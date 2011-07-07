@@ -78,6 +78,10 @@ public class VariablesModelSMC extends VariablesModel {
 		}
 		out.append(newLine);
 		out.append(newLine);
+
+		//out.append("Crono = crono();");
+		out.append(newLine);
+		out.append(newLine);
 		
 		// compose the system
 		out.append("system ");
@@ -92,6 +96,7 @@ public class VariablesModelSMC extends VariablesModel {
 			out.append(getReactionName(r));
 			first = false;
 		}
+		//out.append(", Crono;");
 		out.append(";");
 		
 		out.append(newLine);
@@ -261,6 +266,12 @@ public class VariablesModelSMC extends VariablesModel {
 			tra.setOutputProperty(OutputKeys.INDENT, "yes");
 			tra.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			tra.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+			/*outString = new StringWriter();
+			document = documentBuilder.parse(new ByteArrayInputStream(("<template><name>crono</name><declaration>int[0, 1073741821] metro := 0;</declaration><location id=\"id0\" x=\"0\" y=\"0\"><label kind=\"invariant\" x=\"-176\" y=\"-24\">globalTime&lt;=metro+1</label></location><init ref=\"id0\"/><transition><source ref=\"id0\"/><target ref=\"id0\"/><label kind=\"guard\" x=\"56\" y=\"-24\">globalTime&gt;=metro</label><label kind=\"assignment\" x=\"56\" y=\"0\">metro:=metro+1</label><nail x=\"56\" y=\"-48\"/><nail x=\"56\" y=\"48\"/></transition></template>").getBytes()));
+			tra.transform(new DOMSource(document), new StreamResult(outString));
+			out.append(outString.toString());
+			out.append(newLine);
+			out.append(newLine);*/
 			for (Reaction r : m.getReactions()) {
 				if (!r.get(ENABLED).as(Boolean.class)) continue;
 				outString = new StringWriter();

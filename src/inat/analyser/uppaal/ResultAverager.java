@@ -1,6 +1,7 @@
 package inat.analyser.uppaal;
 
 import inat.analyser.AnalysisException;
+import inat.cytoscape.RunAction;
 import inat.model.Model;
 
 import java.util.HashMap;
@@ -14,15 +15,20 @@ import cytoscape.task.TaskMonitor;
 
 public class ResultAverager {
 	private TaskMonitor monitor = null;
+	private RunAction runAction = null;
 	
-	public ResultAverager(TaskMonitor monitor) {
+	public ResultAverager(TaskMonitor monitor, RunAction runAction) {
 		this.monitor = monitor;
+		this.runAction = runAction;
 	}
 	
 	public SimpleLevelResult analyzeAverage(Model m, int timeTo, int nRuns, boolean computeStdDev) throws AnalysisException, Exception {
 		Vector<SimpleLevelResult> results = new Vector<SimpleLevelResult>(nRuns);
-		UppaalModelAnalyserFaster analyzer = new UppaalModelAnalyserFaster(monitor);
+		UppaalModelAnalyserFasterConcrete analyzer = new UppaalModelAnalyserFasterConcrete(monitor, runAction);
 		for (int i=0;i<nRuns;i++) {
+			if (runAction != null && runAction.needToStop()) {
+				throw new AnalysisException("User interrupted");
+			}
 			if (monitor != null) {
 				monitor.setPercentCompleted((int)((double)i / nRuns * 100));
 			}

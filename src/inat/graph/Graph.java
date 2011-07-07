@@ -216,6 +216,18 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	}
 	
 	/*
+	 * If the series at index seriesIdx has a slave, toggle explicit error bars (shown by the slave)
+	 */
+	public void toggleErrorBars(int seriesIdx) {
+		if (seriesIdx < 0 || seriesIdx >= data.size()) return;
+		Series s = data.elementAt(seriesIdx);
+		if (s.isMaster()) {
+			s = s.getSlave();
+			s.setErrorBars(!s.getErrorBars());
+		}
+	}
+	
+	/*
 	 * The small title for the X axis (most of the times, it is something like "Time")
 	 */
 	public void setXSeriesName(String name) {
@@ -722,6 +734,17 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		}
 		out.close();
 	}
+	
+	/*
+	 * Set the minimum and maximum for X and Y, defining the area of the graph
+	 * to be drawn.
+	 */
+	public void setDrawArea(int minX, int maxX, int minY, int maxY) {
+		scale.setMinX(new Double(minX));
+		scale.setMaxX(new Double(maxX));
+		scale.setMinY(new Double(minY));
+		scale.setMaxY(new Double(maxY));
+	}
 
 	/*
 	 * Used only for testing purposes
@@ -854,8 +877,16 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 			this.repaint();
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if (legendBounds != null && legendBounds.contains(e.getX(), e.getY())) {
-				legendBounds = null;
+				/*legendBounds = null;
 				customLegendPosition = false;
+				this.repaint();*/
+				//Instead of replacing the legend in the default position, I let the user ask for explicit error bars
+				int xPresumed = e.getX() - legendBounds.x,
+					yPresumed = e.getY() - legendBounds.y;
+				int seriesIdx = findSeriesInLegend(xPresumed, yPresumed);
+				if (seriesIdx != -1) {
+					this.toggleErrorBars(seriesIdx);
+				}
 				this.repaint();
 			} else {
 				popupMenu.show(this, e.getX(), e.getY());

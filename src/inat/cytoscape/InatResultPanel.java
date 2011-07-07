@@ -100,7 +100,10 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 		g.parseLevelResult(result, seriesNameMapping, scale);
 		g.setXSeriesName("Time (min)");
 		if (!model.getProperties().get("levels").isNull()) { //if we find a maximum value for activity levels, we declare it to the graph, so that other added graphs (such as experimental data) will be automatically rescaled to match us
-			g.declareMaxYValue(model.getProperties().get("levels").as(Integer.class));
+			int nLevels = model.getProperties().get("levels").as(Integer.class);
+			g.declareMaxYValue(nLevels);
+			double maxTime = scale * result.getTimeIndices().get(result.getTimeIndices().size()-1);
+			g.setDrawArea(0, (int)maxTime, 0, nLevels);
 		}
 		this.add(g, BorderLayout.CENTER);
 	}

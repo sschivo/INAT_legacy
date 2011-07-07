@@ -131,9 +131,9 @@ public class VariablesModel implements ModelTransformer {
 		out.append(newLine);
 		out.append(newLine);
 		
-		out.append("Crono = crono();");
+		/*out.append("Crono = crono();");
 		out.append(newLine);
-		out.append(newLine);
+		out.append(newLine);*/
 		
 		// compose the system
 		out.append("system ");
@@ -152,8 +152,8 @@ public class VariablesModel implements ModelTransformer {
 				out.append(getReactionName(r) + ", ");
 			}
 		}
-		out.append("Coord, Crono;");
-		//out.append("Coord;");
+		//out.append("Coord, Crono;");
+		out.append("Coord;");
 
 		out.append(newLine);
 		out.append(newLine);
@@ -218,16 +218,34 @@ public class VariablesModel implements ModelTransformer {
 			out.append("const int " + reactantId + "_tLower[" + m.getReactant(reactantId).get("levels").as(Integer.class) + "+1] := {");
 			for (int i = 0; i < timesL.getRowCount() - 1; i++) {
 				out.append(formatTime(timesL.get(i, 0)) + ", ");
+				/*int rnd;
+				if (timesL.get(i, 0) != INFINITE_TIME) {
+					rnd = Math.max(1, (int)(Math.round(timesL.get(i, 0) + Math.random() * (timesU.get(i, 0) - timesL.get(i, 0)))));
+					timesL.set(i, 0, rnd);
+				} else {
+					rnd = INFINITE_TIME;
+				}
+				out.append(formatTime(rnd) + ", ");*/
 			}
 			out.append(formatTime(timesL.get(timesL.getRowCount() - 1, 0)) + "};");
+			/*int rnd;
+			if (timesL.get(timesL.getRowCount() - 1,0) != INFINITE_TIME) {
+				rnd = Math.max(1, (int)(Math.round(timesL.get(timesL.getRowCount() - 1, 0) + Math.random() * (timesU.get(timesU.getRowCount() - 1, 0) - timesL.get(timesL.getRowCount() - 1,0)))));
+				timesL.set(timesL.getRowCount() - 1, 0, rnd);
+			} else {
+				rnd = INFINITE_TIME;
+			}
+			out.append(formatTime(rnd) + "};");*/
 			out.append(newLine);
 			
 			// output times table constants for this reaction (upper bound)
 			out.append("const int " + reactantId + "_tUpper[" + m.getReactant(reactantId).get("levels").as(Integer.class) + "+1] := {");
 			for (int i = 0; i < timesU.getRowCount() - 1; i++) {
 				out.append(formatTime(timesU.get(i, 0)) + ", ");
+				//out.append(formatTime(timesL.get(i, 0)) + ", ");
 			}
 			out.append(formatTime(timesU.get(timesU.getRowCount() - 1, 0)) + "};");
+			//out.append(formatTime(timesL.get(timesL.getRowCount() - 1, 0)) + "};");
 			out.append(newLine);
 
 			// output reaction instantiation
@@ -277,6 +295,14 @@ public class VariablesModel implements ModelTransformer {
 				// for each column
 				for (int col = 0; col < timesL.getColumnCount(); col++) {
 					out.append(formatTime(timesL.get(row, col)));
+					/*int rnd;
+					if (timesL.get(row, col) != INFINITE_TIME) {
+						rnd = Math.max(1, (int)(timesL.get(row, col) + Math.round(Math.random() * (timesU.get(row, col) - timesL.get(row, col)))));
+						timesL.set(row, col, rnd);
+					} else {
+						rnd = INFINITE_TIME;
+					}
+					out.append(formatTime(rnd));*/
 					
 					// seperate value with a comma if it is not the last one
 					if (col < timesL.getColumnCount() - 1) {
@@ -306,6 +332,7 @@ public class VariablesModel implements ModelTransformer {
 				// for each column
 				for (int col = 0; col < timesU.getColumnCount(); col++) {
 					out.append(formatTime(timesU.get(row, col)));
+					//out.append(formatTime(timesL.get(row, col)));
 
 					// seperate value with a comma if it is not the last one
 					if (col < timesU.getColumnCount() - 1) {
@@ -361,12 +388,12 @@ public class VariablesModel implements ModelTransformer {
 			tra.setOutputProperty(OutputKeys.INDENT, "yes");
 			tra.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 			tra.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-			outString = new StringWriter();
+			/*outString = new StringWriter();
 			document = documentBuilder.parse(new ByteArrayInputStream(("<template><name>crono</name><declaration>int[0, 1073741821] metro := 0;</declaration><location id=\"id0\" x=\"0\" y=\"0\"><label kind=\"invariant\" x=\"-176\" y=\"-24\">globalTime&lt;=metro+1</label></location><init ref=\"id0\"/><transition><source ref=\"id0\"/><target ref=\"id0\"/><label kind=\"guard\" x=\"56\" y=\"-24\">globalTime&gt;=metro</label><label kind=\"assignment\" x=\"56\" y=\"0\">metro:=metro+1</label><nail x=\"56\" y=\"-48\"/><nail x=\"56\" y=\"48\"/></transition></template>").getBytes()));
 			tra.transform(new DOMSource(document), new StreamResult(outString));
 			out.append(outString.toString());
 			out.append(newLine);
-			out.append(newLine);
+			out.append(newLine);*/
 			for (Reaction r : m.getReactions()) {
 				if (!r.get(ENABLED).as(Boolean.class)) continue;
 				outString = new StringWriter();

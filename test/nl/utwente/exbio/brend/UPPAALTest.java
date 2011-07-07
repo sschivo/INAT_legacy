@@ -2,7 +2,7 @@ package nl.utwente.exbio.brend;
 
 import inat.InatBackend;
 import inat.analyser.LevelResult;
-import inat.analyser.uppaal.UppaalModelAnalyserFaster;
+import inat.analyser.uppaal.UppaalModelAnalyserFasterConcrete;
 import inat.exceptions.InatException;
 import inat.graph.Graph;
 import inat.model.Model;
@@ -99,12 +99,12 @@ public class UPPAALTest {
 		//ModelAnalyser<LevelResult> analyzer = new UppaalModelAnalyser(new VariablesInterpreter(), new VariablesModel());
 
 		// analyse model
-		File file = new File("/local/schivos/zioporco.xml");
+		File file = new File("my_example.xml");
 		  DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 		  DocumentBuilder db = dbf.newDocumentBuilder();
 		  Document doc = db.parse(file);
 		model = new XMLSerializer().deserializeModel(doc);
-		LevelResult result = new UppaalModelAnalyserFaster(null).analyze(model, 1200);
+		LevelResult result = new UppaalModelAnalyserFasterConcrete(null, null).analyze(model, 1200);
 		//result = new UPPAALClient("ewi1735.ewi.utwente.nl", 1234).analyze(model, 500);
 
 		// output result

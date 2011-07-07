@@ -14,6 +14,7 @@ public class Series {
 	public static String SLAVE_SUFFIX = "_stddev"; //for a series to be a representation of confidence intervals of series ABC, its name should be "ABC" + SLAVE_SUFFIX (suffix can have any capitalization)
 	private Color myColor = null;
 	private boolean changeColor = false;
+	private boolean showBars = false; //valid only if this Series is a slave. Tells to show the vertical error bars
 	
 	public Series(P[] data) {
 		this(data, new Scale());
@@ -120,6 +121,14 @@ public class Series {
 		return this.myColor;
 	}
 	
+	public void setErrorBars(boolean showBars) {
+		this.showBars = showBars;
+	}
+	
+	public boolean getErrorBars() {
+		return this.showBars;
+	}
+	
 	public void plot(Graphics2D g, Rectangle bounds) {
 		scale.computeScale(bounds);
 		double scaleX = scale.getXScale(),
@@ -222,13 +231,15 @@ public class Series {
 			for (P punto : data) {
 				for (;i<masterData.length && masterData[i].x<punto.x;i++);
 				if (i < masterData.length) {
-					//TODO: the commented lines draw the vertical error bars, but if we have a lot of points the thing becomes extremely clumsy
-					/*g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)), 
-							(int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  + punto.y - minY)));
-					g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)) - 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)), 
-							(int)(bounds.x + scaleX * (masterData[i].x - minX)) + 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  - punto.y - minY)));
-					g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)) - 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)), 
-							(int)(bounds.x + scaleX * (masterData[i].x - minX)) + 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  + punto.y - minY)));*/
+					if (showBars) {
+						//these lines draw the vertical error bars, but if we have a lot of points the thing becomes extremely clumsy
+						g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)), 
+								(int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  + punto.y - minY)));
+						g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)) - 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)), 
+								(int)(bounds.x + scaleX * (masterData[i].x - minX)) + 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  - punto.y - minY)));
+						g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)) - 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)), 
+								(int)(bounds.x + scaleX * (masterData[i].x - minX)) + 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  + punto.y - minY)));
+					}
 					if (i > 0) {
 						g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY)),
 								   (int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY)));

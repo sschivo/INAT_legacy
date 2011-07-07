@@ -6,6 +6,7 @@ import inat.analyser.AnalysisException;
 import inat.analyser.LevelResult;
 import inat.analyser.ModelAnalyser;
 import inat.analyser.SMCResult;
+import inat.cytoscape.RunAction;
 import inat.model.Model;
 import inat.model.Property;
 import inat.model.Reactant;
@@ -22,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,15 +33,10 @@ import cytoscape.Cytoscape;
 import cytoscape.task.TaskMonitor;
 
 
-public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
+public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelResult> {
 	
 	public static double TIME_SCALE = 0.2; //the factor by which time values are mutiplied before being output on the .csv file (it answers the question "how many real-life minutes does a time unit of the model represent?")
 	
-	/**
-	 * The configuration key for the tracer path property.
-	 */
-	private static final String TRACER_KEY = "/Inat/UppaalInvoker/tracer";
-
 	/**
 	 * The configuration key for the verifyta path property.
 	 */
@@ -47,16 +44,18 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 	
 	private static final String VERIFY_SMC_KEY = "/Inat/UppaalInvoker/verifytaSMC";
 	
-	private String verifytaPath, verifytaSMCPath, tracerPath;
+	private String verifytaPath, verifytaSMCPath;//, tracerPath;
 	private TaskMonitor monitor;
+	private RunAction runAction;
+	private int taskStatus = 0; //1 = process completed, 2 = user pressed Cancel
 	
-	public UppaalModelAnalyserFaster(TaskMonitor monitor) {
+	public UppaalModelAnalyserFasterConcrete(TaskMonitor monitor, RunAction runAction) {
 		XmlConfiguration configuration = InatBackend.get().configuration();
 
 		this.monitor = monitor;
+		this.runAction = runAction;
 		this.verifytaPath = configuration.get(VERIFY_KEY);
 		this.verifytaSMCPath = configuration.get(VERIFY_SMC_KEY);
-		this.tracerPath = configuration.get(TRACER_KEY);
 	}
 	
 	public static boolean areWeUnderWindows() {
@@ -108,13 +107,49 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			}
 			cmd[2] += " \"" + nomeFileModello + "\" \"" + nomeFileQuery + "\" > \"" + nomeFileOutput + "\"";
 			Runtime rt = Runtime.getRuntime();
-			//t0 = System.currentTimeMillis();
-			Process proc = rt.exec(cmd);
-			try {
-				proc.waitFor();
-			} catch (InterruptedException ex){
-				proc.destroy();
-				throw new Exception("Interrupted (1)");
+			final Process proc = rt.exec(cmd);
+			if (runAction != null) {
+				taskStatus = 0;
+				new Thread() { //wait for the process to end correctly
+					@Override
+					public void run() {
+						try {
+							proc.waitFor();
+						} catch (InterruptedException ex) {
+							taskStatus = 2;
+						}
+						taskStatus = 1;
+					}
+				}.start();
+				new Thread() { //wait for the process to end by user cancellation
+					@Override
+					public void run() {
+						while (taskStatus == 0) {
+							if (runAction.needToStop()) {
+								taskStatus = 2;
+								return;
+							}
+							try {
+								Thread.sleep(500);
+							} catch (InterruptedException e) {
+								
+							}
+						}
+					}
+				}.start();
+				while (taskStatus == 0) {
+					Thread.sleep(100);
+				}
+				if (taskStatus == 2) { //the process has been cancelled: we need to exit
+					throw new AnalysisException("User interrupted");
+				}
+			} else {
+				try {
+					proc.waitFor();
+				} catch (InterruptedException ex){
+					proc.destroy();
+					throw new Exception("Interrupted (1)");
+				}
 			}
 			if (proc.exitValue() != 0) {
 				StringBuilder errorBuilder = new StringBuilder();
@@ -131,14 +166,11 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			proc.getErrorStream().close();
 			proc.getInputStream().close();
 			proc.getOutputStream().close();
-			//t = System.currentTimeMillis();
-			//System.out.println("Executed " + cmd[0] + " " + cmd[1] + " " + cmd[2] + " in " + (t-t0) + " ms.");
 			
-			result = new UppaalModelAnalyserFaster.VariablesInterpreter().analyseSMC(m, new FileInputStream(nomeFileOutput));
+			result = new UppaalModelAnalyserFasterConcrete.VariablesInterpreterConcrete(monitor).analyseSMC(m, new FileInputStream(nomeFileOutput));
 			
 			new File(nomeFileOutput).delete();
 			
-			//System.err.println(averageCSV.getAbsolutePath() + " --> " + nomeFileModello);
 		} catch (Exception e) {
 			throw new AnalysisException("Error during analysis", e);
 		}
@@ -150,10 +182,10 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 		return result;
 	}
 	
-	public LevelResult analyze(Model m, int timeTo) throws AnalysisException {
+	public LevelResult analyze(final Model m, final int timeTo) throws AnalysisException {
 		LevelResult result = null;
 		try {
-			final String uppaalModel = new VariablesModel().transform(m);
+			final String uppaalModel = new VariablesModelSMC().transform(m);
 			final String uppaalQuery = "E<> (globalTime > " + timeTo + ")";
 			
 			File modelFile = File.createTempFile("inat", ".xml");
@@ -175,8 +207,6 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 				   nomeFileQuery = queryFile.getAbsolutePath();
 			
 			
-			//the following string is used in order to make sure that the name of .xtr output files is unique even when we are called by an application which is multi-threaded itself (it supposes of course that the input file is unique =))
-			final String inputUppaalNoExtension = nomeFileModello.substring(nomeFileModello.lastIndexOf("/") + 1, nomeFileModello.indexOf("."));
 			String[] cmd = new String[3];
 			
 			if (areWeUnderWindows()) {
@@ -194,19 +224,75 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 				cmd[1] = "-c";
 				cmd[2] = verifytaPath;				
 			}
-			cmd[2] += " -t0 -o2 -y -f" + prefix + " \"" + nomeFileModello + "\" \"" + nomeFileQuery + "\"";
+			cmd[2] += " -t0 -o2 \"" + nomeFileModello + "\" \"" + nomeFileQuery + "\"";
 			Runtime rt = Runtime.getRuntime();
-			//t0 = System.currentTimeMillis();
 			if (monitor != null) {
 				monitor.setStatus("Analyzing model with UPPAAL.");
 			}
-			Process proc = rt.exec(cmd);
-			try {
-				proc.waitFor();
-			} catch (InterruptedException ex){
-				proc.destroy();
-				throw new Exception("Interrupted (1)");
+			final Process proc = rt.exec(cmd);
+			final Vector<LevelResult> resultVector = new Vector<LevelResult>(1); //this has no other reason than to hack around the fact that an internal class needs to have all variables it uses declared as final
+			final Vector<Exception> errors = new Vector<Exception>(); //same reason as above
+			new Thread() {
+				@Override
+				public void run() {
+					try {
+						resultVector.add(new UppaalModelAnalyserFasterConcrete.VariablesInterpreterConcrete(monitor).analyse(m, proc.getErrorStream(), timeTo));
+					} catch (Exception e) {
+						errors.add(e);
+					}
+				}
+			}.start();
+			if (runAction != null) {
+				taskStatus = 0;
+				new Thread() { //wait for the process to end correctly
+					@Override
+					public void run() {
+						try {
+							proc.waitFor();
+						} catch (InterruptedException ex) {
+							taskStatus = 2;
+						}
+						taskStatus = 1;
+					}
+				}.start();
+				new Thread() { //wait for the process to end by user cancellation
+					@Override
+					public void run() {
+						while (taskStatus == 0) {
+							if (runAction.needToStop()) {
+								taskStatus = 2;
+								return;
+							}
+							try {
+								Thread.sleep(500);
+							} catch (InterruptedException e) {
+								
+							}
+						}
+					}
+				}.start();
+				while (taskStatus == 0) {
+					Thread.sleep(100);
+				}
+				if (taskStatus == 2) {
+					throw new AnalysisException("User interrupted");
+				}
+				while (resultVector.isEmpty()) { //if the verifyta process is completed, we may still need to wait for the analysis thread to complete
+					Thread.sleep(100);
+				}
+			} else {
+				try {
+					proc.waitFor();
+				} catch (InterruptedException ex){
+					proc.destroy();
+					throw new Exception("Interrupted (1)");
+				}
 			}
+			if (!errors.isEmpty()) {
+				Exception ex = errors.firstElement();
+				throw new AnalysisException("Error during analysis", ex);
+			}
+			result = resultVector.firstElement();
 			if (proc.exitValue() != 0) {
 				StringBuilder errorBuilder = new StringBuilder();
 				errorBuilder.append("[" + nomeFileModello + "] Verify result: " + proc.exitValue() + "\n");
@@ -222,66 +308,6 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			proc.getErrorStream().close();
 			proc.getInputStream().close();
 			proc.getOutputStream().close();
-			//t = System.currentTimeMillis();
-			//System.out.println("Executed " + cmd[0] + " " + cmd[1] + " " + cmd[2] + " in " + (t-t0) + " ms.");
-			
-			if (areWeUnderWindows()) {
-				cmd[0] = "cmd";
-				cmd[1] = "/c";
-				cmd[2] = " \"" + verifytaPath + "\"";
-			} else {
-				cmd[0] = "bash";
-				cmd[1] = "-c";
-				cmd[2] = verifytaPath;				
-			}
-			cmd[2] += " -t0 -o2 \"" + nomeFileModello + "\" - | ";
-			if (areWeUnderWindows()) {
-				if (!new File(tracerPath).exists()) {
-					throw new FileNotFoundException("Cannot locate tracer executable! (tried in " + tracerPath + ")");
-				}
-				cmd[2] += " \"" + tracerPath + "\"";
-			} else {
-				if (!new File(tracerPath).exists()) {
-					throw new FileNotFoundException("Cannot locate tracer executable! (tried in " + tracerPath + ")");
-				}
-				cmd[2] += tracerPath;				
-			}
-			cmd[2] += " - " + prefix + "-1.xtr";
-			new File(prefix + "-1.xtr").deleteOnExit();
-			//t0 = System.currentTimeMillis();
-			if (monitor != null) {
-				monitor.setStatus("Analysing UPPAAL output trace.");
-			}
-			proc = rt.exec(cmd, new String[]{"UPPAAL_COMPILE_ONLY=TRUE"});
-			result = new UppaalModelAnalyserFaster.VariablesInterpreter().analyse(m, proc.getInputStream(), timeTo);
-			try {
-				proc.waitFor();
-			} catch (InterruptedException ex) {
-				proc.destroy();
-				throw new Exception("Interrupted (2)");
-			}
-			if (proc.exitValue() != 0) {
-				StringBuilder errorBuilder = new StringBuilder();
-				errorBuilder.append(cmd[0] + cmd[1] + cmd[2] + " failed.");
-				errorBuilder.append("[" + nomeFileModello + "] Tracer result: " + proc.exitValue() + "\n");
-				BufferedReader br = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-				String line = null;
-				while ((line = br.readLine()) != null) {
-					errorBuilder.append(line + "\n");
-				}
-				errorBuilder.append(" (current directory: " + new File(".").getAbsolutePath() + ")\n");
-				throw new Exception(errorBuilder.toString());
-			}
-			//N B: it is responsibility of the caller to close all streams when the process is done!!!
-			proc.getErrorStream().close();
-			proc.getInputStream().close();
-			proc.getOutputStream().close();
-			//t = System.currentTimeMillis();
-			//System.out.println("Executed " + cmd[0] + " " + cmd[1] + " " + cmd[2] + " in " + (t-t0) + " ms.");
-			new File("output" + inputUppaalNoExtension + "-1.xtr").delete();
-			
-			
-			//System.err.println(averageCSV.getAbsolutePath() + " --> " + nomeFileModello);
 			
 		} catch (Exception e) {
 			throw new AnalysisException("Error during analysis", e);
@@ -295,9 +321,15 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 	}
 	
 	
-	
 	//This is slightly different from the "official" one in the sense that it reads data directly from the input stream. This way, we don't have to read the whole stream to a string (with the consequent waste of memory) before giving an input to the interpreter
-	public class VariablesInterpreter {
+	public class VariablesInterpreterConcrete {
+		
+		private TaskMonitor monitor = null;
+		
+		public VariablesInterpreterConcrete(TaskMonitor monitor) {
+			this.monitor = monitor;
+		}
+		
 
 		public SMCResult analyseSMC(Model m, InputStream smcOutput) throws Exception {
 			BufferedReader br = new BufferedReader(new InputStreamReader(smcOutput));
@@ -387,14 +419,13 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			return confidence;
 		}
 		
+		
 		public LevelResult analyse(Model m, InputStream output, int timeTo) throws Exception {
 			Map<String, SortedMap<Double, Double>> levels = new HashMap<String, SortedMap<Double, Double>>();
 
 			BufferedReader br = new BufferedReader(new InputStreamReader(output));
 			String line = null;
-			Pattern globalTimePattern = Pattern.compile("t\\(0\\)-globalTime<[=]?[-]?[0-9]+");
-			//Pattern tempoP = Pattern.compile("<[=]?[-]?[0-9]+");
-			//Pattern cronometroPattern = Pattern.compile("Crono[.]metro[' ']*[=][' ']*[-]?[0-9]+");
+			Pattern globalTimePattern = Pattern.compile("globalTime[=][0-9]+");
 			Pattern statePattern = Pattern.compile("[A-Za-z0-9_]+[' ']*[=][' ']*[0-9]+");
 			int time = 0;
 			int maxNumberOfLevels = m.getProperties().get("levels").as(Integer.class);
@@ -403,6 +434,8 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			while ((line = br.readLine()) != null) {
 				if (!line.startsWith("State"))
 					continue;
+				line = br.readLine(); //the "State:" string has a \n at the end, so we need to read the next line
+				line = br.readLine(); //the second line contains informations about which we don't care. We want variable values
 				Matcher stateMatcher = statePattern.matcher(line);
 				String s = null;
 				while (stateMatcher.find()) {
@@ -410,12 +443,12 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 					if (s.contains("_nonofficial") || s.contains("counter") || s.contains("metro"))
 						continue;
 					String reactantId = null;
-					if (s.indexOf(' ') < s.indexOf('=')) {
+					if (s.indexOf(' ') >= 0 && s.indexOf(' ') < s.indexOf('=')) {
 						reactantId = s.substring(0, s.indexOf(' '));
 					} else {
 						reactantId = s.substring(0, s.indexOf('='));
 					}
-					if (reactantId.equals("r") || reactantId.equals("r1") || reactantId.equals("r2")) continue; //private variables are not taken into account
+					if (reactantId.equals("c") || reactantId.equals("globalTime") || reactantId.equals("r") || reactantId.equals("r1") || reactantId.equals("r2")) continue; //private variables are not taken into account
 					// put the reactant into the result map
 					levels.put(reactantId, new TreeMap<Double, Double>());
 				}
@@ -452,35 +485,28 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 					levels.get(r.getId()).put(0.0, initialLevel);
 				}
 			}
+			
+			if (monitor != null) {
+				monitor.setStatus("Analysing UPPAAL output trace.");
+			}
 
 			String oldLine = null;
 			while ((line = br.readLine()) != null) {
-				while (!(line.startsWith("Transition") && line.contains("update?"))) { //wait until the next time we update all the official variables
+				/*while (line != null && !line.contains("inform_reacting")) {
 					line = br.readLine();
-					if (line == null) break;
 				}
-				if (line == null) break;
-				br.readLine(); //riga vuota
-				line = br.readLine();
-				if (line == null) break;
-				/*if (!line.startsWith("State") || !line.contains("Coord.updated"))
-					continue;*/
+				while ((line = br.readLine()) != null) {
+					if (line.startsWith("State")) break;
+				}
+				if (line == null) break;*/
+				if (!line.startsWith("State")) continue;
+				br.readLine(); //as said before, the "State:" string ends with \n, so we need to read the next line in order to get the actual state data
+				line = br.readLine(); //and the line after that contains only the states of the processes, while we are interested in variable values, which are in the 3rd line
 				Matcher timeMatcher = globalTimePattern.matcher(line);
-				//Matcher timeMatcher = cronometroPattern.matcher(line);
 				if (oldLine == null)
 					oldLine = line;
-				/*
-				 * As sometimes the time is very difficult to guess (the values of clocks are NEVER explicitly present in UPPAAL traces)
-				 * we look for the part of the line where all clock values are "hinted" showing the differences between clocks
-				 * The meaning of t(0) is not very clear, but it surely is one of the first things you see when the trace starts to
-				 * list clock values.
-				 * We suppose that each of the differences shown in this way is never higher than the actual value of globalTime
-				 * (the clock telling us the "time of the simulation"). So, we simply look in this part of the line for all the values of
-				 * clock differences, and take the largest one as "as good an approximation as we can get" for the current value of globalTime. 
-				 */
-				if (timeMatcher.find()) {//line.contains("t(0)")) {
-					String value = (timeMatcher.group().split("<")[1]);
-					//String value = (timeMatcher.group().split(" = ")[1]);
+				if (timeMatcher.find()) {
+					String value = (timeMatcher.group().split("=")[1]);
 					int newTime = -1;
 					if (value.substring(0, 1).equals("=")) {
 						if (value.substring(1, 2).equals("-")) {
@@ -495,30 +521,7 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 							newTime = Integer.parseInt(value.substring(0, value.length())) + 1;
 						}
 					}
-					/*String parteCoiTempi = line.substring(line.indexOf("t(0)"));
-					Matcher tempoM = tempoP.matcher(parteCoiTempi);
-					int max = 0;
-					while (tempoM.find()) {
-						String value = tempoM.group();
-						if (value == null || value.equals("")) continue;
-						value = value.substring(1); //skipping "<"
-						int tempo = -1;
-						if (value.substring(0, 1).equals("=")) {
-							if (value.substring(1, 2).equals("-")) {
-								tempo = Integer.parseInt(value.substring(2, value.length()));
-							} else {
-								tempo = Integer.parseInt(value.substring(1, value.length()));
-							}
-						} else {
-							if (value.substring(0, 1).equals("-")) {
-								tempo = Integer.parseInt(value.substring(1, value.length())) + 1;
-							} else {
-								tempo = Integer.parseInt(value.substring(0, value.length())) + 1;
-							}
-						}
-						if (tempo > max) max = tempo;
-					}
-					int newTime = max;*/
+					
 					if (time < newTime) {
 						time = newTime;
 						// we now know the time
@@ -529,12 +532,12 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 							if (s.contains("_nonofficial") || s.contains("counter") || s.contains("metro"))
 								continue;
 							String reactantId = null;
-							if (s.indexOf(' ') < s.indexOf('=')) {
+							if (s.indexOf(' ') >= 0 && s.indexOf(' ') < s.indexOf('=')) {
 								reactantId = s.substring(0, s.indexOf(' '));
 							} else {
 								reactantId = s.substring(0, s.indexOf('='));
 							}
-							if (reactantId.equals("r") || reactantId.equals("r1") || reactantId.equals("r2") || numberOfLevels.get(reactantId) == null) continue; //we check whether it is a private variable
+							if (reactantId.equals("c") || reactantId.equals("globalTime") || reactantId.equals("r") || reactantId.equals("r1") || reactantId.equals("r2") || numberOfLevels.get(reactantId) == null) continue; //we check whether it is a private variable
 							// we can determine the level of activation
 							int level = Integer.valueOf(s.substring(s.indexOf("=") + 1).trim());
 							if (numberOfLevels.get(reactantId) != maxNumberOfLevels) {
@@ -569,5 +572,4 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			return new SimpleLevelResult(levels);
 		}
 	}
-	
 }

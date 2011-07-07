@@ -5,7 +5,7 @@ import giny.model.Node;
 import inat.analyser.LevelResult;
 import inat.analyser.SMCResult;
 import inat.analyser.uppaal.ResultAverager;
-import inat.analyser.uppaal.UppaalModelAnalyserFaster;
+import inat.analyser.uppaal.UppaalModelAnalyserFasterConcrete;
 import inat.analyser.uppaal.VariablesModel;
 import inat.exceptions.InatException;
 import inat.model.Model;
@@ -71,6 +71,8 @@ public class RunAction extends CytoscapeAction {
 	private JCheckBox computeStdDev;
 	private JFormattedTextField timeToFormula, nSimulationRuns;
 	private JTextField serverName, serverPort, smcFormula;
+	private boolean needToStop;
+	private RunAction meStesso;
 	
 	/**
 	 * Constructor.
@@ -87,6 +89,7 @@ public class RunAction extends CytoscapeAction {
 		this.nSimulationRuns = nSimulationRuns;
 		this.computeStdDev = computeStdDev;
 		this.smcFormula = smcFormula;
+		this.meStesso = this;
 	}
 
 	@Override
@@ -107,6 +110,10 @@ public class RunAction extends CytoscapeAction {
 		// Execute Task in New Thread; pops open JTask Dialog Box.
 		TaskManager.executeTask(task, jTaskConfig);
 	}
+	
+	public boolean needToStop() {
+		return this.needToStop;
+	}
 
 	private class RunTask implements Task {
 
@@ -124,12 +131,13 @@ public class RunAction extends CytoscapeAction {
 
 		@Override
 		public void halt() {
-			// not implemented
+			needToStop = true;
 		}
 
 		@Override
 		public void run() {
 			try {
+				needToStop = false;
 				
 				this.monitor.setStatus("Creating model representation");
 				this.monitor.setPercentCompleted(0);
@@ -197,7 +205,7 @@ public class RunAction extends CytoscapeAction {
 				UPPAALClient client = new UPPAALClient(serverName.getText(), Integer.parseInt(serverPort.getText()));
 				result = client.analyzeSMC(model, probabilisticFormula);
 			} else {
-				result = new UppaalModelAnalyserFaster(monitor).analyzeSMC(model, probabilisticFormula);
+				result = new UppaalModelAnalyserFasterConcrete(monitor, meStesso).analyzeSMC(model, probabilisticFormula);
 			}
 			
 			SwingUtilities.invokeLater(new Runnable() {
@@ -264,9 +272,9 @@ public class RunAction extends CytoscapeAction {
 					} catch (Exception e) {
 						throw new Exception("Unable to understand the number of requested simulations.");
 					}
-					result = new ResultAverager(monitor).analyzeAverage(model, timeTo, nSims, computeStdDev.isSelected());
+					result = new ResultAverager(monitor, meStesso).analyzeAverage(model, timeTo, nSims, computeStdDev.isSelected());
 				} else {
-					result = new UppaalModelAnalyserFaster(monitor).analyze(model, timeTo);
+					result = new UppaalModelAnalyserFasterConcrete(monitor, meStesso).analyze(model, timeTo);
 				}
 			}
 

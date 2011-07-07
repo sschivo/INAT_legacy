@@ -4,7 +4,7 @@ import inat.InatBackend;
 import inat.analyser.LevelResult;
 import inat.analyser.SMCResult;
 import inat.analyser.uppaal.ResultAverager;
-import inat.analyser.uppaal.UppaalModelAnalyserFaster;
+import inat.analyser.uppaal.UppaalModelAnalyserFasterConcrete;
 import inat.model.Model;
 
 import java.io.File;
@@ -36,9 +36,9 @@ public class UPPAALServer extends UnicastRemoteObject implements iUPPAALServer {
 		System.out.println(df.format(new Date(System.currentTimeMillis())) + " Analysing \"normal\" model with simulation up to " + timeTo);
 		LevelResult result;
 		if (nSimulationRuns > 1) {
-			result = new ResultAverager(null).analyzeAverage(m, timeTo, nSimulationRuns, computeStdDev);
+			result = new ResultAverager(null, null).analyzeAverage(m, timeTo, nSimulationRuns, computeStdDev);
 		} else {
-			result = new UppaalModelAnalyserFaster(null).analyze(m, timeTo);
+			result = new UppaalModelAnalyserFasterConcrete(null, null).analyze(m, timeTo);
 		}
 		System.out.println(df.format(new Date(System.currentTimeMillis())) + " Done.");
 		System.out.println();
@@ -48,7 +48,7 @@ public class UPPAALServer extends UnicastRemoteObject implements iUPPAALServer {
 	@Override
 	public SMCResult analyze(Model m, String smcQuery) throws Exception {
 		System.out.println(df.format(new Date(System.currentTimeMillis())) + " Analysing \"SMC\" model with query " + smcQuery);
-		SMCResult result = new UppaalModelAnalyserFaster(null).analyzeSMC(m, smcQuery);
+		SMCResult result = new UppaalModelAnalyserFasterConcrete(null, null).analyzeSMC(m, smcQuery);
 		System.out.println(df.format(new Date(System.currentTimeMillis())) + " Done.");
 		System.out.println();
 		return result;
