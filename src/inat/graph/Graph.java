@@ -52,6 +52,8 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 								EXPORT_VISIBLE_LABEL = "Export visible as CSV...",
 								CLEAR_LABEL = "Clear Data",
 								INTERVAL_LABEL = "Graph interval...",
+								ZOOM_RECTANGLE_LABEL = "Zoom rectangle",
+								ZOOM_EXTENTS_LABEL = "Zoom extents",
 								CLOSE_LABEL = "Close",
 								CSV_FILE_EXTENSION = ".csv",
 								CSV_FILE_DESCRIPTION = "CSV file",
@@ -73,6 +75,9 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	private Rectangle legendBounds = null; //Where the legend is, and what are its dimensions
 	private boolean customLegendPosition = false;
 	private boolean movingLegend = false; //If the user is currently dragging the legend (left mouse button down)
+	private boolean drawingZoomRectangle = false; //If the user is using the rectangle-based zoom, and is now drawing the rectangle, this is true
+	private Rectangle zoomExtentsBounds = null; //We put here the bounds we find when performing the zoom rectangle. This way, when the user asks for "zoom back" we show them these bounds
+	private Rectangle zoomRectangleBounds = null; //The bounds inside which to draw the zoom rectangle when showing it to the user
 	private int oldLegendX = 0, oldLegendY = 0; //Used to move the legend
 	private int SCALA = 1; //used to implement some kind of "zooming" (see the events related to mouse wheel)
 	private final int BORDER_X = 25, BORDER_Y = 25; //width of the border around the graph area (in pixel). Notice that it is scaled with SCALA, like all other constants for the drawing
@@ -91,24 +96,32 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		JMenuItem export = new JMenuItem(EXPORT_VISIBLE_LABEL);
 		JMenuItem clear = new JMenuItem(CLEAR_LABEL);
 		JMenuItem newInterval = new JMenuItem(INTERVAL_LABEL);
+		JMenuItem zoomRectangle = new JMenuItem(ZOOM_RECTANGLE_LABEL);
+		JMenuItem zoomExtents = new JMenuItem(ZOOM_EXTENTS_LABEL);
 		JMenuItem close = new JMenuItem(CLOSE_LABEL);
 		open.addActionListener(this);
 		save.addActionListener(this);
 		export.addActionListener(this);
 		clear.addActionListener(this);
 		newInterval.addActionListener(this);
+		zoomRectangle.addActionListener(this);
+		zoomExtents.addActionListener(this);
 		close.addActionListener(this);
 		popupMenu.add(open);
 		popupMenu.add(save);
 		popupMenu.add(export);
 		popupMenu.add(clear);
 		popupMenu.add(newInterval);
+		popupMenu.add(zoomRectangle);
+		popupMenu.add(zoomExtents);
 		//popupMenu.addSeparator();
 		//popupMenu.add(close);
 		this.add(popupMenu);
 		customLegendPosition = false;
 		movingLegend = false;
 		legendBounds = null;
+		drawingZoomRectangle = false;
+		zoomRectangleBounds = null;
 	}
 	
 	/*
@@ -414,6 +427,14 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		g.setStroke(oldStroke);
 	}
 	
+	public void drawZoomRectangle(Graphics2D g) {
+		Stroke oldStroke = g.getStroke();
+		float dash[] = { 10.0f * SCALA };
+		g.setStroke(new BasicStroke(1.0f * SCALA, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f * SCALA, dash, 0.0f));
+		g.draw(zoomRectangleBounds);
+		g.setStroke(oldStroke);
+	}
+	
 	public void paint(Graphics g1) {
 		Graphics2D g = (Graphics2D)g1;
 		Font fintus = g.getFont();
@@ -481,6 +502,10 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		
 		
 		drawAxes(g, bounds);
+		
+		if (drawingZoomRectangle) {
+			drawZoomRectangle(g);
+		}
 
 		g.setStroke(oldStroke);
 		g.setFont(fintus);
@@ -748,6 +773,14 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		scale.setMinY(new Double(minY));
 		scale.setMaxY(new Double(maxY));
 	}
+	
+	//Simply the string version of the one above. If the numbers in the strings are actually not numbers, I am sorry for the user.
+	public void setDrawArea(String minX, String maxX, String minY, String maxY) {
+		scale.setMinX(new Double(minX));
+		scale.setMaxX(new Double(maxX));
+		scale.setMinY(new Double(minY));
+		scale.setMaxY(new Double(maxY));
+	}
 
 	/*
 	 * Used only for testing purposes
@@ -912,6 +945,12 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 			oldLegendX = legendBounds.x - e.getX();
 			oldLegendY = legendBounds.y - e.getY();
 			movingLegend = true;
+		} else if (e.getButton() == MouseEvent.BUTTON1 && zoomRectangleBounds != null) {
+			drawingZoomRectangle = true;
+			zoomRectangleBounds.x = e.getX();
+			zoomRectangleBounds.y = e.getY();
+			zoomRectangleBounds.width = 0;
+			zoomRectangleBounds.height = 0;
 		}
 	}
 
@@ -920,6 +959,21 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 			legendBounds.x = oldLegendX + e.getX();
 			legendBounds.y = oldLegendY + e.getY();
 			movingLegend = false;
+			this.repaint();
+		} else if (drawingZoomRectangle) {
+			int minimumX = Math.min(zoomRectangleBounds.x, e.getX()), //this (I hope) allows the user to draw the rectangle also "backwards" (i.e. not necessarily from top-left to bottom-right)
+				maximumX = Math.max(zoomRectangleBounds.x, e.getX()),
+				minimumY = Math.min(zoomRectangleBounds.y, e.getY()),
+				maximumY = Math.max(zoomRectangleBounds.y, e.getY());
+			if (zoomExtentsBounds == null) {
+				zoomExtentsBounds = new Rectangle((int)scale.getMinX(), (int)scale.getMinY(), (int)scale.getMaxX(), (int)scale.getMaxY());
+			} else {
+				//there is already the starting measure
+			}
+			this.setDrawArea((int)(minimumX / scale.getXScale()), (int)(maximumX / scale.getXScale()), (int)(minimumY / scale.getYScale()), (int)(maximumY / scale.getYScale()));
+			zoomRectangleBounds = null;
+			drawingZoomRectangle = false;
+			this.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 			this.repaint();
 		}
 	}
@@ -931,12 +985,18 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 			oldLegendX = legendBounds.x - e.getX();
 			oldLegendY = legendBounds.y - e.getY();
 			this.repaint();
+		} else if (drawingZoomRectangle) {
+			zoomRectangleBounds.width = e.getX() - zoomRectangleBounds.x;
+			zoomRectangleBounds.height = e.getY() - zoomRectangleBounds.y;
+			this.repaint();
 		}
 	}
 
 	public void mouseMoved(MouseEvent e) {
 		if (legendBounds != null && showLegend && legendBounds.contains(e.getX(), e.getY())) {
 			this.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		} else if (zoomRectangleBounds != null) {
+			this.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
 		} else {
 			this.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
@@ -1003,14 +1063,25 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 				if (valMinY == null) return;
 				String valMaxY = JOptionPane.showInputDialog(this, "Give the value of maximum Y", scale.getMaxY());
 				if (valMaxY == null) return;
-				scale.setMinX(new Double(valMinX));
+				this.setDrawArea(valMinX, valMaxX, valMinY, valMaxY);
+				/*scale.setMinX(new Double(valMinX));
 				scale.setMaxX(new Double(valMaxX));
 				scale.setMinY(new Double(valMinY));
-				scale.setMaxY(new Double(valMaxY));
+				scale.setMaxY(new Double(valMaxY));*/
 				this.repaint();
 			} else if (menu.getText().equals(CLOSE_LABEL)) {
 				//findJFrame(this).setVisible(false);
 				findJFrame(this).dispose();
+			} else if (menu.getText().equals(ZOOM_RECTANGLE_LABEL)) {
+				zoomRectangleBounds = new Rectangle(0, 0, 0, 0);
+				this.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+			} else if (menu.getText().equals(ZOOM_EXTENTS_LABEL)) {
+				if (zoomExtentsBounds != null) {
+					this.setDrawArea(zoomExtentsBounds.x, zoomExtentsBounds.width, zoomExtentsBounds.y, zoomExtentsBounds.height);
+					this.repaint();
+				} else {
+					//do nothing
+				}
 			}
 		}
 	}
