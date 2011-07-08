@@ -20,6 +20,9 @@ import java.util.Set;
  * @author Stefano Schivo
  */
 public class CsvWriter {
+	private static final String REACTANT_NAME = Model.Properties.REACTANT_NAME,
+								ALIAS = Model.Properties.ALIAS;
+
 	/**
 	 * Outputs the given {@link LevelResult} to a CSV formatted file.
 	 * 
@@ -62,9 +65,9 @@ public class CsvWriter {
 		bw.write("Time (min)");
 		for (String rid : rids) {
 			// determine official name and output it
-			Property name = m.getReactant(rid).get("alias"); //if an alias is set, we prefer it
+			Property name = m.getReactant(rid).get(ALIAS); //if an alias is set, we prefer it
 			if (name == null) {
-				name = m.getReactant(rid).get("name");
+				name = m.getReactant(rid).get(REACTANT_NAME);
 			}
 			bw.write(", " + name.as(String.class));
 		}

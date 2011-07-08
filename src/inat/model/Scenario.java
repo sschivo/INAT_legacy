@@ -6,6 +6,11 @@ import java.util.*;
  * There are 3 predefined scenarios, each one with its set of parameters.
  */
 public class Scenario {
+	private static final String SCENARIO_PARAMETER_KM = Model.Properties.SCENARIO_PARAMETER_KM,
+								SCENARIO_PARAMETER_K2 = Model.Properties.SCENARIO_PARAMETER_K2,
+								SCENARIO_PARAMETER_STOT = Model.Properties.SCENARIO_PARAMETER_STOT,
+								SCENARIO_PARAMETER_K2_KM = Model.Properties.SCENARIO_PARAMETER_K2_KM,
+								SCENARIO_ONLY_PARAMETER = Model.Properties.SCENARIO_ONLY_PARAMETER;
 	protected HashMap<String, Double> parameters = new HashMap<String, Double>(); //Parameter name -> value
 	public static final int INFINITE_TIME = -1; //The constant to mean that the reaction will not happen
 	
@@ -14,7 +19,7 @@ public class Scenario {
 	static {
 		sixScenarios[0] = new Scenario() {
 			public int computeFormula(int r1Level, int r2Level) {
-				double par = parameters.get("parameter"),
+				double par = parameters.get(SCENARIO_ONLY_PARAMETER),
 					   E = r1Level;
 				double rate = par * E;
 				if (rate != 0) {
@@ -25,19 +30,19 @@ public class Scenario {
 			}
 			
 			public String[] listVariableParameters() {
-				return new String[]{"parameter"};
+				return new String[]{SCENARIO_ONLY_PARAMETER};
 			}
 			
 			public String toString() {
 				return "Scenario 1-2-3-4";
 			}
 		};
-		sixScenarios[0].setParameter("parameter", 0.01);
+		sixScenarios[0].setParameter(SCENARIO_ONLY_PARAMETER, 0.01);
 		
 		sixScenarios[1] = new Scenario() {
 			public int computeFormula(int r1Level, int r2Level) {
-				double par1 = parameters.get("k2/km"),
-					   Stot = parameters.get("Stot"),
+				double par1 = parameters.get(SCENARIO_PARAMETER_K2_KM),
+					   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
 					   S = Stot - r2Level,
 					   E = r1Level;
 				double rate = par1 * E * S;
@@ -49,23 +54,23 @@ public class Scenario {
 			}
 			
 			public String[] listVariableParameters() {
-				return new String[]{"k2/km", "Stot"};
+				return new String[]{SCENARIO_PARAMETER_K2_KM, SCENARIO_PARAMETER_STOT};
 			}
 			
 			public String toString() {
 				return "Scenario 5";
 			}
 		};
-		sixScenarios[1].setParameter("k2/km", 0.001);
-		sixScenarios[1].setParameter("Stot", 15.0);
+		sixScenarios[1].setParameter(SCENARIO_PARAMETER_K2_KM, 0.001);
+		sixScenarios[1].setParameter(SCENARIO_PARAMETER_STOT, 15.0);
 		
 		sixScenarios[2] = new Scenario() {
 			public int computeFormula(int r1Level, int r2Level) {
-				double k2 = parameters.get("k2"),
+				double k2 = parameters.get(SCENARIO_PARAMETER_K2),
 					   E = (double)r1Level,
-					   Stot = parameters.get("Stot"),
+					   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
 					   S = Stot - r2Level,
-					   km = parameters.get("km");
+					   km = parameters.get(SCENARIO_PARAMETER_KM);
 				double rate = k2 * E * S / (km + S);
 				if (rate != 0) {
 					return Math.max(1, (int)Math.round(1 / rate));
@@ -75,16 +80,16 @@ public class Scenario {
 			}
 			
 			public String[] listVariableParameters() {
-				return new String[]{"k2", "km", "Stot"};
+				return new String[]{SCENARIO_PARAMETER_K2, SCENARIO_PARAMETER_KM, SCENARIO_PARAMETER_STOT};
 			}
 			
 			public String toString() {
 				return "Scenario 6";
 			}
 		};
-		sixScenarios[2].setParameter("k2", 0.01);
-		sixScenarios[2].setParameter("km", 10.0);
-		sixScenarios[2].setParameter("Stot", 15.0);
+		sixScenarios[2].setParameter(SCENARIO_PARAMETER_K2, 0.01);
+		sixScenarios[2].setParameter(SCENARIO_PARAMETER_KM, 10.0);
+		sixScenarios[2].setParameter(SCENARIO_PARAMETER_STOT, 15.0);
 	}
 	
 	public Scenario() {
@@ -112,10 +117,10 @@ public class Scenario {
 	//We advise to call super.computeFormula at the end of the extended method, as this
 	//is the "official" complete formula.
 	protected int computeFormula(int r1Level, int r2Level) {
-		double k2 = parameters.get("k2"),
+		double k2 = parameters.get(SCENARIO_PARAMETER_K2),
 			   E = r1Level,
-			   km = parameters.get("km"),
-			   Stot = parameters.get("Stot"),
+			   km = parameters.get(SCENARIO_PARAMETER_KM),
+			   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
 			   S = Stot - r2Level;
 		double rate = k2 * E * S / (km + S);
 		if (rate > 1e-8) {

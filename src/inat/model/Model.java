@@ -1,6 +1,3 @@
-/**
- * 
- */
 package inat.model;
 
 import java.io.Serializable;
@@ -17,6 +14,34 @@ import java.util.Map;
  * @author B. Wanders
  */
 public class Model implements Serializable {
+	public static class Properties {
+		public static final String NUMBER_OF_LEVELS = "levels", //Property that can belong to a node or to a network. If related to a single node, it represents the maximum number of levels for that single reactant. If related to a complete network, it is the maximum value of the NUMBER_OF_LEVELS property among all nodes in the network. Expressed as integer number in [0, 100] (chosen by the user).
+								   INITIAL_LEVEL = "initialConcentration", //Property belonging to a node. The initial activity level for a node. Expressed as an integer number in [0, NUMBER_OF_LEVELS for that node]
+								   SHOWN_LEVEL = "activityRatio", //Property belonging to a node. The current activity level of a node. Expressed as a relative number representing INITIAL_LEVEL / NUMBER_OF_LEVELS, so it is a double number in [0, 1]
+								   SECONDS_PER_POINT = "seconds per point", //Property belonging to a network. The number of real-life seconds represented by a single UPPAAL time unit.
+								   SCENARIO = "scenario", //Property belonging to an edge. The id of the scenario on which the reaction corresponding to the edge computes its time tables.
+								   ALIAS = "alias", //The property used to indicate the user-chosen name of a node
+								   ENABLED = "enabled", //Tells us whether a node/edge is enabled
+								   GROUP = "group", //A group of nodes identifies alternative phosphorylation sites (can be useless)
+								   TIMES_UPPER = "timesU", //Upper time bound
+								   TIMES = "times", //Time bound (no upper nor lower: it is possible that it is never be used in practice)
+								   TIMES_LOWER = "timesL", //Lower time bound
+								   INCREMENT = "increment", //Increment in substrate as effect of the reaction (+1, -1, etc)
+								   BI_REACTION = "reaction2", //Reaction between two reactants (substrate/reactant and catalyst)
+								   MONO_REACTION = "reaction1", //Reaction with only one reactant
+								   REACTANT = "reactant", //The reactant for a mono-reaction or the substrate for a bi-reaction
+								   REACTANT_NAME = "name", //The name of the reactant (possibly outdated property name)
+								   REACTION_TYPE = "type", //Type of reaction (mono, bi)
+								   CATALYST = "catalyst", //Catalyst in a bi-reaction
+								   REACTANT_INDEX = "index", //The index of the reactant (sometimes we need to assign them an index)
+								   SCENARIO_PARAMETER_KM = "km", //The following are all scenario parameters
+								   SCENARIO_PARAMETER_K2 = "k2",
+								   SCENARIO_PARAMETER_STOT = "Stot",
+								   SCENARIO_PARAMETER_K2_KM = "k2/km",
+								   SCENARIO_ONLY_PARAMETER = "parameter";
+	}
+
+	
 	private static final long serialVersionUID = 9078409933212069999L;
 	/**
 	 * The vertices in the model.

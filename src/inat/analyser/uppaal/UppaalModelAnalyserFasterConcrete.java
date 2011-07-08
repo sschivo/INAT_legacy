@@ -360,6 +360,9 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 	//This is slightly different from the "official" one in the sense that it reads data directly from the input stream. This way, we don't have to read the whole stream to a string (with the consequent waste of memory) before giving an input to the interpreter
 	public class VariablesInterpreterConcrete {
 		
+		private static final String INITIAL_LEVEL = Model.Properties.INITIAL_LEVEL;
+		private static final String ALIAS = Model.Properties.ALIAS;
+		private static final String NUMBER_OF_LEVELS = Model.Properties.NUMBER_OF_LEVELS;
 		private TaskMonitor monitor = null;
 		
 		public VariablesInterpreterConcrete(TaskMonitor monitor) {
@@ -497,7 +500,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 			Pattern globalTimePattern = Pattern.compile("globalTime[=][0-9]+");
 			Pattern statePattern = Pattern.compile("[A-Za-z0-9_]+[' ']*[=][' ']*[0-9]+");
 			int time = 0;
-			int maxNumberOfLevels = m.getProperties().get("levels").as(Integer.class);
+			int maxNumberOfLevels = m.getProperties().get(NUMBER_OF_LEVELS).as(Integer.class);
 			HashMap<String, Double> numberOfLevels = new HashMap<String, Double>();
 
 			while ((line = br.readLine()) != null) {
@@ -526,9 +529,9 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 
 			// add initial concentrations and get number of levels
 			for (Reactant r : m.getReactants()) {
-				Integer nLvl = r.get("levels").as(Integer.class);
+				Integer nLvl = r.get(NUMBER_OF_LEVELS).as(Integer.class);
 				if (nLvl == null) {
-					Property nameO = r.get("alias");
+					Property nameO = r.get(ALIAS);
 					String name;
 					if (nameO == null) {
 						name = r.getId();
@@ -549,7 +552,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 				numberOfLevels.put(r.getId(), (double)nLvl);
 				
 				if (levels.containsKey(r.getId())) {
-					double initialLevel = r.get("initialConcentration").as(Integer.class);
+					double initialLevel = r.get(INITIAL_LEVEL).as(Integer.class);
 					initialLevel = initialLevel / (double)nLvl * (double)maxNumberOfLevels; //of course, the initial "concentration" itself needs to be rescaled correctly
 					levels.get(r.getId()).put(0.0, initialLevel);
 				}

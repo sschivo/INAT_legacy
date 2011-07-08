@@ -32,9 +32,21 @@ import org.w3c.dom.Document;
  */
 public class VariablesModel implements ModelTransformer {
 
+	protected static final String CATALYST = Model.Properties.CATALYST,
+								NUMBER_OF_LEVELS = Model.Properties.NUMBER_OF_LEVELS,
+								TIMES_UPPER = Model.Properties.TIMES_UPPER,
+								TIMES = Model.Properties.TIMES,
+								TIMES_LOWER = Model.Properties.TIMES_LOWER,
+								INCREMENT = Model.Properties.INCREMENT,
+								BI_REACTION = Model.Properties.BI_REACTION,
+								MONO_REACTION = Model.Properties.MONO_REACTION,
+								REACTANT = Model.Properties.REACTANT,
+								REACTION_TYPE = Model.Properties.REACTION_TYPE,
+								ALIAS = Model.Properties.ALIAS,
+								ENABLED = Model.Properties.ENABLED,
+								GROUP = Model.Properties.GROUP,
+								INITIAL_LEVEL = Model.Properties.INITIAL_LEVEL;
 	public static final int INFINITE_TIME = -1;
-	public static final String ENABLED = "enabled",
-							   GROUP = "group";
 	protected static String newLine = System.getProperty("line.separator");
 	Map<String, Vector<Reactant>> groups = null;
 
@@ -179,45 +191,45 @@ public class VariablesModel implements ModelTransformer {
 	 * @return the name of the process
 	 */
 	protected String getReactionName(Reaction r) {
-		if (r.get("type").as(String.class).equals("reaction1")) {
+		if (r.get(REACTION_TYPE).as(String.class).equals(MONO_REACTION)) {
 			// reaction1 is assumed to be a degredation reaction
-			String reactantId = r.get("reactant").as(String.class);
+			String reactantId = r.get(REACTANT).as(String.class);
 			return reactantId + "_deg";
-		} else if (r.get("type").as(String.class).equals("reaction2")) {
-			String r1Id = r.get("catalyst").as(String.class);
-			String r2Id = r.get("reactant").as(String.class);
-			return r1Id + "_" + r2Id + "_r_" + ((r.get("increment").as(Integer.class) >= 0) ? "up" : "down");
+		} else if (r.get(REACTION_TYPE).as(String.class).equals(BI_REACTION)) {
+			String r1Id = r.get(CATALYST).as(String.class);
+			String r2Id = r.get(REACTANT).as(String.class);
+			return r1Id + "_" + r2Id + "_r_" + ((r.get(INCREMENT).as(Integer.class) >= 0) ? "up" : "down");
 		} else {
 			return null;
 		}
 	}
 
 	protected void appendReactionProcesses(StringBuilder out, Model m, Reaction r, int index) {
-		if (r.get("type").as(String.class).equals("reaction1")) {
-			String reactantId = r.get("reactant").as(String.class);
-			out.append("//Mono-reaction on " + reactantId + " (" + m.getReactant(reactantId).get("alias").as(String.class) + ")");
+		if (r.get(REACTION_TYPE).as(String.class).equals(MONO_REACTION)) {
+			String reactantId = r.get(REACTANT).as(String.class);
+			out.append("//Mono-reaction on " + reactantId + " (" + m.getReactant(reactantId).get(ALIAS).as(String.class) + ")");
 			out.append(newLine);
 			
 			Table timesL, timesU;
-			Property property = r.get("timesL");
+			Property property = r.get(TIMES_LOWER);
 			if (property != null) {
 				timesL = property.as(Table.class);
 			} else {
-				timesL = r.get("times").as(Table.class);
+				timesL = r.get(TIMES).as(Table.class);
 			}
-			property = r.get("timesU");
+			property = r.get(TIMES_UPPER);
 			if (property != null) {
 				timesU = property.as(Table.class);
 			} else {
-				timesU = r.get("times").as(Table.class);
+				timesU = r.get(TIMES).as(Table.class);
 			}
 			assert timesL.getColumnCount() == 1 : "Table LowerBound is (larger than one)-dimensional.";
 			assert timesU.getColumnCount() == 1 : "Table UpperBound is (larger than one)-dimensional.";
-			assert timesL.getRowCount() == m.getReactant(reactantId).get("levels").as(Integer.class) + 1 : "Incorrect number of rows in 'timesLower' table of '" + r + "'";
-			assert timesU.getRowCount() == m.getReactant(reactantId).get("levels").as(Integer.class) + 1 : "Incorrect number of rows in 'timesUpper' table of '" + r + "'";
+			assert timesL.getRowCount() == m.getReactant(reactantId).get(NUMBER_OF_LEVELS).as(Integer.class) + 1 : "Incorrect number of rows in 'timesLower' table of '" + r + "'";
+			assert timesU.getRowCount() == m.getReactant(reactantId).get(NUMBER_OF_LEVELS).as(Integer.class) + 1 : "Incorrect number of rows in 'timesUpper' table of '" + r + "'";
 			
 			// output times table constants for this reaction (lower bound)
-			out.append("const int " + reactantId + "_tLower[" + m.getReactant(reactantId).get("levels").as(Integer.class) + "+1] := {");
+			out.append("const int " + reactantId + "_tLower[" + m.getReactant(reactantId).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1] := {");
 			for (int i = 0; i < timesL.getRowCount() - 1; i++) {
 				out.append(formatTime(timesL.get(i, 0)) + ", ");
 			}
@@ -225,7 +237,7 @@ public class VariablesModel implements ModelTransformer {
 			out.append(newLine);
 			
 			// output times table constants for this reaction (upper bound)
-			out.append("const int " + reactantId + "_tUpper[" + m.getReactant(reactantId).get("levels").as(Integer.class) + "+1] := {");
+			out.append("const int " + reactantId + "_tUpper[" + m.getReactant(reactantId).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1] := {");
 			for (int i = 0; i < timesU.getRowCount() - 1; i++) {
 				out.append(formatTime(timesU.get(i, 0)) + ", ");
 			}
@@ -235,41 +247,41 @@ public class VariablesModel implements ModelTransformer {
 			// output reaction instantiation
 			final String name = getReactionName(r);
 			out.append(name + " = Reaction_" + reactantId + "(" + reactantId + ", " + reactantId + "_nonofficial, " + reactantId + "_tLower, "
-					+ reactantId + "_tUpper, " + r.get("increment").as(Integer.class) + ", update, reaction_happening[" + index + "], update_done[" + index + "]);");
+					+ reactantId + "_tUpper, " + r.get(INCREMENT).as(Integer.class) + ", update, reaction_happening[" + index + "], update_done[" + index + "]);");
 			out.append(newLine);
 			out.append(newLine);
 
-		} else if (r.get("type").as(String.class).equals("reaction2")) {
-			String r1Id = r.get("catalyst").as(String.class);
-			String r2Id = r.get("reactant").as(String.class);
-			out.append("//Reaction " + r1Id + " (" + m.getReactant(r1Id).get("alias").as(String.class) + ") " + (r.get("increment").as(Integer.class)>0?"-->":"--|") + " " + r2Id + " (" + m.getReactant(r2Id).get("alias").as(String.class) + ")");
+		} else if (r.get(REACTION_TYPE).as(String.class).equals(BI_REACTION)) {
+			String r1Id = r.get(CATALYST).as(String.class);
+			String r2Id = r.get(REACTANT).as(String.class);
+			out.append("//Reaction " + r1Id + " (" + m.getReactant(r1Id).get(ALIAS).as(String.class) + ") " + (r.get(INCREMENT).as(Integer.class)>0?"-->":"--|") + " " + r2Id + " (" + m.getReactant(r2Id).get(ALIAS).as(String.class) + ")");
 			out.append(newLine);
 			
 			Table timesL, timesU;
-			Property property = r.get("timesL");
+			Property property = r.get(TIMES_LOWER);
 			if (property != null) {
 				timesL = property.as(Table.class);
 			} else {
-				timesL = r.get("times").as(Table.class);
+				timesL = r.get(TIMES).as(Table.class);
 			}
-			property = r.get("timesU");
+			property = r.get(TIMES_UPPER);
 			if (property != null) {
 				timesU = property.as(Table.class);
 			} else {
-				timesU = r.get("times").as(Table.class);
+				timesU = r.get(TIMES).as(Table.class);
 			}
 
-			assert timesL.getRowCount() == m.getReactant(r2Id).get("levels").as(Integer.class) + 1 : "Incorrect number of rows in 'times lower' table of '"
+			assert timesL.getRowCount() == m.getReactant(r2Id).get(NUMBER_OF_LEVELS).as(Integer.class) + 1 : "Incorrect number of rows in 'times lower' table of '"
 					+ r + "'.";
-			assert timesU.getRowCount() == m.getReactant(r2Id).get("levels").as(Integer.class) + 1 : "Incorrect number of rows in 'times upper' table of '"
+			assert timesU.getRowCount() == m.getReactant(r2Id).get(NUMBER_OF_LEVELS).as(Integer.class) + 1 : "Incorrect number of rows in 'times upper' table of '"
 				+ r + "'.";
-			assert timesL.getColumnCount() == m.getReactant(r1Id).get("levels").as(Integer.class) + 1 : "Incorrect number of columns in 'times lower' table of '"
+			assert timesL.getColumnCount() == m.getReactant(r1Id).get(NUMBER_OF_LEVELS).as(Integer.class) + 1 : "Incorrect number of columns in 'times lower' table of '"
 					+ r + "'.";
-			assert timesU.getColumnCount() == m.getReactant(r1Id).get("levels").as(Integer.class) + 1 : "Incorrect number of columns in 'times upper' table of '"
+			assert timesU.getColumnCount() == m.getReactant(r1Id).get(NUMBER_OF_LEVELS).as(Integer.class) + 1 : "Incorrect number of columns in 'times upper' table of '"
 				+ r + "'.";
 			
 			// output times table constant for this reaction
-			out.append("const int " + r1Id + "_" + r2Id + "_r_tLower[" + m.getReactant(r2Id).get("levels").as(Integer.class) + "+1][" + m.getReactant(r1Id).get("levels").as(Integer.class) + "+1] := {");
+			out.append("const int " + r1Id + "_" + r2Id + "_r_tLower[" + m.getReactant(r2Id).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1][" + m.getReactant(r1Id).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1] := {");
 			out.append(newLine);
 			
 			// for each row
@@ -298,7 +310,7 @@ public class VariablesModel implements ModelTransformer {
 			out.append(newLine);
 			
 			// output times table constant for this reaction
-			out.append("const int " + r1Id + "_" + r2Id + "_r_tUpper[" + m.getReactant(r2Id).get("levels").as(Integer.class) + "+1][" + m.getReactant(r1Id).get("levels").as(Integer.class) + "+1] := {");
+			out.append("const int " + r1Id + "_" + r2Id + "_r_tUpper[" + m.getReactant(r2Id).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1][" + m.getReactant(r1Id).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1] := {");
 			out.append(newLine);
 
 			// for each row
@@ -330,7 +342,7 @@ public class VariablesModel implements ModelTransformer {
 			// output process instantiation
 			final String name = getReactionName(r);
 			out.append(name + " = Reaction2_" + r1Id + "_" + r2Id + "(" + r1Id + ", " + r1Id + "_nonofficial, " + r2Id + ", " + r2Id + "_nonofficial, " + r1Id + "_" + r2Id
-					+ "_r_tLower, " + r1Id + "_" + r2Id + "_r_tUpper, " + r.get("increment").as(Integer.class)
+					+ "_r_tLower, " + r1Id + "_" + r2Id + "_r_tUpper, " + r.get(INCREMENT).as(Integer.class)
 					+ ", update, reaction_happening[" + index + "], update_done[" + index + "]);");
 			out.append(newLine);
 			out.append(newLine);
@@ -373,10 +385,10 @@ public class VariablesModel implements ModelTransformer {
 			for (Reaction r : m.getReactions()) {
 				if (!r.get(ENABLED).as(Boolean.class)) continue;
 				outString = new StringWriter();
-				if (r.get("type").as(String.class).equals("reaction2")) {
-					document = documentBuilder.parse(new ByteArrayInputStream(("<template><name x=\"5\" y=\"5\">Reaction2_" + r.get("catalyst").as(String.class) + "_" + r.get("reactant").as(String.class) + "</name><parameter>int[0," + m.getReactant(r.get("catalyst").as(String.class)).get("levels").as(Integer.class) + "] &amp;reactant1, int &amp;reactant1_nonofficial, int[0," + m.getReactant(r.get("reactant").as(String.class)).get("levels").as(Integer.class) + "] &amp;reactant2, int &amp;reactant2_nonofficial, const int timeL[" + m.getReactant(r.get("reactant").as(String.class)).get("levels").as(Integer.class) + "+1][" + m.getReactant(r.get("catalyst").as(String.class)).get("levels").as(Integer.class) + "+1], const int timeU[" + m.getReactant(r.get("reactant").as(String.class)).get("levels").as(Integer.class) + "+1][" + m.getReactant(r.get("catalyst").as(String.class)).get("levels").as(Integer.class) + "+1], const int delta, broadcast chan &amp;update, chan &amp;inform_reacting, chan &amp;inform_updated</parameter><declaration>clock c;</declaration><location id=\"id0\" x=\"-1816\" y=\"-736\"></location><location id=\"id1\" x=\"-1816\" y=\"-1128\"></location><location id=\"id2\" x=\"-1552\" y=\"-976\"><committed/></location><location id=\"id3\" x=\"-1816\" y=\"-872\"><label kind=\"invariant\" x=\"-2152\" y=\"-896\">timeU[reactant2][reactant1] == INFINITE_TIME\n|| c&lt;=timeU[reactant2][reactant1]</label></location><location id=\"id4\" x=\"-1816\" y=\"-1016\"><committed/></location><init ref=\"id4\"/><transition><source ref=\"id3\"/><target ref=\"id3\"/><label kind=\"guard\" x=\"-2096\" y=\"-832\">reactant1 == reactant1_nonofficial\n&amp;&amp; reactant2 == reactant2_nonofficial</label><label kind=\"synchronisation\" x=\"-1976\" y=\"-800\">update?</label><nail x=\"-1856\" y=\"-832\"/><nail x=\"-1920\" y=\"-832\"/><nail x=\"-1920\" y=\"-776\"/><nail x=\"-1856\" y=\"-776\"/></transition><transition><source ref=\"id1\"/><target ref=\"id1\"/><label kind=\"guard\" x=\"-1928\" y=\"-1248\">reactant1 == reactant1_nonofficial\n&amp;&amp; reactant2 == reactant2_nonofficial</label><label kind=\"synchronisation\" x=\"-1840\" y=\"-1224\">update?</label><nail x=\"-1776\" y=\"-1208\"/><nail x=\"-1864\" y=\"-1208\"/></transition><transition><source ref=\"id1\"/><target ref=\"id4\"/><label kind=\"guard\" x=\"-2088\" y=\"-1160\">reactant1 != reactant1_nonofficial\n|| reactant2 != reactant2_nonofficial</label><label kind=\"synchronisation\" x=\"-2032\" y=\"-1128\">update?</label><nail x=\"-1968\" y=\"-1128\"/><nail x=\"-1968\" y=\"-1016\"/></transition><transition><source ref=\"id3\"/><target ref=\"id2\"/><label kind=\"guard\" x=\"-1736\" y=\"-960\">reactant1 != reactant1_nonofficial\n|| reactant2 != reactant2_nonofficial</label><label kind=\"synchronisation\" x=\"-1728\" y=\"-936\">update?</label><nail x=\"-1728\" y=\"-920\"/><nail x=\"-1624\" y=\"-920\"/></transition><transition><source ref=\"id0\"/><target ref=\"id2\"/><label kind=\"synchronisation\" x=\"-1776\" y=\"-752\">update?</label><nail x=\"-1424\" y=\"-736\"/><nail x=\"-1424\" y=\"-896\"/></transition><transition><source ref=\"id2\"/><target ref=\"id1\"/><label kind=\"guard\" x=\"-1792\" y=\"-1144\">timeL[reactant2][reactant1] == INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1792\" y=\"-1160\">inform_updated?</label><nail x=\"-1464\" y=\"-976\"/><nail x=\"-1464\" y=\"-1128\"/></transition><transition><source ref=\"id4\"/><target ref=\"id1\"/><label kind=\"guard\" x=\"-1952\" y=\"-1080\">timeL[reactant2][reactant1]== INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1872\" y=\"-1096\">inform_updated?</label></transition><transition><source ref=\"id2\"/><target ref=\"id3\"/><label kind=\"guard\" x=\"-1784\" y=\"-1032\">timeU[reactant2][reactant1] != INFINITE_TIME\n&amp;&amp; c&gt;timeU[reactant2][reactant1]</label><label kind=\"synchronisation\" x=\"-1784\" y=\"-1008\">inform_updated?</label><label kind=\"assignment\" x=\"-1784\" y=\"-992\">c:=timeU[reactant2][reactant1]</label><nail x=\"-1736\" y=\"-976\"/></transition><transition><source ref=\"id2\"/><target ref=\"id3\"/><label kind=\"guard\" x=\"-1760\" y=\"-912\">(timeU[reactant2][reactant1] == INFINITE_TIME &amp;&amp; timeL[reactant2][reactant1] != INFINITE_TIME)\n|| (timeU[reactant2][reactant1] != INFINITE_TIME &amp;&amp; c&lt;=timeU[reactant2][reactant1])</label><label kind=\"synchronisation\" x=\"-1760\" y=\"-888\">inform_updated?</label><nail x=\"-1552\" y=\"-872\"/></transition><transition><source ref=\"id3\"/><target ref=\"id0\"/><label kind=\"guard\" x=\"-1808\" y=\"-840\">c&gt;=timeL[reactant2][reactant1]</label><label kind=\"synchronisation\" x=\"-1808\" y=\"-824\">inform_reacting!</label><label kind=\"assignment\" x=\"-1808\" y=\"-808\">reactant2_nonofficial := reactant2_nonofficial + delta,\nc:=0</label></transition><transition><source ref=\"id4\"/><target ref=\"id3\"/><label kind=\"guard\" x=\"-1968\" y=\"-976\">timeL[reactant2][reactant1]\n!= INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1968\" y=\"-952\">inform_updated?</label><label kind=\"assignment\" x=\"-1968\" y=\"-936\">c:=0</label></transition></template>").getBytes()));
+				if (r.get(REACTION_TYPE).as(String.class).equals(BI_REACTION)) {
+					document = documentBuilder.parse(new ByteArrayInputStream(("<template><name x=\"5\" y=\"5\">Reaction2_" + r.get(CATALYST).as(String.class) + "_" + r.get(REACTANT).as(String.class) + "</name><parameter>int[0," + m.getReactant(r.get(CATALYST).as(String.class)).get(NUMBER_OF_LEVELS).as(Integer.class) + "] &amp;reactant1, int &amp;reactant1_nonofficial, int[0," + m.getReactant(r.get(REACTANT).as(String.class)).get(NUMBER_OF_LEVELS).as(Integer.class) + "] &amp;reactant2, int &amp;reactant2_nonofficial, const int timeL[" + m.getReactant(r.get(REACTANT).as(String.class)).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1][" + m.getReactant(r.get(CATALYST).as(String.class)).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1], const int timeU[" + m.getReactant(r.get(REACTANT).as(String.class)).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1][" + m.getReactant(r.get(CATALYST).as(String.class)).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1], const int delta, broadcast chan &amp;update, chan &amp;inform_reacting, chan &amp;inform_updated</parameter><declaration>clock c;</declaration><location id=\"id0\" x=\"-1816\" y=\"-736\"></location><location id=\"id1\" x=\"-1816\" y=\"-1128\"></location><location id=\"id2\" x=\"-1552\" y=\"-976\"><committed/></location><location id=\"id3\" x=\"-1816\" y=\"-872\"><label kind=\"invariant\" x=\"-2152\" y=\"-896\">timeU[reactant2][reactant1] == INFINITE_TIME\n|| c&lt;=timeU[reactant2][reactant1]</label></location><location id=\"id4\" x=\"-1816\" y=\"-1016\"><committed/></location><init ref=\"id4\"/><transition><source ref=\"id3\"/><target ref=\"id3\"/><label kind=\"guard\" x=\"-2096\" y=\"-832\">reactant1 == reactant1_nonofficial\n&amp;&amp; reactant2 == reactant2_nonofficial</label><label kind=\"synchronisation\" x=\"-1976\" y=\"-800\">update?</label><nail x=\"-1856\" y=\"-832\"/><nail x=\"-1920\" y=\"-832\"/><nail x=\"-1920\" y=\"-776\"/><nail x=\"-1856\" y=\"-776\"/></transition><transition><source ref=\"id1\"/><target ref=\"id1\"/><label kind=\"guard\" x=\"-1928\" y=\"-1248\">reactant1 == reactant1_nonofficial\n&amp;&amp; reactant2 == reactant2_nonofficial</label><label kind=\"synchronisation\" x=\"-1840\" y=\"-1224\">update?</label><nail x=\"-1776\" y=\"-1208\"/><nail x=\"-1864\" y=\"-1208\"/></transition><transition><source ref=\"id1\"/><target ref=\"id4\"/><label kind=\"guard\" x=\"-2088\" y=\"-1160\">reactant1 != reactant1_nonofficial\n|| reactant2 != reactant2_nonofficial</label><label kind=\"synchronisation\" x=\"-2032\" y=\"-1128\">update?</label><nail x=\"-1968\" y=\"-1128\"/><nail x=\"-1968\" y=\"-1016\"/></transition><transition><source ref=\"id3\"/><target ref=\"id2\"/><label kind=\"guard\" x=\"-1736\" y=\"-960\">reactant1 != reactant1_nonofficial\n|| reactant2 != reactant2_nonofficial</label><label kind=\"synchronisation\" x=\"-1728\" y=\"-936\">update?</label><nail x=\"-1728\" y=\"-920\"/><nail x=\"-1624\" y=\"-920\"/></transition><transition><source ref=\"id0\"/><target ref=\"id2\"/><label kind=\"synchronisation\" x=\"-1776\" y=\"-752\">update?</label><nail x=\"-1424\" y=\"-736\"/><nail x=\"-1424\" y=\"-896\"/></transition><transition><source ref=\"id2\"/><target ref=\"id1\"/><label kind=\"guard\" x=\"-1792\" y=\"-1144\">timeL[reactant2][reactant1] == INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1792\" y=\"-1160\">inform_updated?</label><nail x=\"-1464\" y=\"-976\"/><nail x=\"-1464\" y=\"-1128\"/></transition><transition><source ref=\"id4\"/><target ref=\"id1\"/><label kind=\"guard\" x=\"-1952\" y=\"-1080\">timeL[reactant2][reactant1]== INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1872\" y=\"-1096\">inform_updated?</label></transition><transition><source ref=\"id2\"/><target ref=\"id3\"/><label kind=\"guard\" x=\"-1784\" y=\"-1032\">timeU[reactant2][reactant1] != INFINITE_TIME\n&amp;&amp; c&gt;timeU[reactant2][reactant1]</label><label kind=\"synchronisation\" x=\"-1784\" y=\"-1008\">inform_updated?</label><label kind=\"assignment\" x=\"-1784\" y=\"-992\">c:=timeU[reactant2][reactant1]</label><nail x=\"-1736\" y=\"-976\"/></transition><transition><source ref=\"id2\"/><target ref=\"id3\"/><label kind=\"guard\" x=\"-1760\" y=\"-912\">(timeU[reactant2][reactant1] == INFINITE_TIME &amp;&amp; timeL[reactant2][reactant1] != INFINITE_TIME)\n|| (timeU[reactant2][reactant1] != INFINITE_TIME &amp;&amp; c&lt;=timeU[reactant2][reactant1])</label><label kind=\"synchronisation\" x=\"-1760\" y=\"-888\">inform_updated?</label><nail x=\"-1552\" y=\"-872\"/></transition><transition><source ref=\"id3\"/><target ref=\"id0\"/><label kind=\"guard\" x=\"-1808\" y=\"-840\">c&gt;=timeL[reactant2][reactant1]</label><label kind=\"synchronisation\" x=\"-1808\" y=\"-824\">inform_reacting!</label><label kind=\"assignment\" x=\"-1808\" y=\"-808\">reactant2_nonofficial := reactant2_nonofficial + delta,\nc:=0</label></transition><transition><source ref=\"id4\"/><target ref=\"id3\"/><label kind=\"guard\" x=\"-1968\" y=\"-976\">timeL[reactant2][reactant1]\n!= INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1968\" y=\"-952\">inform_updated?</label><label kind=\"assignment\" x=\"-1968\" y=\"-936\">c:=0</label></transition></template>").getBytes()));
 				} else {
-					document = documentBuilder.parse(new ByteArrayInputStream(("<template><name x=\"5\" y=\"5\">Reaction_" + r.get("reactant").as(String.class) + "</name><parameter>int[0," + m.getReactant(r.get("reactant").as(String.class)).get("levels").as(Integer.class) + "] &amp;reactant, int &amp;reactant_nonofficial, const int timeL[" + m.getReactant(r.get("reactant").as(String.class)).get("levels").as(Integer.class) + "+1], const int timeU[" + m.getReactant(r.get("reactant").as(String.class)).get("levels").as(Integer.class) + "+1], const int delta, broadcast chan &amp;update, chan &amp;inform_reacting, chan &amp;inform_updated</parameter><declaration>clock c;</declaration><location id=\"id5\" x=\"-1320\" y=\"-480\"></location><location id=\"id6\" x=\"-1320\" y=\"-920\"></location><location id=\"id7\" x=\"-1128\" y=\"-712\"><committed/></location><location id=\"id8\" x=\"-1320\" y=\"-624\"><label kind=\"invariant\" x=\"-1568\" y=\"-648\">timeU[reactant] == INFINITE_TIME\n|| c&lt;=timeU[reactant]</label></location><location id=\"id9\" x=\"-1320\" y=\"-816\"><committed/></location><init ref=\"id9\"/><transition><source ref=\"id8\"/><target ref=\"id8\"/><label kind=\"guard\" x=\"-1552\" y=\"-560\">reactant == reactant_nonofficial</label><label kind=\"synchronisation\" x=\"-1496\" y=\"-544\">update?</label><nail x=\"-1376\" y=\"-560\"/><nail x=\"-1440\" y=\"-560\"/><nail x=\"-1440\" y=\"-504\"/><nail x=\"-1360\" y=\"-504\"/></transition><transition><source ref=\"id6\"/><target ref=\"id6\"/><label kind=\"guard\" x=\"-1424\" y=\"-1016\">reactant == reactant_nonofficial</label><label kind=\"synchronisation\" x=\"-1352\" y=\"-1000\">update?</label><nail x=\"-1288\" y=\"-984\"/><nail x=\"-1360\" y=\"-984\"/></transition><transition><source ref=\"id6\"/><target ref=\"id9\"/><label kind=\"guard\" x=\"-1600\" y=\"-936\">reactant != reactant_nonofficial</label><label kind=\"synchronisation\" x=\"-1544\" y=\"-920\">update?</label><nail x=\"-1480\" y=\"-920\"/><nail x=\"-1480\" y=\"-816\"/></transition><transition><source ref=\"id8\"/><target ref=\"id7\"/><label kind=\"guard\" x=\"-1264\" y=\"-696\">reactant != reactant_nonofficial</label><label kind=\"synchronisation\" x=\"-1264\" y=\"-688\">update?</label><nail x=\"-1264\" y=\"-672\"/><nail x=\"-1168\" y=\"-672\"/></transition><transition><source ref=\"id5\"/><target ref=\"id7\"/><label kind=\"synchronisation\" x=\"-1256\" y=\"-496\">update?</label><nail x=\"-944\" y=\"-480\"/><nail x=\"-944\" y=\"-656\"/></transition><transition><source ref=\"id7\"/><target ref=\"id6\"/><label kind=\"guard\" x=\"-1288\" y=\"-936\">timeL[reactant] == INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1288\" y=\"-952\">inform_updated?</label><nail x=\"-1040\" y=\"-712\"/><nail x=\"-1040\" y=\"-920\"/></transition><transition><source ref=\"id9\"/><target ref=\"id6\"/><label kind=\"guard\" x=\"-1440\" y=\"-864\">timeL[reactant] == INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1376\" y=\"-880\">inform_updated?</label></transition><transition><source ref=\"id7\"/><target ref=\"id8\"/><label kind=\"guard\" x=\"-1272\" y=\"-768\">timeU[reactant] != INFINITE_TIME\n&amp;&amp; c&gt;timeU[reactant]</label><label kind=\"synchronisation\" x=\"-1272\" y=\"-744\">inform_updated?</label><label kind=\"assignment\" x=\"-1272\" y=\"-728\">c:=timeU[reactant]</label><nail x=\"-1264\" y=\"-712\"/></transition><transition><source ref=\"id7\"/><target ref=\"id8\"/><label kind=\"guard\" x=\"-1280\" y=\"-664\">(timeU[reactant] == INFINITE_TIME &amp;&amp; timeL[reactant] != INFINITE_TIME)\n|| (timeU[reactant] != INFINITE_TIME &amp;&amp; c&lt;=timeU[reactant])</label><label kind=\"synchronisation\" x=\"-1280\" y=\"-640\">inform_updated?</label><nail x=\"-1128\" y=\"-624\"/></transition><transition><source ref=\"id8\"/><target ref=\"id5\"/><label kind=\"guard\" x=\"-1312\" y=\"-584\">c&gt;=timeL[reactant]</label><label kind=\"synchronisation\" x=\"-1312\" y=\"-568\">inform_reacting!</label><label kind=\"assignment\" x=\"-1312\" y=\"-552\">reactant_nonofficial := reactant_nonofficial + delta,\nc:=0</label></transition><transition><source ref=\"id9\"/><target ref=\"id8\"/><label kind=\"guard\" x=\"-1424\" y=\"-792\">timeL[reactant] != INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1424\" y=\"-776\">inform_updated?</label><label kind=\"assignment\" x=\"-1424\" y=\"-760\">c:=0</label><nail x=\"-1320\" y=\"-656\"/></transition></template>").getBytes()));
+					document = documentBuilder.parse(new ByteArrayInputStream(("<template><name x=\"5\" y=\"5\">Reaction_" + r.get(REACTANT).as(String.class) + "</name><parameter>int[0," + m.getReactant(r.get(REACTANT).as(String.class)).get(NUMBER_OF_LEVELS).as(Integer.class) + "] &amp;reactant, int &amp;reactant_nonofficial, const int timeL[" + m.getReactant(r.get(REACTANT).as(String.class)).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1], const int timeU[" + m.getReactant(r.get(REACTANT).as(String.class)).get(NUMBER_OF_LEVELS).as(Integer.class) + "+1], const int delta, broadcast chan &amp;update, chan &amp;inform_reacting, chan &amp;inform_updated</parameter><declaration>clock c;</declaration><location id=\"id5\" x=\"-1320\" y=\"-480\"></location><location id=\"id6\" x=\"-1320\" y=\"-920\"></location><location id=\"id7\" x=\"-1128\" y=\"-712\"><committed/></location><location id=\"id8\" x=\"-1320\" y=\"-624\"><label kind=\"invariant\" x=\"-1568\" y=\"-648\">timeU[reactant] == INFINITE_TIME\n|| c&lt;=timeU[reactant]</label></location><location id=\"id9\" x=\"-1320\" y=\"-816\"><committed/></location><init ref=\"id9\"/><transition><source ref=\"id8\"/><target ref=\"id8\"/><label kind=\"guard\" x=\"-1552\" y=\"-560\">reactant == reactant_nonofficial</label><label kind=\"synchronisation\" x=\"-1496\" y=\"-544\">update?</label><nail x=\"-1376\" y=\"-560\"/><nail x=\"-1440\" y=\"-560\"/><nail x=\"-1440\" y=\"-504\"/><nail x=\"-1360\" y=\"-504\"/></transition><transition><source ref=\"id6\"/><target ref=\"id6\"/><label kind=\"guard\" x=\"-1424\" y=\"-1016\">reactant == reactant_nonofficial</label><label kind=\"synchronisation\" x=\"-1352\" y=\"-1000\">update?</label><nail x=\"-1288\" y=\"-984\"/><nail x=\"-1360\" y=\"-984\"/></transition><transition><source ref=\"id6\"/><target ref=\"id9\"/><label kind=\"guard\" x=\"-1600\" y=\"-936\">reactant != reactant_nonofficial</label><label kind=\"synchronisation\" x=\"-1544\" y=\"-920\">update?</label><nail x=\"-1480\" y=\"-920\"/><nail x=\"-1480\" y=\"-816\"/></transition><transition><source ref=\"id8\"/><target ref=\"id7\"/><label kind=\"guard\" x=\"-1264\" y=\"-696\">reactant != reactant_nonofficial</label><label kind=\"synchronisation\" x=\"-1264\" y=\"-688\">update?</label><nail x=\"-1264\" y=\"-672\"/><nail x=\"-1168\" y=\"-672\"/></transition><transition><source ref=\"id5\"/><target ref=\"id7\"/><label kind=\"synchronisation\" x=\"-1256\" y=\"-496\">update?</label><nail x=\"-944\" y=\"-480\"/><nail x=\"-944\" y=\"-656\"/></transition><transition><source ref=\"id7\"/><target ref=\"id6\"/><label kind=\"guard\" x=\"-1288\" y=\"-936\">timeL[reactant] == INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1288\" y=\"-952\">inform_updated?</label><nail x=\"-1040\" y=\"-712\"/><nail x=\"-1040\" y=\"-920\"/></transition><transition><source ref=\"id9\"/><target ref=\"id6\"/><label kind=\"guard\" x=\"-1440\" y=\"-864\">timeL[reactant] == INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1376\" y=\"-880\">inform_updated?</label></transition><transition><source ref=\"id7\"/><target ref=\"id8\"/><label kind=\"guard\" x=\"-1272\" y=\"-768\">timeU[reactant] != INFINITE_TIME\n&amp;&amp; c&gt;timeU[reactant]</label><label kind=\"synchronisation\" x=\"-1272\" y=\"-744\">inform_updated?</label><label kind=\"assignment\" x=\"-1272\" y=\"-728\">c:=timeU[reactant]</label><nail x=\"-1264\" y=\"-712\"/></transition><transition><source ref=\"id7\"/><target ref=\"id8\"/><label kind=\"guard\" x=\"-1280\" y=\"-664\">(timeU[reactant] == INFINITE_TIME &amp;&amp; timeL[reactant] != INFINITE_TIME)\n|| (timeU[reactant] != INFINITE_TIME &amp;&amp; c&lt;=timeU[reactant])</label><label kind=\"synchronisation\" x=\"-1280\" y=\"-640\">inform_updated?</label><nail x=\"-1128\" y=\"-624\"/></transition><transition><source ref=\"id8\"/><target ref=\"id5\"/><label kind=\"guard\" x=\"-1312\" y=\"-584\">c&gt;=timeL[reactant]</label><label kind=\"synchronisation\" x=\"-1312\" y=\"-568\">inform_reacting!</label><label kind=\"assignment\" x=\"-1312\" y=\"-552\">reactant_nonofficial := reactant_nonofficial + delta,\nc:=0</label></transition><transition><source ref=\"id9\"/><target ref=\"id8\"/><label kind=\"guard\" x=\"-1424\" y=\"-792\">timeL[reactant] != INFINITE_TIME</label><label kind=\"synchronisation\" x=\"-1424\" y=\"-776\">inform_updated?</label><label kind=\"assignment\" x=\"-1424\" y=\"-760\">c:=0</label><nail x=\"-1320\" y=\"-656\"/></transition></template>").getBytes()));
 				}
 				tra.transform(new DOMSource(document), new StreamResult(outString));
 				out.append(outString.toString());
@@ -402,7 +414,7 @@ public class VariablesModel implements ModelTransformer {
 					continue;
 				}
 				outString = new StringWriter();
-				document = documentBuilder.parse(new ByteArrayInputStream(("<template><name>Reactant_" + r.getId() + "</name><parameter>int[0," + r.get("levels").as(Integer.class) + "] &amp;official, int &amp;nonofficial, broadcast chan &amp;update</parameter><location id=\"id10\" x=\"-416\" y=\"-104\"></location><init ref=\"id10\"/><transition><source ref=\"id10\"/><target ref=\"id10\"/><label kind=\"guard\" x=\"-536\" y=\"-248\">nonofficial&gt;" + r.get("levels").as(Integer.class) + "</label><label kind=\"synchronisation\" x=\"-536\" y=\"-232\">update?</label><label kind=\"assignment\" x=\"-536\" y=\"-216\">official := " + r.get("levels").as(Integer.class) + ", nonofficial := " + r.get("levels").as(Integer.class) + "</label><nail x=\"-168\" y=\"-200\"/><nail x=\"-168\" y=\"-256\"/><nail x=\"-544\" y=\"-256\"/><nail x=\"-544\" y=\"-192\"/><nail x=\"-416\" y=\"-192\"/></transition><transition><source ref=\"id10\"/><target ref=\"id10\"/><label kind=\"guard\" x=\"-496\" y=\"-48\">nonofficial&lt;0</label><label kind=\"synchronisation\" x=\"-496\" y=\"-32\">update?</label><label kind=\"assignment\" x=\"-496\" y=\"-16\">official := 0, nonofficial := 0</label><nail x=\"-416\" y=\"-56\"/><nail x=\"-504\" y=\"-56\"/><nail x=\"-504\" y=\"8\"/><nail x=\"-288\" y=\"8\"/><nail x=\"-288\" y=\"-24\"/></transition><transition><source ref=\"id10\"/><target ref=\"id10\"/><label kind=\"guard\" x=\"-680\" y=\"-176\">nonofficial&gt;=0\n&amp;&amp; nonofficial&lt;=" + r.get("levels").as(Integer.class) + "</label><label kind=\"synchronisation\" x=\"-680\" y=\"-144\">update?</label><label kind=\"assignment\" x=\"-680\" y=\"-128\">official := nonofficial</label><nail x=\"-688\" y=\"-104\"/><nail x=\"-688\" y=\"-184\"/><nail x=\"-464\" y=\"-184\"/></transition></template>").getBytes()));
+				document = documentBuilder.parse(new ByteArrayInputStream(("<template><name>Reactant_" + r.getId() + "</name><parameter>int[0," + r.get(NUMBER_OF_LEVELS).as(Integer.class) + "] &amp;official, int &amp;nonofficial, broadcast chan &amp;update</parameter><location id=\"id10\" x=\"-416\" y=\"-104\"></location><init ref=\"id10\"/><transition><source ref=\"id10\"/><target ref=\"id10\"/><label kind=\"guard\" x=\"-536\" y=\"-248\">nonofficial&gt;" + r.get(NUMBER_OF_LEVELS).as(Integer.class) + "</label><label kind=\"synchronisation\" x=\"-536\" y=\"-232\">update?</label><label kind=\"assignment\" x=\"-536\" y=\"-216\">official := " + r.get(NUMBER_OF_LEVELS).as(Integer.class) + ", nonofficial := " + r.get(NUMBER_OF_LEVELS).as(Integer.class) + "</label><nail x=\"-168\" y=\"-200\"/><nail x=\"-168\" y=\"-256\"/><nail x=\"-544\" y=\"-256\"/><nail x=\"-544\" y=\"-192\"/><nail x=\"-416\" y=\"-192\"/></transition><transition><source ref=\"id10\"/><target ref=\"id10\"/><label kind=\"guard\" x=\"-496\" y=\"-48\">nonofficial&lt;0</label><label kind=\"synchronisation\" x=\"-496\" y=\"-32\">update?</label><label kind=\"assignment\" x=\"-496\" y=\"-16\">official := 0, nonofficial := 0</label><nail x=\"-416\" y=\"-56\"/><nail x=\"-504\" y=\"-56\"/><nail x=\"-504\" y=\"8\"/><nail x=\"-288\" y=\"8\"/><nail x=\"-288\" y=\"-24\"/></transition><transition><source ref=\"id10\"/><target ref=\"id10\"/><label kind=\"guard\" x=\"-680\" y=\"-176\">nonofficial&gt;=0\n&amp;&amp; nonofficial&lt;=" + r.get(NUMBER_OF_LEVELS).as(Integer.class) + "</label><label kind=\"synchronisation\" x=\"-680\" y=\"-144\">update?</label><label kind=\"assignment\" x=\"-680\" y=\"-128\">official := nonofficial</label><nail x=\"-688\" y=\"-104\"/><nail x=\"-688\" y=\"-184\"/><nail x=\"-464\" y=\"-184\"/></transition></template>").getBytes()));
 				tra.transform(new DOMSource(document), new StreamResult(outString));
 				out.append(outString.toString());
 				out.append(newLine);
@@ -417,19 +429,19 @@ public class VariablesModel implements ModelTransformer {
 					templateString.append("<template><name>Reactant_group_" + group + "</name><parameter>");
 					for (int i=0; i<v.size();i++) {
 						Reactant r = v.elementAt(i);
-						templateString.append("int[0," + r.get("levels").as(Integer.class) + "] &amp;official" + (i + 1) + ", int &amp;unofficial" + (i + 1) + ", ");
+						templateString.append("int[0," + r.get(NUMBER_OF_LEVELS).as(Integer.class) + "] &amp;official" + (i + 1) + ", int &amp;unofficial" + (i + 1) + ", ");
 					}
 					templateString.append("broadcast chan &amp;update</parameter><declaration>void updateAll(");
 					for (int i=0; i<v.size() - 1;i++) {
 						Reactant r = v.elementAt(i);
-						templateString.append("int[0," + r.get("levels").as(Integer.class) + "] &amp;official" + (i + 1) + ", int &amp;unofficial" + (i + 1) + ", ");
+						templateString.append("int[0," + r.get(NUMBER_OF_LEVELS).as(Integer.class) + "] &amp;official" + (i + 1) + ", int &amp;unofficial" + (i + 1) + ", ");
 					}
-					templateString.append("int[0," + v.lastElement().get("levels").as(Integer.class) + "] &amp;official" + v.size() + ", int &amp;unofficial" + v.size() + ") {\n\tint i;\n\tint sum := 0;\n");
+					templateString.append("int[0," + v.lastElement().get(NUMBER_OF_LEVELS).as(Integer.class) + "] &amp;official" + v.size() + ", int &amp;unofficial" + v.size() + ") {\n\tint i;\n\tint sum := 0;\n");
 					for (int i=0; i<v.size();i++) {
 						templateString.append("\tif (unofficial" + (i + 1) + " &lt; 0) unofficial" + (i + 1) + " := 0;\n\tsum := sum + unofficial" + (i + 1) + ";\n");
 					}
 					//TODO: v.firstElement().get("levels").as(Integer.class) is the number of levels of the "grouped" reactant. So, we implicitly assume that all reactants in a group have the same NUMBER_OF_LEVELS
-					templateString.append("\n\twhile (sum &gt; " + v.firstElement().get("levels").as(Integer.class) + ") {\n\t\tsum := 0;\n");
+					templateString.append("\n\twhile (sum &gt; " + v.firstElement().get(NUMBER_OF_LEVELS).as(Integer.class) + ") {\n\t\tsum := 0;\n");
 					for (int i=0; i<v.size(); i++) {
 						templateString.append("\t\tif (unofficial" + (i + 1) + " &gt; 0) unofficial" + (i + 1) + "--;\n\t\tsum := sum + unofficial" + (i + 1) + ";\n");
 					}
@@ -464,11 +476,11 @@ public class VariablesModel implements ModelTransformer {
 
 	protected void appendReactantVariables(StringBuilder out, Reactant r) {
 		// outputs the global variables necessary for the given reactant
-		out.append("//" + r.getId() + " = " + r.get("alias").as(String.class));
+		out.append("//" + r.getId() + " = " + r.get(ALIAS).as(String.class));
 		out.append(newLine);
-		out.append("int[0," + r.get("levels").as(Integer.class) + "] " + r.getId() + " := " + r.get("initialConcentration").as(Integer.class) + ";");
+		out.append("int[0," + r.get(NUMBER_OF_LEVELS).as(Integer.class) + "] " + r.getId() + " := " + r.get(INITIAL_LEVEL).as(Integer.class) + ";");
 		out.append(newLine);
-		out.append("int " + r.getId() + "_nonofficial := " + r.get("initialConcentration").as(Integer.class) + ";");
+		out.append("int " + r.getId() + "_nonofficial := " + r.get(INITIAL_LEVEL).as(Integer.class) + ";");
 		out.append(newLine);
 		out.append(newLine);
 	}

@@ -6,6 +6,7 @@ import java.util.*;
  * It has only one scenario, with one parameter.
  */
 public class ScenarioMono extends Scenario {
+	private static final String SCENARIO_ONLY_PARAMETER = Model.Properties.SCENARIO_ONLY_PARAMETER;
 	protected HashMap<String, Double> parameters = new HashMap<String, Double>();
 	
 	public ScenarioMono() {
@@ -13,7 +14,7 @@ public class ScenarioMono extends Scenario {
 	}
 	
 	public void setDefault() {
-		setParameter("parameter", 0.1);
+		setParameter(SCENARIO_ONLY_PARAMETER, 0.1);
 	}
 		
 	public void setParameter(String name, Double value) {
@@ -33,7 +34,7 @@ public class ScenarioMono extends Scenario {
 	//We advise to call super.computeFormula at the end of the extended method, as this
 	//is the "official" complete formula.
 	protected int computeFormula(int reactantLevel) {
-		double param = parameters.get("parameter");
+		double param = parameters.get(SCENARIO_ONLY_PARAMETER);
 		double rate = param * reactantLevel;
 		if (rate > 1e-8) {
 			return Math.max(1, (int)Math.round(1 / rate)); //We need to put at least 1 because otherwise the reaction will keep happening forever (it is not very nice not to let time pass..)
