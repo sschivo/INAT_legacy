@@ -20,6 +20,10 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 
+/**
+ * Produces an UPPAAL model to be used with the UPPAAL SMC engine.
+ * For comments on what the different functions do, refer to the VariablesModel class.
+ */
 public class VariablesModelSMC extends VariablesModel {
 
 	@Override
@@ -109,6 +113,7 @@ public class VariablesModelSMC extends VariablesModel {
 	@Override
 	protected void appendReactionProcesses(StringBuilder out, Model m, Reaction r, int index) {
 		//NOTICE THAT index IS NOT USED HERE!!
+		//We used it in the VariablesModel class, and just to maintain the same form, we still take it here, even if it is never used.
 		index = -1;
 		
 		if (r.get("type").as(String.class).equals("reaction1")) {

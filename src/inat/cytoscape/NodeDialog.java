@@ -31,9 +31,7 @@ import cytoscape.data.CyAttributes;
  * 
  */
 public class NodeDialog extends JFrame {
-	/**
-	 * 
-	 */
+	
 	private static final long serialVersionUID = 1498730989498413815L;
 
 	/**
@@ -62,7 +60,7 @@ public class NodeDialog extends JFrame {
 		this.setLayout(new BorderLayout(2, 2));
 
 		//JPanel values = new JPanel(new GridLayout(3, 2, 2, 2));
-		JPanel values = new JPanel(new GridBagLayout());
+		JPanel values = new JPanel(new GridBagLayout()); //You REALLY don't want to know how GridBagLayout works...
 		
 		int levels;
 		if (nodeAttributes.hasAttribute(node.getIdentifier(), "levels")) {
@@ -112,7 +110,7 @@ public class NodeDialog extends JFrame {
 
 		this.add(values, BorderLayout.CENTER);
 
-
+		//When the user changes the total number of levels, we automatically update the "current activity level" slider, adapting maximum and current values in a sensible way
 		totalLevels.addChangeListener(new ChangeListener() {
 
 			@Override
@@ -152,9 +150,6 @@ public class NodeDialog extends JFrame {
 		
 		JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		controls.add(new JButton(new AbstractAction("Save") {
-			/**
-			 * 
-			 */
 			private static final long serialVersionUID = -6179643943409321939L;
 
 			@Override
@@ -176,9 +171,6 @@ public class NodeDialog extends JFrame {
 		}));
 
 		controls.add(new JButton(new AbstractAction("Cancel") {
-			/**
-			 * 
-			 */
 			private static final long serialVersionUID = -2038333013177775241L;
 
 			@Override

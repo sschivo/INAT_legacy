@@ -13,9 +13,6 @@ import inat.exceptions.InatException;
  */
 public class AnalysisException extends InatException {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 8207531416480612466L;
 
 	/**

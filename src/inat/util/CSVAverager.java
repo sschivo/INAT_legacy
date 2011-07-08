@@ -7,6 +7,11 @@ import java.text.DecimalFormatSymbols;
 import java.util.*;
 
 
+/**
+ * This class is not currently used.
+ * It takes a series of .csv files (with the same headings)
+ * and produces a new .csv with the averages of the given data series
+ */
 //Get a series of csv files and output one csv file containing the averages of the columns of all input files
 public class CSVAverager {
 	private File[] csvFiles = null;

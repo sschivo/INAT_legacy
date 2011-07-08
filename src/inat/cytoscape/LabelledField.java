@@ -7,6 +7,11 @@ import java.awt.Component;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 
+/**
+ * "Simplified" version of ComponentTitledBorder: show a component (typically a text field)
+ * with a border around it, and a title on the border. I sometimes use it to gain some space
+ * in the user interface.
+ */
 public class LabelledField extends JPanel {
 	private static final long serialVersionUID = 7369414240895916427L;
 	private String title = null;

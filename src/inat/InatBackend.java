@@ -36,11 +36,11 @@ public class InatBackend {
 	 */
 	private XmlConfiguration configuration;
 
-	private static final String NUMBER_OF_LEVELS = "levels",
-								INITIAL_LEVEL = "initialConcentration",
-								SHOWN_LEVEL = "activityRatio",
-								SECONDS_PER_POINT = "seconds per point",
-								SCENARIO = "scenario";
+	private static final String NUMBER_OF_LEVELS = "levels", //Property that can belong to a node or to a network. If related to a single node, it represents the maximum number of levels for that single reactant. If related to a complete network, it is the maximum value of the NUMBER_OF_LEVELS property among all nodes in the network. Expressed as integer number in [0, 100] (chosen by the user).
+								INITIAL_LEVEL = "initialConcentration", //Property belonging to a node. The initial activity level for a node. Expressed as an integer number in [0, NUMBER_OF_LEVELS for that node]
+								SHOWN_LEVEL = "activityRatio", //Property belonging to a node. The current activity level of a node. Expressed as a relative number representing INITIAL_LEVEL / NUMBER_OF_LEVELS, so it is a double number in [0, 1]
+								SECONDS_PER_POINT = "seconds per point", //Property belonging to a network. The number of real-life seconds represented by a single UPPAAL time unit.
+								SCENARIO = "scenario"; //Property belonging to an edge. The id of the scenario on which the reaction corresponding to the edge computes its time tables.
 		
 	/**
 	 * Constructor.
@@ -66,6 +66,17 @@ public class InatBackend {
 					
 				}
 
+				/**
+				 * Perform useful updates when a property is changed.
+				 * If the maximum number of levels of a reactant (NUMBER_OF_LEVELS) was changed, we update
+				 * all reactions in which the reactant is involved, changing the right parameter(s) depending
+				 * on which scenario the reaction is based. We also update the NUMBER_OF_LEVELS property of the
+				 * whole network, making sure that it is always set to the maximum of that property for all
+				 * nodes.
+				 * If the initial activity level was changed, we update the activity ratio (SHOWN_LEVEL) to
+				 * reflect the change also in the graphics of the node (see the visual mapping based on that
+				 * property in AugmentAction.actionPerformed).
+				 */
 				@SuppressWarnings("unchecked")
 				@Override
 				public void attributeValueAssigned(String objectKey, String attributeName,
@@ -183,6 +194,11 @@ public class InatBackend {
 					
 				}
 
+				/**
+				 * When the user changes the SECONDS_PER_POINT property, we need to update all reaction
+				 * parameters, causing all reactions to speed up or slow down, depending whether the time
+				 * interval was shortened or stretched.
+				 */
 				@SuppressWarnings("unchecked")
 				@Override
 				public void attributeValueAssigned(String objectKey, String attributeName,

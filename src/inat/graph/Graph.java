@@ -46,7 +46,7 @@ import javax.swing.JPopupMenu;
 
 public class Graph extends JPanel implements MouseListener, MouseMotionListener, MouseWheelListener, ActionListener, ComponentListener {
 	private static final long serialVersionUID = 8185951065715897260L;
-	private static final String AUTOGRAPH_WINDOW_TITLE = "AutoGraph",
+	private static final String AUTOGRAPH_WINDOW_TITLE = "AutoGraph", //If we are a window, this will be our (lame) title
 								OPEN_LABEL = "Add data from CSV...",
 								SAVE_LABEL = "Save as PNG...",
 								EXPORT_VISIBLE_LABEL = "Export visible as CSV...",
@@ -60,8 +60,8 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 								GENERIC_ERROR_S = "There has been a problem: ",
 																//You can "declare" the maximum y value that you intend to represent with a particular series 
 								MAX_Y_STRING = "Number_of_levels"; //The idea is to take into account these values in order to rescale the y maximum value for all shown graphs when requested
-	private Double maxYValue = null;
-	private static final java.awt.Color BACKGROUND_COLOR = Color.WHITE, FOREGROUND_COLOR = Color.BLACK, DISABLED_COLOR = Color.LIGHT_GRAY;
+	private Double maxYValue = null; //The maximum Y value: it is used to rescale other bunches of series (if they themselves declare their maximum Y value). In a .csv file, the user needs to have a column titled "Number_of_levels", and as value (in the first line) the max Y the user wants to declare for that .csv bunch of series
+	private static final java.awt.Color BACKGROUND_COLOR = Color.WHITE, FOREGROUND_COLOR = Color.BLACK, DISABLED_COLOR = Color.LIGHT_GRAY; //The colors for the background, the axis and the (possibly disabled) series names
 	
 	private Vector<Series> data = null; //the Series plotted in the graph
 	private Vector<String> selectedColumns = null; //the names of the Series to be shown (all others are hidden)
@@ -70,10 +70,10 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	private JPopupMenu popupMenu = null;
 	private boolean showLegend = true;
 	private double maxLabelLength = 0; //used to compute the width of the legend box
-	private Rectangle legendBounds = null;
+	private Rectangle legendBounds = null; //Where the legend is, and what are its dimensions
 	private boolean customLegendPosition = false;
-	private boolean movingLegend = false;
-	private int oldLegendX = 0, oldLegendY = 0;
+	private boolean movingLegend = false; //If the user is currently dragging the legend (left mouse button down)
+	private int oldLegendX = 0, oldLegendY = 0; //Used to move the legend
 	private int SCALA = 1; //used to implement some kind of "zooming" (see the events related to mouse wheel)
 	private final int BORDER_X = 25, BORDER_Y = 25; //width of the border around the graph area (in pixel). Notice that it is scaled with SCALA, like all other constants for the drawing
 	
@@ -239,7 +239,10 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	}
 	
 	/*
-	 * The available colors for the Series
+	 * The available colors for the Series.
+	 * As we see also with the other following functions, we normally cycle through
+	 * colors when drawing a bunch of series. If the user has set a particular color for
+	 * a Series, the Series will remember it and we will use that color instead
 	 */
 	private Color colori[] = {/*Color.RED, Color.BLUE, Color.GREEN, 
 							   Color.ORANGE, Color.CYAN, Color.GRAY, 

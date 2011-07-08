@@ -32,7 +32,14 @@ import javax.swing.JOptionPane;
 import cytoscape.Cytoscape;
 import cytoscape.task.TaskMonitor;
 
-
+/**
+ * This class is currently used for all queries.
+ * Computes the requested analysis on the given INAT model, translating it into
+ * the corresponding UPPAAL model depending on which query is asked.
+ * Always uses the model produced from VariablesModelSMC, which is tailored to work
+ * with UPPAAL SMC engine. As the model does not use priorities, we employ it also
+ * for the generation of concrete simulation traces.
+ */
 public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelResult> {
 	
 	public static double TIME_SCALE = 0.2; //the factor by which time values are mutiplied before being output on the .csv file (it answers the question "how many real-life minutes does a time unit of the model represent?")
@@ -44,10 +51,10 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 	
 	private static final String VERIFY_SMC_KEY = "/Inat/UppaalInvoker/verifytaSMC";
 	
-	private String verifytaPath, verifytaSMCPath;//, tracerPath;
-	private TaskMonitor monitor;
-	private RunAction runAction;
-	private int taskStatus = 0; //1 = process completed, 2 = user pressed Cancel
+	private String verifytaPath, verifytaSMCPath;//, tracerPath; //The paths to the tools used in the analysis
+	private TaskMonitor monitor; //The reference to the Monitor in which to show the progress of the task
+	private RunAction runAction; //We can ask this one whether the user has asked us to cancel the computation
+	private int taskStatus = 0; //Used to define the current status of the analysis task. 0 = still running, 1 = process completed, 2 = user pressed Cancel
 	
 	public UppaalModelAnalyserFasterConcrete(TaskMonitor monitor, RunAction runAction) {
 		XmlConfiguration configuration = InatBackend.get().configuration();
@@ -63,6 +70,16 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 		return false;
 	}
 	
+	/**
+	 * Returns the SMCResult that we obtain from analysing with UPPAAL the given model
+	 * with the given probabilistic query.
+	 * @param m The model to analyse
+	 * @param probabilisticQuery The probabilistic query already translated with correct UPPAAL time
+	 * units and reactant names (ex. Pr[<=12000](<> reactant0 > 40), and not Pr[<=240](<> MK2 > 40), which
+	 * is instead what the user inserts. The translation is made in RunAction.performSMCAnalysis)
+	 * @return The parsed SMCResult containing the response given by UPPAAL (be it boolean or numerical)
+	 * @throws AnalysisException
+	 */
 	public SMCResult analyzeSMC(Model m, String probabilisticQuery) throws AnalysisException {
 		SMCResult result = null;
 		try {
@@ -182,6 +199,25 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 		return result;
 	}
 	
+	/**
+	 * Perform a simple simulation run on the given model, up to the given time.
+	 * Please notice that we use the VariablesModelSMC class to transform the model into
+	 * the UPPAAL input, because that type of model allows us to get concrete simulation traces,
+	 * while the other model (obtained by using VariableModel) can only produce symbolic traces.
+	 * Notice furthermore that we do not analyse the compiled model via the tracer tool, because
+	 * (for an unexplained reason) the only way to obtain exact time values for the globalTime
+	 * clock along the simulation is reading the direct verifyta output. If we try to parse its
+	 * file output with the tracer tool, all exact values are substituted by a series of clock
+	 * difference inequalities, which need to be solved to regain the knowledge which was there
+	 * in the first place (!!). So, for simplicity's sake, we simply analyse the direct output,
+	 * even if it is in principle a little slower than analysing the file output (it would
+	 * certainly be if the file output also contained exact clock values instead of bounds).
+	 * @param m The model to analyse
+	 * @param timeTo the length of the simulation, in UPPAAL time units. The translation from
+	 * real-life minutes to UPPAAL time units is made in RunAction.performNormalAnalysis.
+	 * @return The SimpleLevelResult showing as series the activity levels of all reactants
+	 * present in the model during the simulation period
+	 */
 	public LevelResult analyze(final Model m, final int timeTo) throws AnalysisException {
 		LevelResult result = null;
 		try {
@@ -331,6 +367,13 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 		}
 		
 
+		/**
+		 * Analyse the UPPAAL output from a Statistical Model Checking query
+		 * @param m The model on which the result is based 
+		 * @param smcOutput The stream from which to read the UPPAAL output
+		 * @return The parsed SMCResult containing the boolean/numerical query answer
+		 * @throws Exception
+		 */
 		public SMCResult analyseSMC(Model m, InputStream smcOutput) throws Exception {
 			BufferedReader br = new BufferedReader(new InputStreamReader(smcOutput));
 			String line = null;
@@ -368,6 +411,16 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 			throw new Exception("Unable to understand UPPAAL SMC output: " + readTheRest(line, br));
 		}
 		
+		/**
+		 * Used when reporting an error about the SMC query answer.
+		 * As UPPAAL SMC is still in beta stage, we do our best to understand its output,
+		 * but if we fail we try at least to speed up the process of changing the parsing
+		 * according to a possibly new output format.
+		 * @param line The entire line which caused the problem
+		 * @param br The buffered reader from which to continue to read the rest of the input
+		 * @return A string containing the rest of the input
+		 * @throws Exception
+		 */
 		private String readTheRest(String line, BufferedReader br) throws Exception {
 			StringBuilder content = new StringBuilder();
 			String endLine = System.getProperty("line.separator");
@@ -378,6 +431,13 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 			return content.toString();
 		}
 		
+		/**
+		 * Find the confidence value given in the UPPAAL SMC query result
+		 * @param currentLine The line from which to start looking for a confidence value
+		 * @param br The reader from which to continue reading UPPAAL output
+		 * @return The confidence value
+		 * @throws Exception
+		 */
 		private double findConfidence(String currentLine, BufferedReader br) throws Exception {
 			double confidence = 0;
 			boolean weHaveAProblem = false;
@@ -391,7 +451,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 					savedOutput.append(line + endLine);
 					if (line.contains(objective)) {
 						break;
-					} else if (line.startsWith("State")) {
+					} else if (line.startsWith("State")) { //This actually means that UPPAAL has found a problem in our model. I do my best to report the error to the user.
 						weHaveAProblem = true;
 					}
 				}
@@ -420,6 +480,15 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 		}
 		
 		
+		/**
+		 * Parse the UPPAAL output containing a trace run on the given model until the given time
+		 * @param m The model on which the trace is based
+		 * @param output The stream from which to read the trace
+		 * @param timeTo The time up to which the simulation trace arrives (or should arrive)
+		 * @return The SimpleLevelResult containing a series for each of the reactants in the model,
+		 * showing the activity levels of that reactant for each time point of the trace.
+		 * @throws Exception
+		 */
 		public LevelResult analyse(Model m, InputStream output, int timeTo) throws Exception {
 			Map<String, SortedMap<Double, Double>> levels = new HashMap<String, SortedMap<Double, Double>>();
 

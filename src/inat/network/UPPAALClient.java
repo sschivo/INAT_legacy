@@ -6,6 +6,9 @@ import inat.model.Model;
 
 import java.rmi.Naming;
 
+/**
+ * The class used to access the remote server.
+ */
 public class UPPAALClient {
 	private iUPPAALServer server = null;
 	

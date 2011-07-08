@@ -3,6 +3,14 @@ package inat.graph;
 import java.awt.*;
 import java.awt.geom.Point2D;
 
+/**
+ * Represents a series of points (x,y) with a title.
+ * It draws itself on the graph panel, with the given color.
+ * If the series is a "slave" it means that it is "attached"
+ * to another series. In particular, the slave series represents
+ * the standard deviation of its master with (optional) vertical
+ * bars and shading
+ */
 public class Series {
 	protected static int seriesCounter = 0;
 	

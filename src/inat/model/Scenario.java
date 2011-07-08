@@ -1,11 +1,15 @@
 package inat.model;
 import java.util.*;
 
+/**
+ * Represents a scenario for a reaction in the model.
+ * There are 3 predefined scenarios, each one with its set of parameters.
+ */
 public class Scenario {
-	protected HashMap<String, Double> parameters = new HashMap<String, Double>();
-	public static final int INFINITE_TIME = -1;
+	protected HashMap<String, Double> parameters = new HashMap<String, Double>(); //Parameter name -> value
+	public static final int INFINITE_TIME = -1; //The constant to mean that the reaction will not happen
 	
-	public static final Scenario[] sixScenarios = new Scenario[3];
+	public static final Scenario[] sixScenarios = new Scenario[3]; //The default predefined scenarios
 	
 	static {
 		sixScenarios[0] = new Scenario() {
@@ -121,6 +125,16 @@ public class Scenario {
 		}
 	}
 
+	/**
+	 * Generate the times table based on the scenario formula and parameters.
+	 * @param nLevelsReactant1 The total number of levels of reactant1 (the enzyme or catalyst)
+	 * @param nLevelsReactant2 The total number of levels of reactant2 (the substrate)
+	 * @return Output is a list for no particular reason anymore. It used to be
+	 * set as a Cytoscape property, but these tables can become clumsy to be stored
+	 * inside the model, slowing down the loading/saving processes in the Cytoscape
+	 * interface. We now compute the tables on the fly and output them directly as
+	 * reference constants in the UPPPAAL models, saving also memory.
+	 */
 	public List<Integer> generateTimes(int nLevelsReactant1, int nLevelsReactant2) {
 		List<Integer> times = new LinkedList<Integer>();
 		for (int i=0;i<nLevelsReactant2-1;i++) {

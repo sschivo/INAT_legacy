@@ -1,6 +1,10 @@
 package inat.model;
 import java.util.*;
 
+/**
+ * A single-reactant version of Scenario.
+ * It has only one scenario, with one parameter.
+ */
 public class ScenarioMono extends Scenario {
 	protected HashMap<String, Double> parameters = new HashMap<String, Double>();
 	

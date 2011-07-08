@@ -5,6 +5,9 @@ import inat.model.Model;
 
 import java.rmi.Remote;
 
+/**
+ * Remotely accessible features: simulation run or SMC analysis
+ */
 public interface iUPPAALServer extends Remote {
 	
 	public LevelResult analyze(Model m, int timeTo, int nSimulationRuns, boolean computeStdDev) throws Exception;

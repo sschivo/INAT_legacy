@@ -58,21 +58,21 @@ import cytoscape.view.cytopanels.CytoPanelState;
  */
 public class RunAction extends CytoscapeAction {
 	private static final long serialVersionUID = -5018057013811632477L;
-	private static final String NUMBER_OF_LEVELS = "levels",
-								SECONDS_PER_POINT = "seconds per point",
-								SCENARIO = "scenario",
-								CANONICAL_NAME = "canonicalName",
-								UNCERTAINTY = "uncertainty",
-								ENABLED = "enabled",
-								GROUP = "group";
-	private int timeTo = 1200;
-	private double scale = 0.2;
-	private JRadioButton remoteUppaal, smcUppaal;
-	private JCheckBox computeStdDev;
-	private JFormattedTextField timeToFormula, nSimulationRuns;
-	private JTextField serverName, serverPort, smcFormula;
-	private boolean needToStop;
-	private RunAction meStesso;
+	private static final String NUMBER_OF_LEVELS = "levels", //The total number of levels for a node (=reactant), or for the whole network (the name of the property is the same)
+								SECONDS_PER_POINT = "seconds per point", //The number of real-life seconds represented by a single UPPAAL time unit
+								SCENARIO = "scenario", //The id of the scenario used to set the parameters for an edge (=reaction)
+								CANONICAL_NAME = "canonicalName", //The name of a reactant displayed to the user
+								UNCERTAINTY = "uncertainty", //The uncertainty about the parameters setting for an edge(=reaction)
+								ENABLED = "enabled", //Whether the node/edge is enabled. Influences the display of that node/edge thanks to the discrete Visual Mapping defined by AugmentAction
+								GROUP = "group"; //Could possibly be never used. All nodes(=reactants) belonging to the same group represent alternative (in the sense of exclusive or) phosphorylation sites of the same protein.
+	private int timeTo = 1200; //The default number of UPPAAL time units until which a simulation will run
+	private double scale = 0.2; //The time scale representing the number of real-life minutes represented by a single UPPAAL time unit
+	private JRadioButton remoteUppaal, smcUppaal; //The RadioButtons telling us whether we use a local or a remote engine, and whether we use the Statistical Model Checking or the "normal" engine
+	private JCheckBox computeStdDev; //Whether to compute the standard deviation when computing the average of a series of runs (if average of N runs is requested)
+	private JFormattedTextField timeToFormula, nSimulationRuns; //Up to which point in time (real-life minutes) the simulation(s) will run, and the number of simulations (if average of N runs is requested)
+	private JTextField serverName, serverPort, smcFormula; //The name of the server, and the corresponding port, in the case we use a remote engine. The text inserted by the user for the SMC formula. Notice that this formula will need to be changed so that it will be compliant with the UPPAAL time scale, and reactant names
+	private boolean needToStop; //Whether the user has pressed the Cancel button on the TaskMonitor while we were running an analysis process
+	private RunAction meStesso; //Myself
 	
 	/**
 	 * Constructor.
@@ -157,6 +157,12 @@ public class RunAction extends CytoscapeAction {
 			}
 		}
 		
+		/**
+		 * Translate the SMC formula into UPPAAL time units, reactant names
+		 * and give it to the analyser. Show the result in a message window.
+		 * @param model
+		 * @throws Exception
+		 */
 		private void performSMCAnalysis(final Model model) throws Exception {
 			//TODO: "understand" the formula and correctly change time values and reagent names
 			String probabilisticFormula = smcFormula.getText();
@@ -216,6 +222,14 @@ public class RunAction extends CytoscapeAction {
 			
 		}
 		
+		/**
+		 * Perform a simulation analysis. Translate the user-set number of real-life minutes
+		 * for the length of the simulation, and obtain all input data for the model engine,
+		 * based on the control the user has set (average, N simulation, StdDev, etc).
+		 * When the analysis is done, display the obtained SimpleLevelResult on a ResultPanel
+		 * @param model
+		 * @throws Exception
+		 */
 		private void performNormalAnalysis(final Model model) throws Exception {
 
 			int nMinutesToSimulate = 0;
@@ -340,6 +354,14 @@ public class RunAction extends CytoscapeAction {
 			this.monitor = monitor;
 		}
 
+		/**
+		 * Translate the Cytoscape network in the internal INAT model representation.
+		 * This intermediate model will then translated as needed into the proper UPPAAL
+		 * model by the analysers. All properties needed from the Cytoscape network are
+		 * copied in the resulting model, checking that all are set ok.
+		 * @return The intermediate INAT model
+		 * @throws InatException
+		 */
 		@SuppressWarnings("unchecked")
 		private Model getInatModel() throws InatException {
 			Map<String, String> nodeNameToId = new HashMap<String, String>();

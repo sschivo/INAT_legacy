@@ -52,97 +52,25 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		super("Augment view");
 	}
 
+	/**
+	 * This allows us to perform some updates to the standard Cytoscape interface,
+	 * in order to allow the user to interact with the model via INAT functions.
+	 * We add two mappings: a discrete one to visually distinguish between enabled
+	 * and disabled nodes/edges, and a continuous one to give the user a feedback
+	 * about the current activity level of a reactant (see the JSlider in InatResultPanel).
+	 */
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		Cytoscape.getCurrentNetworkView().addNodeContextMenuListener(this);
 		Cytoscape.getCurrentNetworkView().addEdgeContextMenuListener(this);
-	
 		
-		//The following two are my attempts to use visual mapping APIs to set up at least the color scale based on activity levels
-		//One is actually present, setting a discrete mapping for the "enabled" attribute (both for node and edge) that reduces the
-		//opacity when the object is disabled.
-		
-		//Tentativo tratto dal sito http://cytoscape.wodaklab.org/wiki/plugin_developer_tutorial#How_to_use_the_VizMapper_programmatically.3F
-//		VisualMappingManager vmm = Cytoscape.getVisualMappingManager();
-//		Set<String> names = vmm.getCalculatorCatalog().getVisualStyleNames();
-//		String vsName = "Example Visual Style";
-//		VisualPropertyType type = VisualPropertyType.NODE_FILL_COLOR;
-//		final Object defaultObj = type.getDefault(Cytoscape.getVisualMappingManager().getVisualStyle());
-//
-//		ContinuousMapping cm = new ContinuousMapping(defaultObj, ObjectMapping.NODE_MAPPING);
-//		// Set controlling Attribute
-//		cm.setControllingAttributeName("concentration", Cytoscape.getCurrentNetwork(), false);
-//
-//		Interpolator numToColor = new LinearNumberToColorInterpolator();
-//		cm.setInterpolator(numToColor);
-//
-//		Color underColor = Color.GRAY;
-//		Color minColor = Color.RED;
-//		Color midColor = Color.WHITE;
-//		Color maxColor = Color.GREEN;
-//		Color overColor = Color.BLUE;
-//
-//		BoundaryRangeValues bv0 = new BoundaryRangeValues(underColor, minColor, minColor);
-//		BoundaryRangeValues bv1 = new BoundaryRangeValues(midColor, midColor, midColor);
-//		BoundaryRangeValues bv2 = new BoundaryRangeValues(maxColor, maxColor, overColor);
-//
-//		// Set the attribute point values associated with the boundary values
-//		// The points p1, p2, p3 are the values between (min~max) of the degree
-//		cm.addPoint(0.0, bv0); cm.addPoint(7.5, bv1); cm.addPoint(15.0, bv2);
-//
-//		// Create a calculator
-//		BasicCalculator myCalculator = new BasicCalculator("My degree calcualtor", cm, VisualPropertyType.NODE_FILL_COLOR);
-//		CyNetwork network = Cytoscape.getCurrentNetwork();
-//        CyNetworkView networkView = Cytoscape.getCurrentNetworkView();
-//
-//        // get the VisualMappingManager and CalculatorCatalog
-//        VisualMappingManager manager = Cytoscape.getVisualMappingManager();
-//        CalculatorCatalog catalog = manager.getCalculatorCatalog();
-//
-//        // check to see if a visual style with this name already exists
-//        VisualStyle vs = catalog.getVisualStyle(vsName);
-//        vs.getNodeAppearanceCalculator().setCalculator(myCalculator);
-//        
-//        networkView.setVisualStyle(vs.getName()); // not strictly necessary
-//
-//        // actually apply the visual style
-//        manager.setVisualStyle(vs);
-//        networkView.redrawGraph(true,true);
-		
-		
-		
-		
-        
-//		//Tentativo fatto a mano
 		VisualMappingManager vizMap = Cytoscape.getVisualMappingManager();
 		NodeAppearanceCalculator nac = vizMap.getVisualStyle().getNodeAppearanceCalculator();
-//		System.err.println("Ecco la descrizione del node appearance calculator: " + nac.getDescription());
-//		List<Calculator> calculatori = nac.getCalculators();
-//		for (Calculator calc : calculatori) {
-//			System.err.println("\tCalculatore \"" + calc + "\". Proprieta':");
-//			Properties prop = calc.getProperties();
-//			for (Object k : prop.keySet()) {
-//				System.err.println("\t\t" + k + "[" + k.getClass().getCanonicalName() + "] --> " + prop.get(k) + "[" + prop.get(k).getClass().getCanonicalName() + "]");
-//			}
-//			System.err.println("\tMappings del calculatore " + calc + ":");
-//			Vector<ObjectMapping> mappi = calc.getMappings();
-//			for (ObjectMapping m : mappi) {
-//				System.err.println("\t\t" + m + " legato all'attributo \"" + m.getControllingAttributeName() + "\"");
-//				Properties pp = m.getProperties("tua sorella zoccola");
-//				for (Object k : pp.keySet()) {
-//					System.err.println("\t\t" + k + " --> " + pp.get(k));
-//				}
-//				//JFrame frame = new JFrame("Mapping per " + VisualPropertyType.NODE_FILL_COLOR.getPropertyLabel() + " del mapping " + m + " del calculatore " + calc);
-//				//frame.getContentPane().add(m.getLegend(VisualPropertyType.NODE_FILL_COLOR));
-//				//frame.setBounds(20, 20, 200, 200);
-//				//frame.setVisible(true);
-//			}
-//			System.err.println();
-//		}
+
 		DiscreteMapping mapping = new DiscreteMapping(Color.class, "enabled");
 		mapping.putMapValue(false, Color.BLACK);
 		mapping.putMapValue(true, Color.WHITE);
-		Calculator calco = new GenericNodeCustomGraphicCalculator("Nome del basico calculatore di cui poco mi curo", mapping, VisualPropertyType.NODE_LABEL_COLOR);
+		Calculator calco = new GenericNodeCustomGraphicCalculator("Mapping for enabled and disabled nodes", mapping, VisualPropertyType.NODE_LABEL_COLOR);
 		nac.setCalculator(calco);
 		
 		ContinuousMapping mc = new ContinuousMapping(Color.class, "activityRatio");
@@ -153,7 +81,7 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		mc.addPoint(0.5, new BoundaryRangeValues(middleBound, middleBound, middleBound));
 		mc.addPoint(1.0, new BoundaryRangeValues(upperBuond, upperBuond, upperBuond));
 		mc.setInterpolator(new LinearNumberToColorInterpolator());
-		nac.setCalculator(new GenericNodeCustomGraphicCalculator("Nome del pit", mc, VisualPropertyType.NODE_FILL_COLOR));
+		nac.setCalculator(new GenericNodeCustomGraphicCalculator("Mapping for the current activity level of nodes", mc, VisualPropertyType.NODE_FILL_COLOR));
 		
 		//Recompute the activityRatio property for all nodes, to make sure that it exists
 		CyNetwork network = Cytoscape.getCurrentNetwork();
@@ -179,56 +107,19 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 			Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 		}
 		
-		
-//		//vizMap.applyAppearances();
-//		if (Cytoscape.getNetworkAttributes().hasAttribute(Cytoscape.getCurrentNetwork().getIdentifier(), "levels")) {
-//			int maxNLivelli = Cytoscape.getNetworkAttributes().getIntegerAttribute(Cytoscape.getCurrentNetwork().getIdentifier(), "levels");
-//			
-//			//nac.removeCalculator(VisualPropertyType.NODE_FILL_COLOR);
-////			Cytoscape.getVisualMappingManager().getCalculatorCatalog().removeMapping("concentration");
-////			Cytoscape.getVisualMappingManager().getCalculatorCatalog().removeCalculator(VisualPropertyType.NODE_FILL_COLOR, "concentration");
-////			Collection<Calculator> col = Cytoscape.getVisualMappingManager().getCalculatorCatalog().getCalculators(VisualPropertyType.NODE_FILL_COLOR);
-////			Calculator[] ararar = (Calculator[])col.toArray(new Calculator[1]);
-////			for (Calculator cc : ararar) {
-////				System.err.println("Provo a rimuovere " + cc);
-////				Cytoscape.getVisualMappingManager().getCalculatorCatalog().removeCalculator(VisualPropertyType.NODE_FILL_COLOR, cc.toString());
-////			}
-//			
-////			vizMap.getVisualStyle().setGlobalAppearanceCalculator(null);
-////			ContinuousMapping mc = new ContinuousMapping(Color.class, "concentration");
-////			mc.addPoint(0.0, new BoundaryRangeValues(Color.RED, Color.RED, Color.YELLOW));
-////			mc.addPoint(maxNLivelli / 2.0, new BoundaryRangeValues(Color.RED, Color.YELLOW, Color.GREEN.darker()));
-////			mc.addPoint(maxNLivelli * 1.0, new BoundaryRangeValues(Color.YELLOW, Color.GREEN.darker(), Color.GREEN.darker()));
-////			mc.setInterpolator(new LinearNumberToColorInterpolator());
-////			nac.setCalculator(new GenericNodeCustomGraphicCalculator("Nome del pit", mc, VisualPropertyType.NODE_FILL_COLOR));
-//			
-////			for (Calculator calc : nac.getCalculators()) {
-////				for (ObjectMapping m : calc.getMappings()) {
-////					if (m.getControllingAttributeName().equals("concentration")) {
-////						if (m.getClass().equals(ContinuousMapping.class)) {
-////							/*System.err.println("Ecco i boundari del simpatico mapping per la concentrazione:");
-////							for (ContinuousMappingPoint p : mc.getAllPoints()) {
-////								System.err.println(p.getValue());
-////							}*/
-////							/*List<ContinuousMappingPoint> punti = mc.getAllPoints();
-////							if (punti.size() == 3) {
-////								punti.get(1).setValue(maxNLivelli / 2.0);
-////								punti.get(2).setValue(maxNLivelli * 1.0);
-////							}*/
-////							nac.removeCalculator(VisualPropertyType.NODE_FILL_COLOR);
-//							ContinuousMapping mc = new ContinuousMapping(Color.class, "concentration");
-//							mc.addPoint(0.0, new BoundaryRangeValues(Color.RED, Color.RED, Color.YELLOW));
-//							mc.addPoint(maxNLivelli / 2.0, new BoundaryRangeValues(Color.RED, Color.YELLOW, Color.GREEN.darker()));
-//							mc.addPoint(maxNLivelli * 1.0, new BoundaryRangeValues(Color.YELLOW, Color.GREEN.darker(), Color.GREEN.darker()));
-//							nac.setCalculator(new GenericNodeCustomGraphicCalculator("Nome del pit", mc, VisualPropertyType.NODE_FILL_COLOR));
-////						}
-////					}
-////				}
-////			}
-//			vizMap.applyAppearances();
-//		}
 	}
 
+	/**
+	 * These ContextMenuItems are added to the contextual menu that pops
+	 * up when the user right-clicks on a node in the cytoscape network
+	 * window.
+	 * Edit reactant will show the NodeDialog.
+	 * Enable/disable will change the ENABLED property of a node/edge to its
+	 * negation. If a group of arcs/nodes was selected, the whole group changes
+	 * state. Moreover, we make sure that after this operation the model is still
+	 * consistent, i.e. there are no enabled dangling edges (pointing to a disabled
+	 * node or coming from a disabled node).
+	 */
 	@Override
 	public void addNodeContextMenuItems(final NodeView nodeView, JPopupMenu menu) {
 		if (menu != null) {
@@ -301,6 +192,14 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		}
 	}
 
+	/**
+	 * These ContextMenuItems are added to the contextual menu that pops
+	 * up when the user right-clicks on an edge in the cytoscape network
+	 * window.
+	 * Edit reaction shows the EdgeDialog.
+	 * The Enable/disable action does the same thins as the one defined for the
+	 * nodes, but this time it does it on nodes.
+	 */
 	@Override
 	public void addEdgeContextMenuItems(final EdgeView edgeView, JPopupMenu menu) {
 		if (menu != null) {

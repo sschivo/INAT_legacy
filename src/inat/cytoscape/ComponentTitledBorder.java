@@ -5,6 +5,12 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.event.MouseListener;
 
+/**
+ * Makes a nice border with a component on it instead of a simple text title.
+ * We mainly use it with a CheckBox or RadioButton as "title", to enable/disable
+ * all the components inside the box when it is selected/deselected.
+ * We don't really need to delve into the details of its working, as long as it works.
+ */
 public class ComponentTitledBorder implements Border, MouseListener, MouseMotionListener, SwingConstants {
     private int offset = 5;
     private Component comp;

@@ -128,21 +128,6 @@ public class EdgeDialog extends JFrame {
 						}
 					}
 					int uncert = uncertainty.getValue();
-					/*int nLevels = Cytoscape.getNetworkAttributes().getIntegerAttribute(Cytoscape.getCurrentNetwork().getIdentifier(), NUMBER_OF_LEVELS);
-					List<Integer> times = scenario.generateTimes(1 + nLevels);
-					List<Integer> timesL = new ArrayList<Integer>(), timesU = new ArrayList<Integer>();
-					for (Integer i : times) {
-						if (i.equals(VariablesModel.INFINITE_TIME)) {
-							timesL.add(i);
-							timesU.add(i);
-						} else {
-							timesL.add(Math.max(1, (int)(i * (100.0 - uncert) / 100.0))); //we use Math.max because we do not want to put 0 as a time
-							timesU.add(Math.max(1, (int)(i * (100.0 + uncert) / 100.0)));
-						}
-					}
-					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES, times);
-					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES_LOWER, timesL);
-					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES_UPPER, timesU);*/
 					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), SCENARIO, 0);
 					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), UNCERTAINTY, uncert);
 					
@@ -217,22 +202,7 @@ public class EdgeDialog extends JFrame {
 					}
 					int uncert = uncertainty.getValue();
 					
-					/*List<Integer> times = selectedScenario.generateTimes(1 + Cytoscape.getNetworkAttributes().getIntegerAttribute(Cytoscape.getCurrentNetwork().getIdentifier(), NUMBER_OF_LEVELS));
-					List<Integer> timesL = new ArrayList<Integer>(), timesU = new ArrayList<Integer>();
-					for (Integer i : times) {
-						if (i.equals(VariablesModel.INFINITE_TIME)) {
-							timesL.add(i);
-							timesU.add(i);
-						} else {
-							timesL.add(Math.max(1, (int)(i * (100.0 - uncert) / 100.0))); //Math.max is used because we cannot put 0 as a time
-							timesU.add(Math.max(1, (int)(i * (100.0 + uncert) / 100.0)));
-						}
-					}
-					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES_LOWER, timesL);
-					Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES_UPPER, timesU);*/
 					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), UNCERTAINTY, uncert);
-					
-					/*Cytoscape.getEdgeAttributes().setListAttribute(edge.getIdentifier(), TIMES, times);*/
 					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), SCENARIO, comboScenario.getSelectedIndex());
 					
 					Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
@@ -260,6 +230,12 @@ public class EdgeDialog extends JFrame {
 		this.add(controls, BorderLayout.SOUTH);
 	}
 	
+	/**
+	 * Update the list of parameters shown when a differnt scenario is chosen
+	 * @param edge The edge representing the reaction of which we display the parameter
+	 * @param parametersBox The box in which to put the list of parameters for the new scenario
+	 * @param selectedScenario The newly selected scenario
+	 */
 	private void updateParametersBox(Edge edge, Box parametersBox, Scenario selectedScenario) {
 		parametersBox.removeAll();
 		String[] parameters = selectedScenario.listVariableParameters();

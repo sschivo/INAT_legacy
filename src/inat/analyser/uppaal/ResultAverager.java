@@ -13,15 +13,31 @@ import java.util.Vector;
 
 import cytoscape.task.TaskMonitor;
 
+/**
+ * Used to produce the average result of a series of simulation queries.
+ * Standard deviation can also be produced on request.
+ */
 public class ResultAverager {
-	private TaskMonitor monitor = null;
-	private RunAction runAction = null;
+	private TaskMonitor monitor = null; //If we are operating via the user interface, we can show the point at which we are with the simulations
+	private RunAction runAction = null; //If we are operating via the user interface, this will tell us if the user has requested that we cancel the simulations
 	
 	public ResultAverager(TaskMonitor monitor, RunAction runAction) {
 		this.monitor = monitor;
 		this.runAction = runAction;
 	}
 	
+	/**
+	 * Analyse the given model, with a reachability query E<> (globalTime > timeTo) (with timeTo given),
+	 * and produce a result showing the average activity levels of all reactants in the model during the simulation
+	 * interval. If computeStdDev is true, adds also series to show the Standard Deviation from the averages.
+	 * @param m The model
+	 * @param timeTo The time up to which a single simulation will run
+	 * @param nRuns How many simulation runs we need to compute the average of
+	 * @param computeStdDev Tells us whether the user has asked for the standard deviation from the average
+	 * @return A SimpleLevelResult showing the averages (and, is requested, the standard deviations) of activity levels of all reactants in the given model
+	 * @throws AnalysisException
+	 * @throws Exception
+	 */
 	public SimpleLevelResult analyzeAverage(Model m, int timeTo, int nRuns, boolean computeStdDev) throws AnalysisException, Exception {
 		Vector<SimpleLevelResult> results = new Vector<SimpleLevelResult>(nRuns);
 		UppaalModelAnalyserFasterConcrete analyzer = new UppaalModelAnalyserFasterConcrete(monitor, runAction);
@@ -37,6 +53,19 @@ public class ResultAverager {
 		return average(results, computeStdDev);
 	}
 	
+	/**
+	 * Given a vector of SimpleLevelResults, computes a new SimpleLevelResult in which the
+	 * series represent the averages (and, if requested, standard deviations) of the series
+	 * contained in the given vector. Of course, all SimpleLevelResults in the vector are expected
+	 * to have the exact same series names. Time instants can be instead different: the number of time
+	 * instants contained in the result will correspond to the average number of time instants
+	 * found in the input SimpleLevelResults.
+	 * @param results The vector containing all the SimpleLevelResults of which we have to compute the average/StdDev
+	 * @param computeStdDev Tells us whether we have to compute the standard deviation for all the series
+	 * @return A single SimpleLevelResult containing the averages (and StdDevs, if needed) of the
+	 * series present in the input SimpleLevelResults
+	 * @throws Exception
+	 */
 	public SimpleLevelResult average(Vector<SimpleLevelResult> results, boolean computeStdDev) throws Exception {
 		if (results.isEmpty()) throw new Exception("Empty result set");
 		Map<String, SortedMap<Double, Double>> result = new HashMap<String, SortedMap<Double, Double>>();

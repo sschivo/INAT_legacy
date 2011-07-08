@@ -7,10 +7,23 @@ import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
 
-
+/**
+ * The class used for file input/output
+ */
 public class FileUtils {
 	private static File currentDirectory = null;
 	
+	/**
+	 * Show the File Chooser dialog and return the name of the chosen file.
+	 * You can choose the file type (ex. ".csv"), the description (ex. "Commma
+	 * separated files"), and the parent Component (null is ok: it is just to
+	 * tell the O.S. to which window the dialog will "belong") 
+	 * @param fileType The file type (ex. ".png")
+	 * @param description The file type description (ex. "Image file")
+	 * @param parent The parent Component (typically a window. null is ok)
+	 * @return The complete (absoluite) path of the file selected by the user, or
+	 * null if the user has selected no file/closed the dialog
+	 */
 	public static String open(final String fileType, final String description, Component parent) {
 		JFileChooser chooser = new JFileChooser(currentDirectory);
 		chooser.setFileFilter(new FileFilter() {
@@ -34,6 +47,14 @@ public class FileUtils {
 		return null;
 	}
 	
+	/**
+	 * Show the save dialog. The workings are the same as the with the open function
+	 * @param fileType The file type (ex. ".png")
+	 * @param description The file type description (ex. "Image file")
+	 * @param parent The parent Component (typically a window. null is ok)
+	 * @return The complete (absoluite) path of the file selected by the user, or
+	 * null if the user has selected no file/closed the dialog
+	 */
 	public static String save(final String fileType, final String description, Component parent) {
 		JFileChooser chooser = new JFileChooser(currentDirectory);
 		chooser.setFileFilter(new FileFilter() {
@@ -61,6 +82,11 @@ public class FileUtils {
 		return null;
 	}
 	
+	/**
+	 * Save what is currently shown on the given Component to a given .png file
+	 * @param c The component whose "photograph" is to be saved
+	 * @param fileName The name of the file in which to save the image
+	 */
 	public static void saveToPNG(Component c, String fileName) {
 		try {
 			BufferedImage image = new BufferedImage(c.getSize().width, c.getSize().height, BufferedImage.TYPE_INT_RGB);
@@ -77,6 +103,11 @@ public class FileUtils {
 		}
 	}
 	
+	/**
+	 * Save what is currently shown on the given Component to a
+	 * file that the user will choose via the open dialog.
+	 * @param c The component to be saved
+	 */
 	public static void saveToPNG(Component c) {
 		String fileName = save(".png", "PNG image", c);
 		if (fileName != null) {

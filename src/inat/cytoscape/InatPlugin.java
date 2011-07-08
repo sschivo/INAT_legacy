@@ -76,6 +76,7 @@ public class InatPlugin extends CytoscapePlugin {
 		// the button container
 		JPanel buttons = new JPanel(new GridLayout(5, 1, 2, 2));
 		
+		//This part allows the user to choose whether to perform the computations on the local machine or on a remote machine.
 		Box uppaalBox = new Box(BoxLayout.Y_AXIS);
 		final JRadioButton localUppaal = new JRadioButton("Local"),
 					 remoteUppaal = new JRadioButton("Remote");
@@ -117,6 +118,7 @@ public class InatPlugin extends CytoscapePlugin {
 		uppaalBox.add(serverBox);
 		buttons.add(uppaalBox);
 		
+		//This part allows the user to choose between simulation run(s) and Statistical Model Checking
 		final JRadioButton normalUppaal = new JRadioButton("Simulation"),
 						   smcUppaal = new JRadioButton("SMC");
 		ButtonGroup modelCheckingGroup = new ButtonGroup();
@@ -209,7 +211,7 @@ public class InatPlugin extends CytoscapePlugin {
 		
 		final JButton changeSecondsPerPointbutton = new JButton();
 		changeSecondsPerPointbutton.setToolTipText("Click here to change the number of seconds to which a single simulation step corresponds");
-		new ChangeSecondsAction(plugin, changeSecondsPerPointbutton);
+		new ChangeSecondsAction(plugin, changeSecondsPerPointbutton); //This manages the button for changing the number of seconds per UPPAAL time unit
 		buttons.add(changeSecondsPerPointbutton);
 		Cytoscape.getNetworkAttributes().getMultiHashMap().addDataListener(new MultiHashMapListener() {
 
@@ -238,6 +240,7 @@ public class InatPlugin extends CytoscapePlugin {
 			}
 		});
 
+		//The "Analyse network" button: perform the requested analysis on the current network with the given parameters
 		JButton runButton = new JButton(new RunAction(plugin, remoteUppaal, serverName, serverPort, smcUppaal, timeTo, nSimulationRuns, computeStdDev, smcFormula));
 		buttons.add(runButton);
 		

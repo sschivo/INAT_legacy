@@ -30,7 +30,11 @@ import javax.swing.JOptionPane;
 import cytoscape.Cytoscape;
 import cytoscape.task.TaskMonitor;
 
-
+/**
+ * This class is not used at the moment.
+ * Computes the requested analysis on the given INAT model, translating it into
+ * the corresponding UPPAAL model depending on which query is asked.
+ */
 public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 	
 	public static double TIME_SCALE = 0.2; //the factor by which time values are mutiplied before being output on the .csv file (it answers the question "how many real-life minutes does a time unit of the model represent?")
@@ -47,8 +51,8 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 	
 	private static final String VERIFY_SMC_KEY = "/Inat/UppaalInvoker/verifytaSMC";
 	
-	private String verifytaPath, verifytaSMCPath, tracerPath;
-	private TaskMonitor monitor;
+	private String verifytaPath, verifytaSMCPath, tracerPath; //The paths to the tools used in the analysis
+	private TaskMonitor monitor; //The reference to the Monitor in which to show the progress of the task
 	
 	public UppaalModelAnalyserFaster(TaskMonitor monitor) {
 		XmlConfiguration configuration = InatBackend.get().configuration();
@@ -64,6 +68,14 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 		return false;
 	}
 	
+	/**
+	 * Returns the SMCResult that we obtain from analysing with UPPAAL the given model
+	 * with the given probabilistic query
+	 * @param m The model to analyse
+	 * @param probabilisticQuery The probabilistic query (ex. Pr[<=12000](<> reactant0 > 40))
+	 * @return The parsed SMCResult containing the response given by UPPAAL (be it boolean or numerical)
+	 * @throws AnalysisException
+	 */
 	public SMCResult analyzeSMC(Model m, String probabilisticQuery) throws AnalysisException {
 		SMCResult result = null;
 		try {
@@ -150,6 +162,13 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 		return result;
 	}
 	
+	/**
+	 * Perform a simple simulation run on the given model, up to the given time
+	 * @param m The model to analyse
+	 * @param timeTo the length of the simulation, in UPPAAL time units
+	 * @return The SimpleLevelResult showing as series the activity levels of all reactants
+	 * present in the model during the simulation period
+	 */
 	public LevelResult analyze(Model m, int timeTo) throws AnalysisException {
 		LevelResult result = null;
 		try {
@@ -299,6 +318,13 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 	//This is slightly different from the "official" one in the sense that it reads data directly from the input stream. This way, we don't have to read the whole stream to a string (with the consequent waste of memory) before giving an input to the interpreter
 	public class VariablesInterpreter {
 
+		/**
+		 * Analyse the UPPAAL output from a Statistical Model Checking query
+		 * @param m The model on which the result is based 
+		 * @param smcOutput The stream from which to read the UPPAAL output
+		 * @return The parsed SMCResult containing the boolean/numerical query answer
+		 * @throws Exception
+		 */
 		public SMCResult analyseSMC(Model m, InputStream smcOutput) throws Exception {
 			BufferedReader br = new BufferedReader(new InputStreamReader(smcOutput));
 			String line = null;
@@ -336,6 +362,16 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			throw new Exception("Unable to understand UPPAAL SMC output: " + readTheRest(line, br));
 		}
 		
+		/**
+		 * Used when reporting an error about the SMC query answer.
+		 * As UPPAAL SMC is still in beta stage, we do our best to understand its output,
+		 * but if we fail we try at least to speed up the process of changing the parsing
+		 * according to a possibly new output format.
+		 * @param line The entire line which caused the problem
+		 * @param br The buffered reader from which to continue to read the rest of the input
+		 * @return A string containing the rest of the input
+		 * @throws Exception
+		 */
 		private String readTheRest(String line, BufferedReader br) throws Exception {
 			StringBuilder content = new StringBuilder();
 			String endLine = System.getProperty("line.separator");
@@ -346,6 +382,13 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			return content.toString();
 		}
 		
+		/**
+		 * Find the confidence value given in the UPPAAL SMC query result
+		 * @param currentLine The line from which to start looking for a confidence value
+		 * @param br The reader from which to continue reading UPPAAL output
+		 * @return The confidence value
+		 * @throws Exception
+		 */
 		private double findConfidence(String currentLine, BufferedReader br) throws Exception {
 			double confidence = 0;
 			boolean weHaveAProblem = false;
@@ -359,7 +402,7 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 					savedOutput.append(line + endLine);
 					if (line.contains(objective)) {
 						break;
-					} else if (line.startsWith("State")) {
+					} else if (line.startsWith("State")) { //This actually means that UPPAAL has found a problem in our model. I do my best to report the error to the user.
 						weHaveAProblem = true;
 					}
 				}
@@ -387,6 +430,15 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			return confidence;
 		}
 		
+		/**
+		 * Parse the UPPAAL output containing a trace run on the given model until the given time
+		 * @param m The model on which the trace is based
+		 * @param output The stream from which to read the trace
+		 * @param timeTo The time up to which the simulation trace arrives (or should arrive)
+		 * @return The SimpleLevelResult containing a series for each of the reactants in the model,
+		 * showing the activity levels of that reactant for each time point of the trace.
+		 * @throws Exception
+		 */
 		public LevelResult analyse(Model m, InputStream output, int timeTo) throws Exception {
 			Map<String, SortedMap<Double, Double>> levels = new HashMap<String, SortedMap<Double, Double>>();
 

@@ -16,16 +16,20 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/**
+ * The remote server. Implements the methods for simulation run analysis and
+ * SMC analysis. Listens for remote connections on the given port.
+ */
 public class UPPAALServer extends UnicastRemoteObject implements iUPPAALServer {
 	private static final long serialVersionUID = 5030971508567718530L;
 	private static final DateFormat df = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss.SSS");
+	private static final int DEFAULT_PORT = 1234;
 
-	protected UPPAALServer() throws RemoteException {
+	protected UPPAALServer(int port) throws RemoteException {
 		super();
-		int portRMI = 1234;
 		try {
-			LocateRegistry.createRegistry(portRMI);
-			Naming.bind("rmi://localhost:" + portRMI + "/UPPAALServer", this);
+			LocateRegistry.createRegistry(port);
+			Naming.bind("rmi://localhost:" + port + "/UPPAALServer", this);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -56,11 +60,21 @@ public class UPPAALServer extends UnicastRemoteObject implements iUPPAALServer {
 	
 	public static void main(String[] args) {
 		try {
+			int port = DEFAULT_PORT;
+			if (args.length < 1) {
+				System.err.println("No port given: default to " + port);
+			} else {
+				try {
+					port = Integer.parseInt(args[0]);
+				} catch (NumberFormatException ex) {
+					throw new Exception("Invalid port number", ex);
+				}
+			}
 			InatBackend.initialise(new File("inat-configuration.xml"));
 
 			@SuppressWarnings("unused")
-			UPPAALServer server = new UPPAALServer();
-			System.out.println(df.format(new Date(System.currentTimeMillis())) + " Server started.");
+			UPPAALServer server = new UPPAALServer(port);
+			System.out.println(df.format(new Date(System.currentTimeMillis())) + " Server started and listening on port " + port + ".");
 		} catch (Exception ex) {
 			System.err.println("Problems in starting server!");
 			ex.printStackTrace();

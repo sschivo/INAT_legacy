@@ -3,7 +3,12 @@ package inat.graph;
 
 import java.awt.Rectangle;
 
-
+/**
+ * The class used to contain the scaling informations for a graph.
+ * When a new series is added to the graph, we make sure that the
+ * update the minimum and maximum values for the graph, so that it will
+ * automatically display the data in the best possible zoom level.
+ */
 public class Scale {
 	private double maxX = Double.NaN;
 	private double maxY = Double.NaN;
