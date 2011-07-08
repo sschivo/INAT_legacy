@@ -218,12 +218,12 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	/*
 	 * If the series at index seriesIdx has a slave, toggle explicit error bars (shown by the slave)
 	 */
-	public void toggleErrorBars(int seriesIdx) {
+	public void changeErrorBars(int seriesIdx) {
 		if (seriesIdx < 0 || seriesIdx >= data.size()) return;
 		Series s = data.elementAt(seriesIdx);
 		if (s.isMaster()) {
 			s = s.getSlave();
-			s.setErrorBars(!s.getErrorBars());
+			s.changeErrorBars();
 		}
 	}
 	
@@ -854,6 +854,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	 * The middle mouse button can be used anywhere in the graph area to hide/show the legend (showing a hidden legend puts it back to the default place)
 	 * The middle mouse button can be used inside the legend box, on the name of a Series to hide/show that Series
 	 * The middle mouse button can be used inside the legend box, on the line representing the color of a Series to change the color for that series
+	 * The right mouse button inside the legend allows you to change the way the Standard Deviation of the selected series, if present, is shown (none, only bars, only shading, both)
 	 * The right mouse button can be used to open the menu for other graph options
 	 * The mouse wheel can be used to "zoom" the graph, changing the width of lines and height of fonts (useful for very large/small windows)
 	 */
@@ -888,7 +889,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 					yPresumed = e.getY() - legendBounds.y;
 				int seriesIdx = findSeriesInLegend(xPresumed, yPresumed);
 				if (seriesIdx != -1) {
-					this.toggleErrorBars(seriesIdx);
+					this.changeErrorBars(seriesIdx);
 				}
 				this.repaint();
 			} else {

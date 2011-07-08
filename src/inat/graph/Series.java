@@ -22,7 +22,8 @@ public class Series {
 	public static String SLAVE_SUFFIX = "_stddev"; //for a series to be a representation of confidence intervals of series ABC, its name should be "ABC" + SLAVE_SUFFIX (suffix can have any capitalization)
 	private Color myColor = null;
 	private boolean changeColor = false;
-	private boolean showBars = false; //valid only if this Series is a slave. Tells to show the vertical error bars
+	private enum BarsState {NOT_SHOWN, ONLY_BARS, ONLY_SHADING, BOTH};
+	private BarsState barsState = BarsState.ONLY_BARS; //valid only if this Series is a slave. Tells to show the vertical error bars
 	
 	public Series(P[] data) {
 		this(data, new Scale());
@@ -129,12 +130,21 @@ public class Series {
 		return this.myColor;
 	}
 	
-	public void setErrorBars(boolean showBars) {
-		this.showBars = showBars;
+	public void changeErrorBars() {
+		BarsState[] states = BarsState.values();
+		int idx = 0;
+		for (int i = 0; i < states.length; i++) {
+			if (this.barsState.equals(states[i])) {
+				idx = i;
+			}
+		}
+		idx++;
+		if (idx >= states.length) idx = 0;
+		this.barsState = states[idx];
 	}
 	
-	public boolean getErrorBars() {
-		return this.showBars;
+	public BarsState getErrorBars() {
+		return this.barsState;
 	}
 	
 	public void plot(Graphics2D g, Rectangle bounds) {
@@ -145,101 +155,103 @@ public class Series {
 			   minY = scale.getMinY();
 		if (!enabled) return;
 		
-		if (master != null) {
+		if (isSlave()) {
 			myColor = master.myColor;
 			P[] masterData = master.getData();
 			P vecchio = null;
 			int i = 0;
 			Color c = g.getColor();
-			for (P punto : data) {
-				if (punto.y < 1e-7) {
-					vecchio = punto;
-					continue;
-				}
-				for (;i<masterData.length && masterData[i].x<punto.x;i++);
-				if (i < masterData.length) {
-					if (i > 0) {
-						float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
-						Color c1 = Color.getHSBColor(hsb[0], hsb[1]/3, hsb[2]);
-							  //c2 = Color.getHSBColor(hsb[0], hsb[1]*3/2, hsb[2]);
-						float[] rgb = c1.getRGBComponents(null);
-						Color c3 = new Color(rgb[0], rgb[1], rgb[2], 0.5f);
-						rgb = c.getRGBColorComponents(null);
-						Color c4 = new Color(rgb[0], rgb[1], rgb[2], 0.6f);
-						/*g.setColor(Color.getHSBColor(hsb[0], hsb[1]/4, hsb[2]));
-						g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)),
-								   (int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
-						g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + vecchio.y - minY)),
-								   (int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)));*/
-						/*Polygon grayedError = new Polygon();
-						grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)));
-						grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
-						grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)));
-						grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + vecchio.y - minY)));
-						g.setPaint(new GradientPaint(new Point2D.Float((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY))), c3, new Point2D.Float((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY))), c4));
-						g.fill(grayedError);*/
-						/*Polygon error1 = new Polygon();
-						error1.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY)));
-						error1.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY)));
-						error1.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
-						error1.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)));
-						g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + masterData[i].y) / 2.0 - minY), (int)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y + masterData[i].y - punto.y) / 2.0 - minY));
-						g.setPaint(new GradientPaint((float)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + masterData[i].y) / 2.0 - minY), c, (float)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y + masterData[i].y - punto.y) / 2.0 - minY), c4));
-						g.fill(error1);*/
-						
-						//I would like to make it simpler, so that it does not negatively influence performances, but I have no time..
-						double maxY = Math.max(vecchio.y, punto.y);
-						Point2D.Float A = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i-1].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + maxY - minY))),
-									  B = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i].y + maxY - minY))),
-									  C = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i].y - maxY - minY))),
-									  D = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i-1].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - maxY - minY))),
-									  E = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i-1].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY))),
-									  F = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY))),
-									  I = new Point2D.Float((E.x + F.x) / 2.0f, (E.y + F.y) / 2.0f);
-						float Gx, Gy;
-						if (A.y != B.y) {
-							Gx = (A.x*(B.y-A.y)/(B.x-A.x) - A.y + I.x*(B.x-A.x)/(B.y-A.y) + I.y) / ((B.y-A.y)/(B.x-A.x) + (B.x-A.x)/(B.y-A.y));
-							Gy = (B.y-A.y)/(B.x-A.x) * (Gx-A.x) + A.y;
-						} else {
-							Gx = (A.x + B.x) / 2.0f;
-							Gy = A.y;
-						}
-						Point2D.Float G = new Point2D.Float(Gx, Gy);
-						float Hx, Hy;
-						if (C.y != D.y) {
-							Hx = (D.x*(C.y-D.y)/(C.x-D.x) - D.y + I.x*(C.x-D.x)/(C.y-D.y) + I.y) / ((C.y-D.y)/(C.x-D.x) + (C.x-D.x)/(C.y-D.y));
-							Hy = (C.y-D.y)/(C.x-D.x) * (Gx-D.x) + D.y;
-						} else {
-							Hx = (C.x + D.x) / 2.0f;
-							Hy = C.y;
-						}
-						Point2D.Float H = new Point2D.Float(Hx, Hy);
-						Polygon error1 = new Polygon();
-						error1.addPoint((int)E.x, (int)E.y);
-						error1.addPoint((int)F.x, (int)F.y);
-						error1.addPoint((int)B.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)));
-						error1.addPoint((int)A.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + vecchio.y - minY)));
-						//g.drawLine((int)I.x, (int)I.y, (int)G.x, (int)G.y);
-						//g.drawLine((int)A.x, (int)A.y, (int)B.x, (int)B.y);
-						g.setPaint(new GradientPaint(I, c4, G, c3));
-						g.fill(error1);
-						Polygon error2 = new Polygon();
-						error2.addPoint((int)E.x, (int)E.y);
-						error2.addPoint((int)F.x, (int)F.y);
-						error2.addPoint((int)C.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
-						error2.addPoint((int)D.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)));
-						g.setPaint(new GradientPaint(I, c4, H, c3));
-						g.fill(error2);
+			if (barsState.equals(BarsState.ONLY_SHADING) || barsState.equals(BarsState.BOTH)) { //Draw standard deviation as shading
+				for (P punto : data) {
+					if (punto.y < 1e-7) {
+						vecchio = punto;
+						continue;
 					}
+					for (;i<masterData.length && masterData[i].x<punto.x;i++);
+					if (i < masterData.length) {
+						if (i > 0) {
+							float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+							Color c1 = Color.getHSBColor(hsb[0], hsb[1]/3, hsb[2]);
+								  //c2 = Color.getHSBColor(hsb[0], hsb[1]*3/2, hsb[2]);
+							float[] rgb = c1.getRGBComponents(null);
+							Color c3 = new Color(rgb[0], rgb[1], rgb[2], 0.5f);
+							rgb = c.getRGBColorComponents(null);
+							Color c4 = new Color(rgb[0], rgb[1], rgb[2], 0.6f);
+							/*g.setColor(Color.getHSBColor(hsb[0], hsb[1]/4, hsb[2]));
+							g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)),
+									   (int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
+							g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + vecchio.y - minY)),
+									   (int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)));*/
+							/*Polygon grayedError = new Polygon();
+							grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)));
+							grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
+							grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)));
+							grayedError.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + vecchio.y - minY)));
+							g.setPaint(new GradientPaint(new Point2D.Float((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY))), c3, new Point2D.Float((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY))), c4));
+							g.fill(grayedError);*/
+							/*Polygon error1 = new Polygon();
+							error1.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY)));
+							error1.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY)));
+							error1.addPoint((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
+							error1.addPoint((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)));
+							g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + masterData[i].y) / 2.0 - minY), (int)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y + masterData[i].y - punto.y) / 2.0 - minY));
+							g.setPaint(new GradientPaint((float)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + masterData[i].y) / 2.0 - minY), c, (float)(bounds.x + scaleX * (masterData[i-1].x + masterData[i].x) / 2.0 - minX), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y + masterData[i].y - punto.y) / 2.0 - minY), c4));
+							g.fill(error1);*/
+							
+							//I would like to make it simpler, so that it does not negatively influence performances, but I have no time..
+							double maxY = Math.max(vecchio.y, punto.y);
+							Point2D.Float A = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i-1].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + maxY - minY))),
+										  B = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i].y + maxY - minY))),
+										  C = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i].y - maxY - minY))),
+										  D = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i-1].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - maxY - minY))),
+										  E = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i-1].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY))),
+										  F = new Point2D.Float((float)(bounds.x + scaleX * (masterData[i].x - minX)), (float)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY))),
+										  I = new Point2D.Float((E.x + F.x) / 2.0f, (E.y + F.y) / 2.0f);
+							float Gx, Gy;
+							if (A.y != B.y) {
+								Gx = (A.x*(B.y-A.y)/(B.x-A.x) - A.y + I.x*(B.x-A.x)/(B.y-A.y) + I.y) / ((B.y-A.y)/(B.x-A.x) + (B.x-A.x)/(B.y-A.y));
+								Gy = (B.y-A.y)/(B.x-A.x) * (Gx-A.x) + A.y;
+							} else {
+								Gx = (A.x + B.x) / 2.0f;
+								Gy = A.y;
+							}
+							Point2D.Float G = new Point2D.Float(Gx, Gy);
+							float Hx, Hy;
+							if (C.y != D.y) {
+								Hx = (D.x*(C.y-D.y)/(C.x-D.x) - D.y + I.x*(C.x-D.x)/(C.y-D.y) + I.y) / ((C.y-D.y)/(C.x-D.x) + (C.x-D.x)/(C.y-D.y));
+								Hy = (C.y-D.y)/(C.x-D.x) * (Gx-D.x) + D.y;
+							} else {
+								Hx = (C.x + D.x) / 2.0f;
+								Hy = C.y;
+							}
+							Point2D.Float H = new Point2D.Float(Hx, Hy);
+							Polygon error1 = new Polygon();
+							error1.addPoint((int)E.x, (int)E.y);
+							error1.addPoint((int)F.x, (int)F.y);
+							error1.addPoint((int)B.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)));
+							error1.addPoint((int)A.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y + vecchio.y - minY)));
+							//g.drawLine((int)I.x, (int)I.y, (int)G.x, (int)G.y);
+							//g.drawLine((int)A.x, (int)A.y, (int)B.x, (int)B.y);
+							g.setPaint(new GradientPaint(I, c4, G, c3));
+							g.fill(error1);
+							Polygon error2 = new Polygon();
+							error2.addPoint((int)E.x, (int)E.y);
+							error2.addPoint((int)F.x, (int)F.y);
+							error2.addPoint((int)C.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)));
+							error2.addPoint((int)D.x, (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - vecchio.y - minY)));
+							g.setPaint(new GradientPaint(I, c4, H, c3));
+							g.fill(error2);
+						}
+					}
+					vecchio = punto;
 				}
-				vecchio = punto;
 			}
 			g.setColor(c);
 			i = 0;
 			for (P punto : data) {
 				for (;i<masterData.length && masterData[i].x<punto.x;i++);
 				if (i < masterData.length) {
-					if (showBars) {
+					if (barsState.equals(BarsState.ONLY_BARS) || barsState.equals(BarsState.BOTH)) { //Draw standard deviation as error bars
 						//these lines draw the vertical error bars, but if we have a lot of points the thing becomes extremely clumsy
 						g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - punto.y - minY)), 
 								(int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  + punto.y - minY)));
@@ -248,7 +260,7 @@ public class Series {
 						g.drawLine((int)(bounds.x + scaleX * (masterData[i].x - minX)) - 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y + punto.y - minY)), 
 								(int)(bounds.x + scaleX * (masterData[i].x - minX)) + 3, (int)(bounds.y + bounds.height - scaleY * (masterData[i].y  + punto.y - minY)));
 					}
-					if (i > 0) {
+					if (i > 0 && (barsState.equals(BarsState.ONLY_SHADING) || barsState.equals(BarsState.BOTH))) { //If there was shading, we need to redraw the "master" line, which can have been partially overdrawn
 						g.drawLine((int)(bounds.x + scaleX * (masterData[i-1].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i-1].y - minY)),
 								   (int)(bounds.x + scaleX * (masterData[i].x - minX)), (int)(bounds.y + bounds.height - scaleY * (masterData[i].y - minY)));
 					}
