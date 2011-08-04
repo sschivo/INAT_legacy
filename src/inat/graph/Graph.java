@@ -970,7 +970,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 			} else {
 				//there is already the starting measure
 			}
-			this.setDrawArea((int)(minimumX / scale.getXScale()), (int)(maximumX / scale.getXScale()), (int)(minimumY / scale.getYScale()), (int)(maximumY / scale.getYScale()));
+			this.setDrawArea((int)(((minimumX - 1 - BORDER_X * SCALA) / scale.getXScale() + scale.getMinX())), (int)((maximumX - 1 - BORDER_X * SCALA) / scale.getXScale() + scale.getMinX()), (int)((this.getBounds().height + 1 - maximumY - BORDER_Y * SCALA) / scale.getYScale() + scale.getMinY()), (int)((this.getBounds().height + 1 - minimumY - BORDER_Y * SCALA) / scale.getYScale() + scale.getMinY()));
 			zoomRectangleBounds = null;
 			drawingZoomRectangle = false;
 			this.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
