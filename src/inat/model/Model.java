@@ -21,6 +21,7 @@ public class Model implements Serializable {
 								   SECONDS_PER_POINT = "seconds per point", //Property belonging to a network. The number of real-life seconds represented by a single UPPAAL time unit.
 								   SCENARIO = "scenario", //Property belonging to an edge. The id of the scenario on which the reaction corresponding to the edge computes its time tables.
 								   ALIAS = "alias", //The property used to indicate the user-chosen name of a node
+								   CANONICAL_NAME = "canonicalName", //The same, but in the Cytoscape model instead of the Model
 								   ENABLED = "enabled", //Tells us whether a node/edge is enabled
 								   GROUP = "group", //A group of nodes identifies alternative phosphorylation sites (can be useless)
 								   TIMES_UPPER = "timesU", //Upper time bound
@@ -29,6 +30,7 @@ public class Model implements Serializable {
 								   INCREMENT = "increment", //Increment in substrate as effect of the reaction (+1, -1, etc)
 								   BI_REACTION = "reaction2", //Reaction between two reactants (substrate/reactant and catalyst)
 								   MONO_REACTION = "reaction1", //Reaction with only one reactant
+								   UNCERTAINTY = "uncertainty", //The percentage of uncertainty about the reaction parameter settings
 								   REACTANT = "reactant", //The reactant for a mono-reaction or the substrate for a bi-reaction
 								   REACTANT_NAME = "name", //The name of the reactant (possibly outdated property name)
 								   REACTION_TYPE = "type", //Type of reaction (mono, bi)

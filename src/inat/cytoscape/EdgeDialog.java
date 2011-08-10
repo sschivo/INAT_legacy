@@ -1,6 +1,7 @@
 package inat.cytoscape;
 
 import giny.model.Edge;
+import inat.model.Model;
 import inat.model.Scenario;
 import inat.model.ScenarioMono;
 
@@ -11,16 +12,22 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
+import java.util.Hashtable;
 
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -39,10 +46,10 @@ public class EdgeDialog extends JFrame {
 	private static final String DECIMAL_FORMAT_STRING = "##.####",
 								SAVE = "Save",
 								CANCEL = "Cancel",
-								SCENARIO = "scenario",
-								CANONICAL_NAME = "canonicalName",
-								INCREMENT = "increment",
-								UNCERTAINTY = "uncertainty";
+								SCENARIO = Model.Properties.SCENARIO,
+								CANONICAL_NAME = Model.Properties.CANONICAL_NAME,
+								INCREMENT = Model.Properties.INCREMENT,
+								UNCERTAINTY = Model.Properties.UNCERTAINTY;
 	
 	private Scenario[] scenarios = Scenario.sixScenarios;
 
@@ -57,22 +64,29 @@ public class EdgeDialog extends JFrame {
 		StringBuilder title = new StringBuilder();
 		title.append("Reaction ");
 		CyAttributes nodeAttrib = Cytoscape.getNodeAttributes();
-		CyAttributes edgeAttrib = Cytoscape.getEdgeAttributes();
-		String res;
-		res = nodeAttrib.getStringAttribute(edge.getSource().getIdentifier(), CANONICAL_NAME);
-		if (res != null) {
-			title.append(res);
-			Integer val = edgeAttrib.getIntegerAttribute(edge.getIdentifier(), INCREMENT);
-			if (val == null) {
-				val = 0;
+		final CyAttributes edgeAttrib = Cytoscape.getEdgeAttributes();
+		int increment;
+		if (edgeAttrib.hasAttribute(edge.getIdentifier(), INCREMENT)) {
+			increment = edgeAttrib.getIntegerAttribute(edge.getIdentifier(), INCREMENT);
+		} else {
+			if (edge.getSource().equals(edge.getTarget())) {
+				increment = -1;
+			} else {
+				increment = 1;
 			}
-			if (val >= 0) {
+		}
+		String res;
+		if (nodeAttrib.hasAttribute(edge.getSource().getIdentifier(), CANONICAL_NAME)) {
+			res = nodeAttrib.getStringAttribute(edge.getSource().getIdentifier(), CANONICAL_NAME);
+			title.append(res);
+			
+			if (increment >= 0) {
 				title.append(" --> ");
 			} else {
 				title.append(" --| ");
 			}
-			res = nodeAttrib.getStringAttribute(edge.getTarget().getIdentifier(), CANONICAL_NAME);
-			if (res != null) {
+			if (nodeAttrib.hasAttribute(edge.getTarget().getIdentifier(), CANONICAL_NAME)) {
+				res = nodeAttrib.getStringAttribute(edge.getTarget().getIdentifier(), CANONICAL_NAME);
 				title.append(res);
 				this.setTitle(title.toString());
 			}
@@ -91,8 +105,8 @@ public class EdgeDialog extends JFrame {
 			Box allParametersBox = new Box(BoxLayout.Y_AXIS);
 			allParametersBox.add(parameterBox);
 			Integer value;
-			if (Cytoscape.getEdgeAttributes().hasAttribute(edge.getIdentifier(), UNCERTAINTY)) {
-				value = Cytoscape.getEdgeAttributes().getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
+			if (edgeAttrib.hasAttribute(edge.getIdentifier(), UNCERTAINTY)) {
+				value = edgeAttrib.getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
 			} else {
 				value = 0;
 			}
@@ -110,6 +124,23 @@ public class EdgeDialog extends JFrame {
 				}
 			});
 			allParametersBox.add(incertaintyField);
+			final JRadioButton positiveIncrement = new JRadioButton("Positive"),
+							   negativeIncrement = new JRadioButton("Negative");
+			ButtonGroup incrementGroup = new ButtonGroup();
+			incrementGroup.add(positiveIncrement);
+			incrementGroup.add(negativeIncrement);
+			if (increment >= 0) {
+				positiveIncrement.setSelected(true);
+				negativeIncrement.setSelected(false);
+			} else {
+				positiveIncrement.setSelected(false);
+				negativeIncrement.setSelected(true);
+			}
+			Box incrementBox = new Box(BoxLayout.X_AXIS);
+			incrementBox.add(positiveIncrement);
+			incrementBox.add(Box.createHorizontalStrut(50));
+			incrementBox.add(negativeIncrement);
+			allParametersBox.add(new LabelledField("Influence", incrementBox));
 			boxScenario.add(allParametersBox);
 			
 			controls.add(new JButton(new AbstractAction(SAVE) {
@@ -122,14 +153,22 @@ public class EdgeDialog extends JFrame {
 						if (paramFields[i] instanceof LabelledField) {
 							LabelledField paramField = (LabelledField)paramFields[i];
 							String paramName = paramField.getTitle();
-							Double paramValue = new Double(((JFormattedTextField)(paramField).getField()).getValue().toString());
+							Double paramValue;
+							if (paramField.getField() instanceof JFormattedTextField) {
+								paramValue = new Double(((JFormattedTextField)(paramField).getField()).getValue().toString());
+							} else if (paramField.getField() instanceof Box) {
+								paramValue = new Double(((JFormattedTextField)(((Box)paramField.getField()).getComponents()[0])).getValue().toString());
+							} else {
+								paramValue = scenario.getParameter(paramName);
+							}
 							scenario.setParameter(paramName, paramValue);
-							Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), paramName, paramValue);
+							edgeAttrib.setAttribute(edge.getIdentifier(), paramName, paramValue);
 						}
 					}
 					int uncert = uncertainty.getValue();
-					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), SCENARIO, 0);
-					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), UNCERTAINTY, uncert);
+					edgeAttrib.setAttribute(edge.getIdentifier(), SCENARIO, 0);
+					edgeAttrib.setAttribute(edge.getIdentifier(), UNCERTAINTY, uncert);
+					edgeAttrib.setAttribute(edge.getIdentifier(), INCREMENT, ((positiveIncrement.isSelected())?1:-1));
 					
 					Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 
@@ -148,8 +187,10 @@ public class EdgeDialog extends JFrame {
 				}
 			});
 			
-			Integer scenarioIdx = Cytoscape.getEdgeAttributes().getIntegerAttribute(edge.getIdentifier(), SCENARIO);
-			if (scenarioIdx == null) {
+			int scenarioIdx;
+			if (edgeAttrib.hasAttribute(edge.getIdentifier(), SCENARIO)) {
+				scenarioIdx = edgeAttrib.getIntegerAttribute(edge.getIdentifier(), SCENARIO); 
+			} else {
 				scenarioIdx = 0;
 			}
 			
@@ -160,8 +201,8 @@ public class EdgeDialog extends JFrame {
 			Box boxScenarioAllParameters = new Box(BoxLayout.Y_AXIS);
 			boxScenarioAllParameters.add(boxScenarioParameters);
 			Integer value;
-			if (Cytoscape.getEdgeAttributes().hasAttribute(edge.getIdentifier(), UNCERTAINTY)) {
-				value = Cytoscape.getEdgeAttributes().getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
+			if (edgeAttrib.hasAttribute(edge.getIdentifier(), UNCERTAINTY)) {
+				value = edgeAttrib.getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
 			} else {
 				value = 0;
 			}
@@ -179,6 +220,23 @@ public class EdgeDialog extends JFrame {
 				}
 			});
 			boxScenarioAllParameters.add(uncertaintyField);
+			final JRadioButton positiveIncrement = new JRadioButton("Positive"),
+			   				   negativeIncrement = new JRadioButton("Negative");
+			ButtonGroup incrementGroup = new ButtonGroup();
+			incrementGroup.add(positiveIncrement);
+			incrementGroup.add(negativeIncrement);
+			if (increment >= 0) {
+			positiveIncrement.setSelected(true);
+			negativeIncrement.setSelected(false);
+			} else {
+			positiveIncrement.setSelected(false);
+			negativeIncrement.setSelected(true);
+			}
+			Box incrementBox = new Box(BoxLayout.X_AXIS);
+			incrementBox.add(positiveIncrement);
+			incrementBox.add(Box.createHorizontalStrut(50));
+			incrementBox.add(negativeIncrement);
+			boxScenarioAllParameters.add(new LabelledField("Influence", incrementBox));
 			boxScenario.add(boxScenarioAllParameters);
 			
 			boxScenario.add(Box.createGlue());
@@ -195,15 +253,23 @@ public class EdgeDialog extends JFrame {
 						if (paramFields[i] instanceof LabelledField) {
 							LabelledField paramField = (LabelledField)paramFields[i];
 							String paramName = paramField.getTitle();
-							Double paramValue = new Double(((JFormattedTextField)(paramField).getField()).getValue().toString());
+							Double paramValue;
+							if (paramField.getField() instanceof JFormattedTextField) {
+								paramValue = new Double(((JFormattedTextField)(paramField).getField()).getValue().toString());
+							} else if (paramField.getField() instanceof Box) {
+								paramValue = new Double(((JFormattedTextField)(((Box)paramField.getField()).getComponents()[0])).getValue().toString());
+							} else {
+								paramValue = selectedScenario.getParameter(paramName);
+							}
 							selectedScenario.setParameter(paramName, paramValue);
-							Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), paramName, paramValue);
+							edgeAttrib.setAttribute(edge.getIdentifier(), paramName, paramValue);
 						}
 					}
 					int uncert = uncertainty.getValue();
 					
-					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), UNCERTAINTY, uncert);
-					Cytoscape.getEdgeAttributes().setAttribute(edge.getIdentifier(), SCENARIO, comboScenario.getSelectedIndex());
+					edgeAttrib.setAttribute(edge.getIdentifier(), UNCERTAINTY, uncert);
+					edgeAttrib.setAttribute(edge.getIdentifier(), SCENARIO, comboScenario.getSelectedIndex());
+					edgeAttrib.setAttribute(edge.getIdentifier(), INCREMENT, ((positiveIncrement.isSelected())?1:-1));
 					
 					Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 
@@ -239,20 +305,77 @@ public class EdgeDialog extends JFrame {
 	private void updateParametersBox(Edge edge, Box parametersBox, Scenario selectedScenario) {
 		parametersBox.removeAll();
 		String[] parameters = selectedScenario.listVariableParameters();
+		CyAttributes edgeAttrib = Cytoscape.getEdgeAttributes();
 		for (int i=0;i<parameters.length;i++) {
 			DecimalFormat format = new DecimalFormat(DECIMAL_FORMAT_STRING);
 			format.setMinimumFractionDigits(8);
-			JFormattedTextField param = new JFormattedTextField(format);
-			Double value = Cytoscape.getEdgeAttributes().getDoubleAttribute(edge.getIdentifier(), parameters[i]);
-			if (value == null) {
-				param.setValue(selectedScenario.getParameter(parameters[i]));
-			} else {
+			final JFormattedTextField param = new JFormattedTextField(format);
+			if (edgeAttrib.hasAttribute(edge.getIdentifier(), parameters[i])) {
+				Double value = edgeAttrib.getDoubleAttribute(edge.getIdentifier(), parameters[i]);
 				param.setValue(value);
+			} else {
+				param.setValue(selectedScenario.getParameter(parameters[i]));
 			}
 			Dimension prefSize = param.getPreferredSize();
 			prefSize.width *= 1.5;
 			param.setPreferredSize(prefSize);
-			parametersBox.add(new LabelledField(parameters[i], param));
+			if (parameters.length == 1) { //If we have only one parameter, we show a slider for the parameter
+				final JSlider parSlider = new JSlider(1, 5, 3);
+				Hashtable<Integer, JLabel> labelTable = new Hashtable<Integer, JLabel>();
+				labelTable.put(new Integer(1), new JLabel("v. slow"));
+				labelTable.put(new Integer(2), new JLabel("slow"));
+				labelTable.put(new Integer(3), new JLabel("medium"));
+				labelTable.put(new Integer(4), new JLabel("fast"));
+				labelTable.put(new Integer(5), new JLabel("v. fast"));
+				parSlider.setLabelTable(labelTable);
+				parSlider.setPaintLabels(true);
+				parSlider.setMajorTickSpacing(1);
+				parSlider.setPaintTicks(true);
+				parSlider.setSnapToTicks(true);
+				prefSize = parSlider.getPreferredSize();
+				prefSize.width *= 1.5;
+				parSlider.setPreferredSize(prefSize);
+				Box parSliBox = new Box(BoxLayout.Y_AXIS);
+				param.addMouseListener(new MouseAdapter() {
+					@Override
+					public void mouseClicked(MouseEvent e) {
+						param.setEnabled(true);
+						parSlider.setEnabled(false);
+					}
+				});
+				parSlider.addMouseListener(new MouseAdapter() {
+					@Override
+					public void mouseClicked(MouseEvent e) {
+						parSlider.setEnabled(true);
+						param.setEnabled(false);
+						double multiplicator = (Double)(param.getValue()) / 0.004;
+						double exp = Math.log(multiplicator) / Math.log(2);
+						int sliderValue = (int)(exp + 3);
+						if (sliderValue < 1) {
+							parSlider.setValue(1);
+						} else if (sliderValue > 5) {
+							parSlider.setValue(5);
+						} else {
+							parSlider.setValue(sliderValue);
+						}
+					}
+				});
+				parSlider.addChangeListener(new ChangeListener() {
+					@Override
+					public void stateChanged(ChangeEvent e) {
+						int exp = parSlider.getValue() - 3;
+						double multiplicator = Math.pow(2.0, exp);
+						param.setValue(0.004 * multiplicator);
+					}
+				});
+				parSliBox.add(param);
+				parSliBox.add(parSlider);
+				param.setEnabled(true);
+				parSlider.setEnabled(false);
+				parametersBox.add(new LabelledField(parameters[i], parSliBox));
+			} else {
+				parametersBox.add(new LabelledField(parameters[i], param));
+			}
 		}
 		parametersBox.validate();
 	}
