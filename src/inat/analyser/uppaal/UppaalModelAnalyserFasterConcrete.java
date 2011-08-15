@@ -391,6 +391,9 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 						return new SMCResult(false, findConfidence(line, br));
 					} else {
 						line = br.readLine();
+						if (line == null) {
+							return new SMCResult(true, findConfidence(line, br));
+						}
 						if ((line.indexOf("runs) H") != -1) || (line.indexOf("runs) Pr(..)/Pr(..)") != -1)) { //it has boolean result
 							return new SMCResult(true, findConfidence(line, br));
 						} else { //the result is between lower and upper bound
@@ -442,6 +445,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 		 * @throws Exception
 		 */
 		private double findConfidence(String currentLine, BufferedReader br) throws Exception {
+			if (currentLine == null) return 1.0;
 			double confidence = 0;
 			boolean weHaveAProblem = false;
 			String objective = "with confidence ";
