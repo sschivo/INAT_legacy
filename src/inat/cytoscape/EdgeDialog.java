@@ -52,6 +52,7 @@ public class EdgeDialog extends JFrame {
 								UNCERTAINTY = Model.Properties.UNCERTAINTY;
 	
 	private Scenario[] scenarios = Scenario.sixScenarios;
+	private int previouslySelectedScenario = 0;
 
 	/**
 	 * Constructor.
@@ -194,6 +195,7 @@ public class EdgeDialog extends JFrame {
 				scenarioIdx = 0;
 			}
 			
+			previouslySelectedScenario = scenarioIdx;
 			comboScenario.setSelectedIndex(scenarioIdx);
 			boxScenario.add(comboScenario);
 			boxScenario.add(Box.createGlue());
@@ -304,15 +306,115 @@ public class EdgeDialog extends JFrame {
 	 */
 	private void updateParametersBox(Edge edge, Box parametersBox, Scenario selectedScenario) {
 		parametersBox.removeAll();
+		
+		//Look for the index of the currently selected scenario, so that we can compare it with the previously selected one, and thus correctly convert the parameters between the two
+		int currentlySelectedScenario = 0;
+		for (int i=0;i<scenarios.length;i++) {
+			if (scenarios[i].equals(selectedScenario)) {
+				currentlySelectedScenario = i;
+				break;
+			}
+		}
+		
 		String[] parameters = selectedScenario.listVariableParameters();
 		CyAttributes edgeAttrib = Cytoscape.getEdgeAttributes();
+		CyAttributes nodeAttrib = Cytoscape.getNodeAttributes();
 		for (int i=0;i<parameters.length;i++) {
 			DecimalFormat format = new DecimalFormat(DECIMAL_FORMAT_STRING);
 			format.setMinimumFractionDigits(8);
 			final JFormattedTextField param = new JFormattedTextField(format);
-			if (edgeAttrib.hasAttribute(edge.getIdentifier(), parameters[i])) {
+			if (currentlySelectedScenario != previouslySelectedScenario) {
+				if (previouslySelectedScenario == 0 && currentlySelectedScenario == 1) { //1234 -> 5
+					if (parameters[i].equals(Model.Properties.SCENARIO_PARAMETER_STOT)) {
+						if (nodeAttrib.hasAttribute(edge.getTarget().getIdentifier(), Model.Properties.NUMBER_OF_LEVELS)) {
+							param.setValue(nodeAttrib.getIntegerAttribute(edge.getTarget().getIdentifier(), Model.Properties.NUMBER_OF_LEVELS));
+						}
+					} else if (parameters[i].equals(Model.Properties.SCENARIO_PARAMETER_K2_KM)) {
+						Double par = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_ONLY_PARAMETER);
+						Double Stot;
+						if (nodeAttrib.hasAttribute(edge.getTarget().getIdentifier(), Model.Properties.NUMBER_OF_LEVELS)) {
+							Stot = (double)nodeAttrib.getIntegerAttribute(edge.getTarget().getIdentifier(), Model.Properties.NUMBER_OF_LEVELS);
+						} else if (edgeAttrib.hasAttribute(edge.getIdentifier(), parameters[i])) {
+							Stot = edgeAttrib.getDoubleAttribute(edge.getIdentifier(), parameters[i]);
+						} else {
+							Stot = selectedScenario.getParameter(parameters[i]);
+						}
+						Double k2km = par / Stot;
+						param.setValue(k2km);
+					}
+				} else if (previouslySelectedScenario == 1 && currentlySelectedScenario == 0) { //5 -> 1234
+					Double k2km, Stot;
+					k2km = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_K2_KM);
+					Stot = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_STOT);
+					param.setValue(k2km * Stot);
+				} else if (previouslySelectedScenario == 1 && currentlySelectedScenario == 2) { //5 -> 6
+					if (parameters[i].equals(Model.Properties.SCENARIO_PARAMETER_STOT)) {
+						param.setValue(scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_STOT));
+					} else if (parameters[i].equals(Model.Properties.SCENARIO_PARAMETER_KM)) {
+						Double Stot = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_STOT);
+						Double k2km = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_K2_KM);
+						Double k2 = (Stot * Stot - Stot) * k2km; //this allows us to have a difference of 0.001 between scenarios 5 and 6
+						Double km = k2 / k2km;
+						param.setValue(km);
+					} else if (parameters[i].equals(Model.Properties.SCENARIO_PARAMETER_K2)) {
+						Double Stot = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_STOT);
+						Double k2km = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_K2_KM);
+						Double k2 = (Stot * Stot - Stot) * k2km; //this allows us to have a difference of 0.001 between scenarios 5 and 6
+						param.setValue(k2);
+					}
+				} else if (previouslySelectedScenario == 2 && currentlySelectedScenario == 1) { //6 -> 5
+					if (parameters[i].equals(Model.Properties.SCENARIO_PARAMETER_STOT)) {
+						param.setValue(scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_STOT));
+					} else if (parameters[i].equals(Model.Properties.SCENARIO_PARAMETER_K2_KM)) {
+						Double k2 = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_K2);
+						Double km = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_KM);
+						Double k2km = k2 / km;
+						param.setValue(k2km);
+					}
+				} else if (previouslySelectedScenario == 0 && currentlySelectedScenario == 2) { //1234 -> 6
+					if (parameters[i].equals(Model.Properties.SCENARIO_PARAMETER_STOT)) {
+						if (nodeAttrib.hasAttribute(edge.getTarget().getIdentifier(), Model.Properties.NUMBER_OF_LEVELS)) {
+							param.setValue(nodeAttrib.getIntegerAttribute(edge.getTarget().getIdentifier(), Model.Properties.NUMBER_OF_LEVELS));
+						}
+					} else if (parameters[i].equals(Model.Properties.SCENARIO_PARAMETER_KM)) {
+						Double par = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_ONLY_PARAMETER);
+						Double Stot;
+						if (nodeAttrib.hasAttribute(edge.getTarget().getIdentifier(), Model.Properties.NUMBER_OF_LEVELS)) {
+							Stot = (double)nodeAttrib.getIntegerAttribute(edge.getTarget().getIdentifier(), Model.Properties.NUMBER_OF_LEVELS);
+						} else if (edgeAttrib.hasAttribute(edge.getIdentifier(), parameters[i])) {
+							Stot = edgeAttrib.getDoubleAttribute(edge.getIdentifier(), parameters[i]);
+						} else {
+							Stot = selectedScenario.getParameter(parameters[i]);
+						}
+						Double k2km = par / Stot;
+						Double k2 = (Stot * Stot - Stot) * k2km; //this allows us to have a difference of 0.001 between scenarios 5 and 6
+						Double km = k2 / k2km;
+						param.setValue(km);
+					} else if (parameters[i].equals(Model.Properties.SCENARIO_PARAMETER_K2)) {
+						Double par = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_ONLY_PARAMETER);
+						Double Stot;
+						if (nodeAttrib.hasAttribute(edge.getTarget().getIdentifier(), Model.Properties.NUMBER_OF_LEVELS)) {
+							Stot = (double)nodeAttrib.getIntegerAttribute(edge.getTarget().getIdentifier(), Model.Properties.NUMBER_OF_LEVELS);
+						} else if (edgeAttrib.hasAttribute(edge.getIdentifier(), parameters[i])) {
+							Stot = edgeAttrib.getDoubleAttribute(edge.getIdentifier(), parameters[i]);
+						} else {
+							Stot = selectedScenario.getParameter(parameters[i]);
+						}
+						Double k2km = par / Stot;
+						Double k2 = (Stot * Stot - Stot) * k2km; //this allows us to have a difference of 0.001 between scenarios 5 and 6
+						param.setValue(k2);
+					}
+				} else if (previouslySelectedScenario == 2 && currentlySelectedScenario == 0) { //6 -> 1234
+					Double Stot = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_STOT);
+					Double k2 = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_K2);
+					Double km = scenarios[previouslySelectedScenario].getParameter(Model.Properties.SCENARIO_PARAMETER_KM);
+					Double k2km = k2 / km;
+					param.setValue(Stot * k2km);
+				}
+			} else if (edgeAttrib.hasAttribute(edge.getIdentifier(), parameters[i])) {
 				Double value = edgeAttrib.getDoubleAttribute(edge.getIdentifier(), parameters[i]);
 				param.setValue(value);
+				scenarios[currentlySelectedScenario].setParameter(parameters[i], value);
 			} else {
 				param.setValue(selectedScenario.getParameter(parameters[i]));
 			}
@@ -378,5 +480,14 @@ public class EdgeDialog extends JFrame {
 			}
 		}
 		parametersBox.validate();
+		
+		//Update the index of the currently selected scenario, so that if the user changes scenario we will be able to know which we were using before, and thus correctly convert the parameters between the two
+		previouslySelectedScenario = 0;
+		for (int i=0;i<scenarios.length;i++) {
+			if (scenarios[i].equals(selectedScenario)) {
+				previouslySelectedScenario = i;
+				break;
+			}
+		}
 	}
 }

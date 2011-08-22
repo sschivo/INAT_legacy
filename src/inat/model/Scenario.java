@@ -44,7 +44,7 @@ public class Scenario {
 				double par1 = parameters.get(SCENARIO_PARAMETER_K2_KM),
 					   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
 					   S = Stot - r2Level,
-					   E = r1Level;
+					   E = (double)r1Level;
 				double rate = par1 * E * S;
 				if (rate != 0) {
 					return Math.max(1, (int)Math.round(1 / rate));
