@@ -124,6 +124,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 			}
 			cmd[2] += " \"" + nomeFileModello + "\" \"" + nomeFileQuery + "\" > \"" + nomeFileOutput + "\"";
 			Runtime rt = Runtime.getRuntime();
+			long startTime = System.currentTimeMillis();
 			final Process proc = rt.exec(cmd);
 			if (runAction != null) {
 				taskStatus = 0;
@@ -168,6 +169,8 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 					throw new Exception("Interrupted (1)");
 				}
 			}
+			long endTime = System.currentTimeMillis();
+			System.err.println("\tUPPAAL analysis of " + nomeFileModello + " took " + RunAction.timeDifferenceFormat(startTime, endTime));
 			if (proc.exitValue() != 0) {
 				StringBuilder errorBuilder = new StringBuilder();
 				errorBuilder.append("[" + nomeFileModello + "] Verify result: " + proc.exitValue() + "\n");
@@ -184,7 +187,10 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 			proc.getInputStream().close();
 			proc.getOutputStream().close();
 			
+			startTime = System.currentTimeMillis();
 			result = new UppaalModelAnalyserFasterConcrete.VariablesInterpreterConcrete(monitor).analyseSMC(m, new FileInputStream(nomeFileOutput));
+			endTime = System.currentTimeMillis();
+			System.err.println("\tParsing the result produced by UPPAAL took " + RunAction.timeDifferenceFormat(startTime, endTime));
 			
 			new File(nomeFileOutput).delete();
 			
@@ -265,6 +271,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 			if (monitor != null) {
 				monitor.setStatus("Analyzing model with UPPAAL.");
 			}
+			System.err.print("\tUPPAAL analysis of " + nomeFileModello);
 			final Process proc = rt.exec(cmd);
 			final Vector<LevelResult> resultVector = new Vector<LevelResult>(1); //this has no other reason than to hack around the fact that an internal class needs to have all variables it uses declared as final
 			final Vector<Exception> errors = new Vector<Exception>(); //same reason as above
@@ -311,6 +318,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 					Thread.sleep(100);
 				}
 				if (taskStatus == 2) {
+					System.err.println("was interrupted by the user");
 					throw new AnalysisException("User interrupted");
 				}
 				while (resultVector.isEmpty()) { //if the verifyta process is completed, we may still need to wait for the analysis thread to complete
@@ -329,9 +337,16 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 				throw new AnalysisException("Error during analysis", ex);
 			}
 			result = resultVector.firstElement();
-			if (proc.exitValue() != 0) {
+			if (proc.exitValue() != 0 && (result == null || result.isEmpty())) {
 				StringBuilder errorBuilder = new StringBuilder();
 				errorBuilder.append("[" + nomeFileModello + "] Verify result: " + proc.exitValue() + "\n");
+				if (result == null) {
+					errorBuilder.append(" null result\n");
+				} else if (result.isEmpty()) {
+					errorBuilder.append(" empty result\n");
+				} else {
+					errorBuilder.append(" result contains " + result.getTimeIndices().size() + " time points\n");
+				}
 				BufferedReader br = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
 				String line = null;
 				while ((line = br.readLine()) != null) {
@@ -497,6 +512,8 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 		 * @throws Exception
 		 */
 		public LevelResult analyse(Model m, InputStream output, int timeTo) throws Exception {
+			long startTime = System.currentTimeMillis();
+			
 			Map<String, SortedMap<Double, Double>> levels = new HashMap<String, SortedMap<Double, Double>>();
 
 			BufferedReader br = new BufferedReader(new InputStreamReader(output));
@@ -562,10 +579,14 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 				}
 			}
 			
+			long endTime = System.currentTimeMillis();
+			System.err.println(" took " + RunAction.timeDifferenceFormat(startTime, endTime));
+			startTime = System.currentTimeMillis();
+			
 			if (monitor != null) {
 				monitor.setStatus("Analysing UPPAAL output trace.");
 			}
-
+			
 			String oldLine = null;
 			while ((line = br.readLine()) != null) {
 				/*while (line != null && !line.contains("inform_reacting")) {
@@ -644,6 +665,9 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 					values.put((double)timeTo, lastValue);
 				}
 			}
+			
+			endTime = System.currentTimeMillis();
+			System.err.println("\tParsing the result produced by UPPAAL took " + RunAction.timeDifferenceFormat(startTime, endTime));
 			
 			return new SimpleLevelResult(levels);
 		}

@@ -21,6 +21,10 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -91,6 +95,26 @@ public class RunAction extends CytoscapeAction {
 		this.smcFormula = smcFormula;
 		this.meStesso = this;
 	}
+	
+	public static String timeDifferenceFormat(long startTime, long endTime) {
+		long diffInSeconds = (endTime - startTime) / 1000;
+	    long diff[] = new long[] { 0, 0, 0, 0 };
+	    /* sec */diff[3] = (diffInSeconds >= 60 ? diffInSeconds % 60 : diffInSeconds);
+	    /* min */diff[2] = (diffInSeconds = (diffInSeconds / 60)) >= 60 ? diffInSeconds % 60 : diffInSeconds;
+	    /* hours */diff[1] = (diffInSeconds = (diffInSeconds / 60)) >= 24 ? diffInSeconds % 24 : diffInSeconds;
+	    /* days */diff[0] = (diffInSeconds = (diffInSeconds / 24));
+	    
+	    return String.format(
+		        "%d day%s, %d hour%s, %d minute%s, %d second%s",
+		        diff[0],
+		        diff[0] != 1 ? "s" : "",
+		        diff[1],
+		        diff[1] != 1 ? "s" : "",
+		        diff[2],
+		        diff[2] != 1 ? "s" : "",
+		        diff[3],
+		        diff[3] != 1 ? "s" : "");
+	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -107,8 +131,35 @@ public class RunAction extends CytoscapeAction {
 		jTaskConfig.displayCancelButton(true);
 		jTaskConfig.displayTimeElapsed(true);
 		
+		long startTime = System.currentTimeMillis();
+		Date now = new Date(startTime);
+		File logFile = null;
+		PrintStream logStream = null;
+		PrintStream oldErr = System.err;
+		try {
+			logFile = File.createTempFile("Cytoscape run " + now.toString(), ".log");
+			logFile.deleteOnExit();
+			logStream = new PrintStream(new FileOutputStream(logFile));
+			System.setErr(logStream);
+		} catch (Exception ex) {
+			//We have no log file, bad luck: we will have to use System.err.
+		}
+		
 		// Execute Task in New Thread; pops open JTask Dialog Box.
 		TaskManager.executeTask(task, jTaskConfig);
+		
+		long endTime = System.currentTimeMillis();
+		
+		try {
+			System.err.println("Time taken: " + timeDifferenceFormat(startTime, endTime));
+			System.err.flush();
+			System.setErr(oldErr);
+			if (logStream != null) {
+				logStream.close();
+			}
+		} catch (Exception ex) {
+			
+		}
 	}
 	
 	public boolean needToStop() {
