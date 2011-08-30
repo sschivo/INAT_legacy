@@ -108,27 +108,27 @@ public class InatBackend {
 								} else {
 									Integer scenarioIdx = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), SCENARIO);
 									if (scenarioIdx == 0) { //Scenario 1-2-3-4
-										Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "parameter");
+										Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER);
 										if (edge.getSource().getIdentifier().equals(objectKey)) { //We do something only if the changed reactant was the upstream one
 											parameter /= factor;
 										} else {
 											parameter *= factor;
 										}
-										edgeAttributes.setAttribute(edge.getIdentifier(), "parameter", parameter);
+										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER, parameter);
 									} else if (scenarioIdx == 1) { //Scenario 5
-										Double stot = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "Stot"),
-											   k2km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "k2/km");
+										Double stot = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT),
+											   k2km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2_KM);
 										if (edge.getSource().getIdentifier().equals(objectKey)) { //If the changed reactant is the upstream one, we change only k2/km
 											k2km /= factor;
 										} else { //If the changed reactant is the downstream one, we change only Stot
 											stot *= factor;
 										}
-										edgeAttributes.setAttribute(edge.getIdentifier(), "Stot", stot);
-										edgeAttributes.setAttribute(edge.getIdentifier(), "k2/km", k2km);
+										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT, stot);
+										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2_KM, k2km);
 									} else if (scenarioIdx == 2) { //Scenario 6
-										Double stot = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "Stot"),
-												 km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "km"),
-												 k2 = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "k2");
+										Double stot = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT),
+												 km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_KM),
+												 k2 = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2);
 										if (edge.getSource().getIdentifier().equals(objectKey)) { //If the changed reactant is the upstream one, we change only k2
 											k2 /= factor;
 										} else { //If the changed reactant is the downstream one, we change all three
@@ -136,9 +136,9 @@ public class InatBackend {
 											km *= factor;
 											k2 *= factor;
 										}
-										edgeAttributes.setAttribute(edge.getIdentifier(), "Stot", stot);
-										edgeAttributes.setAttribute(edge.getIdentifier(), "km", km);
-										edgeAttributes.setAttribute(edge.getIdentifier(), "k2", k2);
+										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT, stot);
+										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_KM, km);
+										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2, k2);
 									}
 								}
 							}
@@ -220,23 +220,23 @@ public class InatBackend {
 							Edge edge = edges.next();
 							
 							if (edge.getSource().equals(edge.getTarget())) {
-								Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "parameter");
+								Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER);
 								parameter /= factor;
-								edgeAttributes.setAttribute(edge.getIdentifier(), "parameter", parameter);
+								edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER, parameter);
 							} else {
 								Integer scenarioIdx = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), SCENARIO);
 								if (scenarioIdx == 0) { //Scenario 1-2-3-4
-									Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "parameter");
+									Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER);
 									parameter /= factor;
-									edgeAttributes.setAttribute(edge.getIdentifier(), "parameter", parameter);
+									edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER, parameter);
 								} else if (scenarioIdx == 1) { //Scenario 5
-									Double k2km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "k2/km");
+									Double k2km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2_KM);
 									k2km /= factor;
-									edgeAttributes.setAttribute(edge.getIdentifier(), "k2/km", k2km);
+									edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2_KM, k2km);
 								} else if (scenarioIdx == 2) { //Scenario 6
-									Double k2 = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "k2");
+									Double k2 = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2);
 									k2 /= factor;
-									edgeAttributes.setAttribute(edge.getIdentifier(), "k2", k2);
+									edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2, k2);
 								}
 							}
 						}
