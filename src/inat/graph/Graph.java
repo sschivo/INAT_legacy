@@ -1193,6 +1193,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 
 	private int oldWidth = -1, oldHeight = -1;
 	public void componentResized(ComponentEvent e) {
+		needRedraw = true;
 		if (!showLegend || !customLegendPosition) {
 			oldWidth = this.getWidth();
 			oldHeight = this.getHeight();
@@ -1201,7 +1202,6 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		if (oldWidth != -1 && oldHeight != -1) {
 			legendBounds.x = (int)((double)legendBounds.x / oldWidth * this.getWidth());
 			legendBounds.y = (int)((double)legendBounds.y / oldHeight * this.getHeight());
-			needRedraw = true;
 			repaint();
 		}
 		oldWidth = this.getWidth();
