@@ -269,7 +269,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 			cmd[2] += " -t0 -o2 \"" + nomeFileModello + "\" \"" + nomeFileQuery + "\"";
 			Runtime rt = Runtime.getRuntime();
 			if (monitor != null) {
-				monitor.setStatus("Analyzing model with UPPAAL.");
+				monitor.setStatus("Analysing model with UPPAAL.");
 			}
 			System.err.print("\tUPPAAL analysis of " + nomeFileModello);
 			final Process proc = rt.exec(cmd);

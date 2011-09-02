@@ -48,6 +48,7 @@ public class ResultAverager {
 			if (monitor != null) {
 				monitor.setPercentCompleted((int)((double)i / nRuns * 100));
 			}
+			System.err.print((i+1));
 			results.add((SimpleLevelResult)(analyzer.analyze(m, timeTo)));
 		}
 		return average(results, computeStdDev);

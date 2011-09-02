@@ -58,13 +58,13 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 		for (String r : result.getReactantIds()) {
 			String name = null;
 			if (model.getReactant(r) != null) { //we can also refer to a name not present in the reactant collection
-				name = model.getReactant(r).get("alias").as(String.class); //if an alias is set, we prefer it
+				name = model.getReactant(r).get(Model.Properties.ALIAS).as(String.class); //if an alias is set, we prefer it
 				if (name == null) {
-					name = model.getReactant(r).get("name").as(String.class);
+					name = model.getReactant(r).get(Model.Properties.REACTANT_NAME).as(String.class);
 				}
 			} else if (r.contains("_StdDev")) {
-				if (model.getReactant(r.substring(0, r.indexOf("_"))).get("alias").as(String.class) != null) {
-					name = model.getReactant(r.substring(0, r.indexOf("_"))).get("alias").as(String.class) + "_StdDev";
+				if (model.getReactant(r.substring(0, r.indexOf("_"))).get(Model.Properties.ALIAS).as(String.class) != null) {
+					name = model.getReactant(r.substring(0, r.indexOf("_"))).get(Model.Properties.ALIAS).as(String.class) + "_StdDev";
 				} else {
 					name = r; //in this case, I simply don't know what we are talking about =)
 				}
@@ -74,8 +74,8 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 		g.parseLevelResult(result, seriesNameMapping, scale); //Add all series to the graph, using the mapping we built here to "translate" the names into the user-defined ones.
 		g.setXSeriesName("Time (min)");
 
-		if (!model.getProperties().get("levels").isNull()) { //if we find a maximum value for activity levels, we declare it to the graph, so that other added graphs (such as experimental data) will be automatically rescaled to match us
-			int nLevels = model.getProperties().get("levels").as(Integer.class);
+		if (!model.getProperties().get(Model.Properties.NUMBER_OF_LEVELS).isNull()) { //if we find a maximum value for activity levels, we declare it to the graph, so that other added graphs (such as experimental data) will be automatically rescaled to match us
+			int nLevels = model.getProperties().get(Model.Properties.NUMBER_OF_LEVELS).as(Integer.class);
 			g.declareMaxYValue(nLevels);
 			double maxTime = scale * result.getTimeIndices().get(result.getTimeIndices().size()-1);
 			g.setDrawArea(0, (int)maxTime, 0, nLevels); //This is done because the graph automatically computes the area to be shown based on minimum and maximum values for X and Y, including StdDev. So, if the StdDev of a particular series (which represents an average) in a particular point is larger that the value of that series in that point, the minimum y value would be negative. As this is not very nice to see, I decided that we will recenter the graph to more strict bounds instead.
@@ -93,12 +93,12 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 	public void stateChanged(ChangeEvent e) {
 		final int t = this.slider.getValue();
 		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
-		final int levels = this.model.getProperties().get("levels").as(Integer.class); //at this point, all levels have already been rescaled to the maximum (= the number of levels of the model), so we use it as a reference for the number of levels to show on the network nodes 
+		final int levels = this.model.getProperties().get(Model.Properties.NUMBER_OF_LEVELS).as(Integer.class); //at this point, all levels have already been rescaled to the maximum (= the number of levels of the model), so we use it as a reference for the number of levels to show on the network nodes 
 		for (String r : this.result.getReactantIds()) {
 			if (this.model.getReactant(r) == null) continue;
-			final String id = this.model.getReactant(r).get("name").as(String.class);
+			final String id = this.model.getReactant(r).get(Model.Properties.REACTANT_NAME).as(String.class);
 			final double level = this.result.getConcentration(r, t);
-			nodeAttributes.setAttribute(id, "activityRatio", level / levels);
+			nodeAttributes.setAttribute(id, Model.Properties.SHOWN_LEVEL, level / levels);
 		}
 
 		Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);

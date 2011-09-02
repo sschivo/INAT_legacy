@@ -5,6 +5,8 @@ import giny.model.Node;
 import giny.view.EdgeView;
 import giny.view.NodeView;
 
+import inat.model.Model;
+
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.util.Iterator;
@@ -41,8 +43,6 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 
 	private static final long serialVersionUID = 4874100514822653655L;
 	
-	private static final String ENABLED = "enabled";
-
 	/**
 	 * Constructor.
 	 * 
@@ -67,13 +67,13 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		VisualMappingManager vizMap = Cytoscape.getVisualMappingManager();
 		NodeAppearanceCalculator nac = vizMap.getVisualStyle().getNodeAppearanceCalculator();
 
-		DiscreteMapping mapping = new DiscreteMapping(Color.class, "enabled");
+		DiscreteMapping mapping = new DiscreteMapping(Color.class, Model.Properties.ENABLED);
 		mapping.putMapValue(false, Color.BLACK);
 		mapping.putMapValue(true, Color.WHITE);
 		Calculator calco = new GenericNodeCustomGraphicCalculator("Mapping for enabled and disabled nodes", mapping, VisualPropertyType.NODE_LABEL_COLOR);
 		nac.setCalculator(calco);
 		
-		ContinuousMapping mc = new ContinuousMapping(Color.class, "activityRatio");
+		ContinuousMapping mc = new ContinuousMapping(Color.class, Model.Properties.SHOWN_LEVEL);
 		Color lowerBound = new Color(204, 0, 0), //Color.RED.darker(),
 			  middleBound = new Color(255, 204, 0), //Color.YELLOW.darker(),
 			  upperBuond = new Color(0, 204, 0); //Color.GREEN.darker();
@@ -92,16 +92,16 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 				double level = 0;
 				int nLevels = 0;
 				try {
-					level = nodeAttr.getIntegerAttribute(n.getIdentifier(), "initialConcentration");
+					level = nodeAttr.getIntegerAttribute(n.getIdentifier(), Model.Properties.INITIAL_LEVEL);
 				} catch (Exception ex) {
 					level = 0;
 				}
 				try {
-					nLevels = nodeAttr.getIntegerAttribute(n.getIdentifier(), "levels");
+					nLevels = nodeAttr.getIntegerAttribute(n.getIdentifier(), Model.Properties.NUMBER_OF_LEVELS);
 				} catch (Exception ex) {
 					nLevels = 1;
 				}
-				nodeAttr.setAttribute(n.getIdentifier(), "activityRatio", level / nLevels);
+				nodeAttr.setAttribute(n.getIdentifier(), Model.Properties.SHOWN_LEVEL, level / nLevels);
 			}
 
 			Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
@@ -114,7 +114,7 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 	 * up when the user right-clicks on a node in the cytoscape network
 	 * window.
 	 * Edit reactant will show the NodeDialog.
-	 * Enable/disable will change the ENABLED property of a node/edge to its
+	 * Enable/disable will change the Model.Properties.ENABLED property of a node/edge to its
 	 * negation. If a group of arcs/nodes was selected, the whole group changes
 	 * state. Moreover, we make sure that after this operation the model is still
 	 * consistent, i.e. there are no enabled dangling edges (pointing to a disabled
@@ -149,31 +149,31 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 						NodeView nView = (NodeView)i.next();
 						CyNode node = (CyNode)nView.getNode();
 						boolean status;
-						if (!nodeAttr.hasAttribute(node.getIdentifier(), ENABLED)) {
+						if (!nodeAttr.hasAttribute(node.getIdentifier(), Model.Properties.ENABLED)) {
 							status = false;
 						} else {
-							status = !nodeAttr.getBooleanAttribute(node.getIdentifier(), ENABLED);
+							status = !nodeAttr.getBooleanAttribute(node.getIdentifier(), Model.Properties.ENABLED);
 						}
-						nodeAttr.setAttribute(node.getIdentifier(), ENABLED, status);
+						nodeAttr.setAttribute(node.getIdentifier(), Model.Properties.ENABLED, status);
 						int [] adjacentEdges = network.getAdjacentEdgeIndicesArray(node.getRootGraphIndex(), true, true, true);
 						for (int edgeIdx : adjacentEdges) {
 							CyEdge edge = (CyEdge)view.getEdgeView(edgeIdx).getEdge();
-							edgeAttr.setAttribute(edge.getIdentifier(), ENABLED, status);
+							edgeAttr.setAttribute(edge.getIdentifier(), Model.Properties.ENABLED, status);
 						}
 					}
 					if (view.getSelectedNodes().isEmpty()) { //if the user wanted to change only one node (i.e. right click on a node without first selecting one), here we go
 						Node node = nodeView.getNode();
 						boolean status;
-						if (!nodeAttr.hasAttribute(node.getIdentifier(), ENABLED)) {
+						if (!nodeAttr.hasAttribute(node.getIdentifier(), Model.Properties.ENABLED)) {
 							status = false;
 						} else {
-							status = !nodeAttr.getBooleanAttribute(node.getIdentifier(), ENABLED);
+							status = !nodeAttr.getBooleanAttribute(node.getIdentifier(), Model.Properties.ENABLED);
 						}
-						nodeAttr.setAttribute(node.getIdentifier(), ENABLED, status);
+						nodeAttr.setAttribute(node.getIdentifier(), Model.Properties.ENABLED, status);
 						int [] adjacentEdges = network.getAdjacentEdgeIndicesArray(node.getRootGraphIndex(), true, true, true);
 						for (int edgeIdx : adjacentEdges) {
 							CyEdge edge = (CyEdge)view.getEdgeView(edgeIdx).getEdge();
-							edgeAttr.setAttribute(edge.getIdentifier(), ENABLED, status);
+							edgeAttr.setAttribute(edge.getIdentifier(), Model.Properties.ENABLED, status);
 						}
 					}
 					//In order to keep the model consistent, we disable all edges coming from (or going into) disabled nodes
@@ -181,9 +181,9 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 						CyEdge edge = (CyEdge)view.getEdgeView(i).getEdge();
 						CyNode source = (CyNode)edge.getSource(),
 							   target = (CyNode)edge.getTarget();
-						if ((nodeAttr.hasAttribute(source.getIdentifier(), ENABLED) && !nodeAttr.getBooleanAttribute(source.getIdentifier(), ENABLED))
-							|| (nodeAttr.hasAttribute(target.getIdentifier(), ENABLED) && !nodeAttr.getBooleanAttribute(target.getIdentifier(), ENABLED))) {
-							edgeAttr.setAttribute(edge.getIdentifier(), ENABLED, false);
+						if ((nodeAttr.hasAttribute(source.getIdentifier(), Model.Properties.ENABLED) && !nodeAttr.getBooleanAttribute(source.getIdentifier(), Model.Properties.ENABLED))
+							|| (nodeAttr.hasAttribute(target.getIdentifier(), Model.Properties.ENABLED) && !nodeAttr.getBooleanAttribute(target.getIdentifier(), Model.Properties.ENABLED))) {
+							edgeAttr.setAttribute(edge.getIdentifier(), Model.Properties.ENABLED, false);
 						}
 					}
 					Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
@@ -228,22 +228,22 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 						EdgeView eView = (EdgeView)i.next();
 						CyEdge edge = (CyEdge)eView.getEdge();
 						boolean status;
-						if (!edgeAttr.hasAttribute(edge.getIdentifier(), ENABLED)) {
+						if (!edgeAttr.hasAttribute(edge.getIdentifier(), Model.Properties.ENABLED)) {
 							status = false;
 						} else {
-							status = !edgeAttr.getBooleanAttribute(edge.getIdentifier(), ENABLED);
+							status = !edgeAttr.getBooleanAttribute(edge.getIdentifier(), Model.Properties.ENABLED);
 						}
-						edgeAttr.setAttribute(edge.getIdentifier(), ENABLED, status);
+						edgeAttr.setAttribute(edge.getIdentifier(), Model.Properties.ENABLED, status);
 					}
 					if (view.getSelectedEdges().isEmpty()) { //if the user wanted to change only one edge (i.e. right click on an edge without first selecting one), here we go
 						Edge edge = edgeView.getEdge();
 						boolean status;
-						if (!edgeAttr.hasAttribute(edge.getIdentifier(), ENABLED)) {
+						if (!edgeAttr.hasAttribute(edge.getIdentifier(), Model.Properties.ENABLED)) {
 							status = false;
 						} else {
-							status = !edgeAttr.getBooleanAttribute(edge.getIdentifier(), ENABLED);
+							status = !edgeAttr.getBooleanAttribute(edge.getIdentifier(), Model.Properties.ENABLED);
 						}
-						edgeAttr.setAttribute(edge.getIdentifier(), ENABLED, status);
+						edgeAttr.setAttribute(edge.getIdentifier(), Model.Properties.ENABLED, status);
 					}
 					Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 				}

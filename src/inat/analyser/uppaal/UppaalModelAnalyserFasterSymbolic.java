@@ -214,7 +214,7 @@ public class UppaalModelAnalyserFasterSymbolic implements ModelAnalyser<LevelRes
 			cmd[2] += " -t0 -o2 -y \"" + nomeFileModello + "\" \"" + nomeFileQuery + "\"";
 			Runtime rt = Runtime.getRuntime();
 				if (monitor != null) {
-				monitor.setStatus("Analyzing model with UPPAAL.");
+				monitor.setStatus("Analysing model with UPPAAL.");
 			}
 			final Process proc = rt.exec(cmd);
 			final Vector<LevelResult> resultVector = new Vector<LevelResult>(1); //this has no other reason than to hack around the fact that an internal class needs to have all variables it uses declared as final

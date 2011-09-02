@@ -23,6 +23,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -64,6 +65,8 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 								MAX_Y_STRING = "Number_of_levels"; //The idea is to take into account these values in order to rescale the y maximum value for all shown graphs when requested
 	private Double maxYValue = null; //The maximum Y value: it is used to rescale other bunches of series (if they themselves declare their maximum Y value). In a .csv file, the user needs to have a column titled "Number_of_levels", and as value (in the first line) the max Y the user wants to declare for that .csv bunch of series
 	private static final java.awt.Color BACKGROUND_COLOR = Color.WHITE, FOREGROUND_COLOR = Color.BLACK, DISABLED_COLOR = Color.LIGHT_GRAY; //The colors for the background, the axis and the (possibly disabled) series names
+	private boolean needRedraw = true; //If true: redraw all the graph. If false: use the saved image graph and redraw only legend
+	private	BufferedImage bufferedImage = null; //The image where we save the graph once drawn
 	
 	private Vector<Series> data = null; //the Series plotted in the graph
 	private Vector<String> selectedColumns = null; //the names of the Series to be shown (all others are hidden)
@@ -430,16 +433,111 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 	public void drawZoomRectangle(Graphics2D g) {
 		Stroke oldStroke = g.getStroke();
 		float dash[] = { 10.0f * SCALA };
-		g.setStroke(new BasicStroke(1.0f * SCALA, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f * SCALA, dash, 0.0f));
+		g.setStroke(new BasicStroke(2.0f * SCALA, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f * SCALA, dash, 0.0f));
 		g.draw(zoomRectangleBounds);
 		g.setStroke(oldStroke);
 	}
 	
 	public void paint(Graphics g1) {
 		Graphics2D g = (Graphics2D)g1;
-		Font fintus = g.getFont();
-		Font funtus = new Font(fintus.getName(), fintus.getStyle(), fintus.getSize() * SCALA);
-		g.setFont(funtus);
+		Graphics2D gBackground;
+		if (needRedraw) {
+			bufferedImage = new BufferedImage(this.getWidth(), this.getHeight(), BufferedImage.TYPE_INT_RGB);
+			gBackground = bufferedImage.createGraphics();
+		} else {
+			gBackground = (Graphics2D)g1;
+		}
+		Font oldFont = g.getFont();
+		Font newFont = new Font(oldFont.getName(), oldFont.getStyle(), oldFont.getSize() * SCALA);
+		g.setFont(newFont);
+		gBackground.setFont(newFont);
+
+		//if (!movingLegend) {
+			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			gBackground.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		//}
+		
+		//g.clearRect(0, 0, this.getWidth(), this.getHeight());
+		gBackground.setPaint(BACKGROUND_COLOR);
+		Rectangle bounds = new Rectangle(this.getBounds());
+		bounds.x = bounds.y = 0; //we don't care where we are inside our containing object: we only need the width and height of the drawing area. The starting x and y are of course 0.
+		if (needRedraw) {
+			gBackground.fill(bounds);
+		}
+		
+		FontMetrics fm = g.getFontMetrics();
+		maxLabelLength = 0;
+		bounds.setBounds(bounds.x + BORDER_X * SCALA, bounds.y + BORDER_Y * SCALA, bounds.width - 2 * BORDER_X * SCALA, bounds.height - 2 * BORDER_Y * SCALA);
+		
+		resetCol();
+		Stroke oldStroke = gBackground.getStroke();
+		gBackground.setStroke(new BasicStroke(2 * SCALA));
+		Stroke fineStroke = new BasicStroke(1 * SCALA);
+		for (Series series : data) {
+			if (series.isSlave()) continue; //first plot all masters, then all slaves: this way we are sure that the master has set all it needs and the slave can lazily copy the same settings
+			
+			if (needRedraw) {
+				if (series.getColor() == null || series.getChangeColor()) {
+					if (!series.getChangeColor()) {
+						gBackground.setPaint(nextCol());
+					} else {
+						gBackground.setPaint(randomCol());
+						series.setChangeColor(false);
+					}
+				} else {
+					gBackground.setPaint(series.getColor());
+				}
+				series.plot(gBackground, bounds);
+				if (series.isMaster()) {
+					series.getSlave().plot(gBackground, bounds);
+				}
+			}
+			
+			double labelLength = fm.stringWidth(series.getName());
+			if (labelLength > maxLabelLength) {
+				maxLabelLength = labelLength;
+			}
+		}
+		
+		g.setStroke(fineStroke);
+		gBackground.setStroke(fineStroke);
+		
+		if (needRedraw) {
+			drawAxes(gBackground, bounds);
+		}
+		
+		if (needRedraw) {
+			needRedraw = false;
+		}
+		
+		//g.drawImage(bufferedImage, 0, 0, this);
+		g.drawImage(bufferedImage, 0, 0, this.getWidth(), this.getHeight(), null);
+		
+		if (legendBounds == null || !customLegendPosition) {
+			int nGraphs = 0;
+			for (Series s : data) {
+				if (!s.isSlave()) nGraphs++;
+			}
+			legendBounds = new Rectangle(bounds.width - 35 * SCALA - (int)maxLabelLength, bounds.y + 20 * SCALA, 35 * SCALA + (int)maxLabelLength, 20 * SCALA * nGraphs);
+		}
+		if (showLegend) {
+			drawLegend(g, legendBounds);
+		}
+		
+		
+		if (drawingZoomRectangle) {
+			drawZoomRectangle(g);
+		}
+
+		g.setStroke(oldStroke);
+		g.setFont(oldFont);
+	}
+	
+	/*public void paint(Graphics g1) {
+		Graphics2D g = (Graphics2D)g1;
+		Font oldFont = g.getFont();
+		Font newFont = new Font(oldFont.getName(), oldFont.getStyle(), oldFont.getSize() * SCALA);
+		g.setFont(newFont);
 		if (!movingLegend) {
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		}
@@ -451,15 +549,6 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		FontMetrics fm = g.getFontMetrics();
 		maxLabelLength = 0;
 		bounds.setBounds(bounds.x + BORDER_X * SCALA, bounds.y + BORDER_Y * SCALA, bounds.width - 2 * BORDER_X * SCALA, bounds.height - 2 * BORDER_Y * SCALA);
-		
-		//Assi + freccine: li ho spostati dopo, sennò il disegno del grafico me li sovrascriveva
-		/*g.setPaint(java.awt.Color.BLACK);
-		g.drawLine(bounds.x - 5, bounds.height + bounds.y, bounds.x + bounds.width, bounds.height + bounds.y);
-		g.drawLine(bounds.x, bounds.height + bounds.y + 5, bounds.x, bounds.y);
-		g.drawLine(bounds.x + bounds.width, bounds.y + bounds.height, bounds.x + bounds.width - 10, bounds.y + bounds.height - 5);
-		g.drawLine(bounds.x + bounds.width, bounds.y + bounds.height, bounds.x + bounds.width - 10, bounds.y + bounds.height + 5);
-		g.drawLine(bounds.x, bounds.y, bounds.x - 5, bounds.y + 10);
-		g.drawLine(bounds.x, bounds.y, bounds.x + 5, bounds.y + 10);*/
 		
 		resetCol();
 		Stroke oldStroke = g.getStroke();
@@ -508,8 +597,8 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		}
 
 		g.setStroke(oldStroke);
-		g.setFont(fintus);
-	}
+		g.setFont(oldFont);
+	}*/
 	
 	/*
 	 * Add a new set of Series from a given LevelResult, marking all as shown
@@ -911,6 +1000,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 					}
 				}
 			}
+			needRedraw = true;
 			this.repaint();
 		} else if (e.getButton() == MouseEvent.BUTTON3) {
 			if (legendBounds != null && legendBounds.contains(e.getX(), e.getY())) {
@@ -924,6 +1014,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 				if (seriesIdx != -1) {
 					this.changeErrorBars(seriesIdx);
 				}
+				needRedraw = true;
 				this.repaint();
 			} else {
 				popupMenu.show(this, e.getX(), e.getY());
@@ -974,6 +1065,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 			zoomRectangleBounds = null;
 			drawingZoomRectangle = false;
 			this.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			needRedraw = true;
 			this.repaint();
 		}
 	}
@@ -1012,6 +1104,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		if (SCALA == 0) SCALA = 1;
 		legendBounds = null;
 		customLegendPosition = false;
+		needRedraw = true;
 		this.repaint();
 	}
 	
@@ -1033,6 +1126,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 				if (fileName != null) {
 					try {
 						this.parseCSV(fileName);
+						needRedraw = true;
 						this.repaint();
 					} catch (Exception ex) {
 						System.err.println(GENERIC_ERROR_S + ex);
@@ -1053,6 +1147,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 				}
 			} else if (menu.getText().equals(CLEAR_LABEL)) {
 				this.reset();
+				needRedraw = true;
 				this.repaint();
 			} else if (menu.getText().equals(INTERVAL_LABEL)) {
 				String valMinX = JOptionPane.showInputDialog(this, "Give the value of minimum X", scale.getMinX());
@@ -1068,6 +1163,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 				scale.setMaxX(new Double(valMaxX));
 				scale.setMinY(new Double(valMinY));
 				scale.setMaxY(new Double(valMaxY));*/
+				needRedraw = true;
 				this.repaint();
 			} else if (menu.getText().equals(CLOSE_LABEL)) {
 				//findJFrame(this).setVisible(false);
@@ -1078,6 +1174,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 			} else if (menu.getText().equals(ZOOM_EXTENTS_LABEL)) {
 				if (zoomExtentsBounds != null) {
 					this.setDrawArea(zoomExtentsBounds.x, zoomExtentsBounds.width, zoomExtentsBounds.y, zoomExtentsBounds.height);
+					needRedraw = true;
 					this.repaint();
 				} else {
 					//do nothing
@@ -1104,6 +1201,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 		if (oldWidth != -1 && oldHeight != -1) {
 			legendBounds.x = (int)((double)legendBounds.x / oldWidth * this.getWidth());
 			legendBounds.y = (int)((double)legendBounds.y / oldHeight * this.getHeight());
+			needRedraw = true;
 			repaint();
 		}
 		oldWidth = this.getWidth();

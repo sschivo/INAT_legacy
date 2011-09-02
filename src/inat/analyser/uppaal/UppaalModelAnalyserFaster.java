@@ -217,7 +217,7 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 			Runtime rt = Runtime.getRuntime();
 			//t0 = System.currentTimeMillis();
 			if (monitor != null) {
-				monitor.setStatus("Analyzing model with UPPAAL.");
+				monitor.setStatus("Analysing model with UPPAAL.");
 			}
 			Process proc = rt.exec(cmd);
 			try {

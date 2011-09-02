@@ -252,7 +252,7 @@ public class RunAction extends CytoscapeAction {
 	         }
 
 			
-			this.monitor.setStatus("Analyzing model with UPPAAL");
+			this.monitor.setStatus("Analysing model with UPPAAL");
 			this.monitor.setPercentCompleted(-1);
 
 			// analyse model
@@ -304,7 +304,7 @@ public class RunAction extends CytoscapeAction {
 			timeTo = (int)(nMinutesToSimulate * 60.0 / model.getProperties().get(SECONDS_PER_POINT).as(Double.class));
 			scale = (double)nMinutesToSimulate / timeTo;
 			
-			//this.monitor.setStatus("Analyzing model with UPPAAL");
+			//this.monitor.setStatus("Analysing model with UPPAAL");
 			this.monitor.setPercentCompleted(-1);
 
 			// composite the analyser (this should be done from
@@ -612,7 +612,13 @@ public class RunAction extends CytoscapeAction {
 						uncertainty = value;
 					}
 					
-					List<Integer> times = scenario.generateTimes(1 + nLevelsR1, 1 + nLevelsR2);
+					boolean activatingReaction = true;
+					if (edgeAttributes.hasAttribute(edge.getIdentifier(), Model.Properties.INCREMENT) && edgeAttributes.getIntegerAttribute(edge.getIdentifier(), Model.Properties.INCREMENT) > 0) {
+						activatingReaction = true;
+					} else {
+						activatingReaction = false;
+					}
+					List<Integer> times = scenario.generateTimes(1 + nLevelsR1, 1 + nLevelsR2, activatingReaction);
 					Table timesLTable = new Table(nLevelsR2 + 1, nLevelsR1 + 1);
 					Table timesUTable = new Table(nLevelsR2 + 1, nLevelsR1 + 1);
 					
@@ -662,7 +668,7 @@ public class RunAction extends CytoscapeAction {
 						nLvl = defNumberOfLevels;
 					}
 					r.let(NUMBER_OF_LEVELS).be(nLvl);
-					System.err.println("Numbero di livelli di " + r.get("cytoscape id").as(String.class) + " = " + nLvl);
+					//System.err.println("Numbero di livelli di " + r.get("cytoscape id").as(String.class) + " = " + nLvl);
 					nodeAttributes.setAttribute(r.get("cytoscape id").as(String.class), NUMBER_OF_LEVELS, nLvl);
 				}
 			}
