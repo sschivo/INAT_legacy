@@ -84,7 +84,7 @@ public class InatPlugin extends CytoscapePlugin {
 		uppaalGroup.add(localUppaal);
 		uppaalGroup.add(remoteUppaal);
 		final Box serverBox = new Box(BoxLayout.X_AXIS);
-		final JTextField serverName = new JTextField("ewi1735.ewi.utwente.nl"),
+		final JTextField serverName = new JTextField("my.server.com"),
 				   serverPort = new JFormattedTextField("1234");
 		remoteUppaal.addChangeListener(new ChangeListener() {
 			@Override

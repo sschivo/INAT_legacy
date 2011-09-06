@@ -19,6 +19,7 @@ public class Model implements Serializable {
 								   INITIAL_LEVEL = "initialConcentration", //Property belonging to a node. The initial activity level for a node. Expressed as an integer number in [0, NUMBER_OF_LEVELS for that node]
 								   SHOWN_LEVEL = "activityRatio", //Property belonging to a node. The current activity level of a node. Expressed as a relative number representing INITIAL_LEVEL / NUMBER_OF_LEVELS, so it is a double number in [0, 1]
 								   SECONDS_PER_POINT = "seconds per point", //Property belonging to a network. The number of real-life seconds represented by a single UPPAAL time unit.
+								   SECS_POINT_SCALE_FACTOR = "time scale factor", //This value is multiplied to the time bounds as a counterbalance to any change in seconds per point. This allows us to avoid having to directly modify the parameters of scenarios.
 								   SCENARIO = "scenario", //Property belonging to an edge. The id of the scenario on which the reaction corresponding to the edge computes its time tables.
 								   ALIAS = "alias", //The property used to indicate the user-chosen name of a node
 								   CANONICAL_NAME = "canonicalName", //The same, but in the Cytoscape model instead of the Model
@@ -32,6 +33,7 @@ public class Model implements Serializable {
 								   MONO_REACTION = "reaction1", //Reaction with only one reactant
 								   UNCERTAINTY = "uncertainty", //The percentage of uncertainty about the reaction parameter settings
 								   REACTANT = "reactant", //The reactant for a mono-reaction or the substrate for a bi-reaction
+								   CYTOSCAPE_ID = "cytoscape id", //The ID assigned to the node/edge by Cytoscape
 								   REACTANT_NAME = "name", //The name of the reactant (possibly outdated property name)
 								   REACTION_TYPE = "type", //Type of reaction (mono, bi)
 								   CATALYST = "catalyst", //Catalyst in a bi-reaction

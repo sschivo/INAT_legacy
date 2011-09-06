@@ -200,7 +200,6 @@ public class InatBackend {
 				 * parameters, causing all reactions to speed up or slow down, depending whether the time
 				 * interval was shortened or stretched.
 				 */
-				@SuppressWarnings("unchecked")
 				@Override
 				public void attributeValueAssigned(String objectKey, String attributeName,
 						Object[] keyIntoValue, Object oldAttributeValue, Object newAttributeValue) {
@@ -213,8 +212,20 @@ public class InatBackend {
 						oldSecondsPerPoint = Double.parseDouble(oldAttributeValue.toString());
 						factor = oldSecondsPerPoint / newSecondsPerPoint;
 						
+						//System.err.println("Sgamato! Hai cambiato il valore di sec/step di un fattore " + factor + "!");
+						
 						CyNetwork network = Cytoscape.getCurrentNetwork();
-						CyAttributes edgeAttributes = Cytoscape.getEdgeAttributes();
+						CyAttributes networkAttributes = Cytoscape.getNetworkAttributes();
+						if (networkAttributes.hasAttribute(network.getIdentifier(), Model.Properties.SECS_POINT_SCALE_FACTOR)) {
+							double val = networkAttributes.getDoubleAttribute(network.getIdentifier(), Model.Properties.SECS_POINT_SCALE_FACTOR);
+							val *= factor;
+							networkAttributes.setAttribute(network.getIdentifier(), Model.Properties.SECS_POINT_SCALE_FACTOR, val);
+						} else {
+							//when we don't find a value for the SECS_POINT_SCALE_FACTOR, we assume it to be 1, so the new value will be simply the value of the factor.
+							networkAttributes.setAttribute(network.getIdentifier(), Model.Properties.SECS_POINT_SCALE_FACTOR, factor);
+						}
+						
+						/*CyAttributes edgeAttributes = Cytoscape.getEdgeAttributes();
 						final Iterator<Edge> edges = (Iterator<Edge>) network.edgesIterator();
 						for (int i = 0; edges.hasNext(); i++) {
 							Edge edge = edges.next();
@@ -239,7 +250,7 @@ public class InatBackend {
 									edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2, k2);
 								}
 							}
-						}
+						}*/
 					}
 				}
 

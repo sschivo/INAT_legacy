@@ -12,35 +12,40 @@ public class Scenario {
 								SCENARIO_PARAMETER_K2_KM = Model.Properties.SCENARIO_PARAMETER_K2_KM,
 								SCENARIO_ONLY_PARAMETER = Model.Properties.SCENARIO_ONLY_PARAMETER;
 	protected HashMap<String, Double> parameters = new HashMap<String, Double>(); //Parameter name -> value
+	protected HashMap<String, Double> defaultParameterValues = new HashMap<String, Double>(); //The defaul values of parameters
 	public static final int INFINITE_TIME = -1; //The constant to mean that the reaction will not happen
 	
 	public static final Scenario[] sixScenarios = new Scenario[3]; //The default predefined scenarios
 	
+	public Scenario() {
+	}
+	
 	static {
 		sixScenarios[0] = new Scenario() {
-			public int computeFormula(int r1Level, int r2Level, boolean activatingReaction) {
+			@Override
+			public double computeRate(int r1Level, int r2Level, boolean activatingReaction) {
 				double par = parameters.get(SCENARIO_ONLY_PARAMETER),
 					   E = r1Level;
 				double rate = par * E;
-				if (rate != 0) {
-					return Math.max(1, (int)Math.round(1 / rate));
-				} else {
-					return Scenario.INFINITE_TIME;
-				}
+				return rate;
 			}
 			
+			@Override
 			public String[] listVariableParameters() {
 				return new String[]{SCENARIO_ONLY_PARAMETER};
 			}
 			
+			@Override
 			public String toString() {
 				return "Scenario 1-2-3-4";
 			}
 		};
-		sixScenarios[0].setParameter(SCENARIO_ONLY_PARAMETER, 0.01);
+		//sixScenarios[0].setParameter(SCENARIO_ONLY_PARAMETER, 0.01);
+		sixScenarios[0].setDefaultParameterValue(SCENARIO_ONLY_PARAMETER, 0.01);
 		
 		sixScenarios[1] = new Scenario() {
-			public int computeFormula(int r1Level, int r2Level, boolean activatingReaction) {
+			@Override
+			public double computeRate(int r1Level, int r2Level, boolean activatingReaction) {
 				double par1 = parameters.get(SCENARIO_PARAMETER_K2_KM),
 					   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
 					   S,
@@ -52,26 +57,27 @@ public class Scenario {
 					S = r2Level;
 				}
 				double rate = par1 * E * S;
-				if (rate != 0) {
-					return Math.max(1, (int)Math.round(1 / rate));
-				} else {
-					return Scenario.INFINITE_TIME;
-				}
+				return rate;
 			}
 			
+			@Override
 			public String[] listVariableParameters() {
 				return new String[]{SCENARIO_PARAMETER_K2_KM, SCENARIO_PARAMETER_STOT};
 			}
 			
+			@Override
 			public String toString() {
 				return "Scenario 5";
 			}
 		};
-		sixScenarios[1].setParameter(SCENARIO_PARAMETER_K2_KM, 0.001);
-		sixScenarios[1].setParameter(SCENARIO_PARAMETER_STOT, 15.0);
+		//sixScenarios[1].setParameter(SCENARIO_PARAMETER_K2_KM, 0.001);
+		//sixScenarios[1].setParameter(SCENARIO_PARAMETER_STOT, 15.0);
+		sixScenarios[1].setDefaultParameterValue(SCENARIO_PARAMETER_K2_KM, 0.001);
+		sixScenarios[1].setDefaultParameterValue(SCENARIO_PARAMETER_STOT, 15.0);
 		
 		sixScenarios[2] = new Scenario() {
-			public int computeFormula(int r1Level, int r2Level, boolean activatingReaction) {
+			@Override
+			public double computeRate(int r1Level, int r2Level, boolean activatingReaction) {
 				double k2 = parameters.get(SCENARIO_PARAMETER_K2),
 					   E = (double)r1Level,
 					   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
@@ -84,28 +90,27 @@ public class Scenario {
 					S = r2Level;
 				}
 				double rate = k2 * E * S / (km + S);
-				if (rate != 0) {
-					return Math.max(1, (int)Math.round(1 / rate));
-				} else {
-					return Scenario.INFINITE_TIME;
-				}
+				return rate;
 			}
 			
+			@Override
 			public String[] listVariableParameters() {
 				return new String[]{SCENARIO_PARAMETER_K2, SCENARIO_PARAMETER_KM, SCENARIO_PARAMETER_STOT};
 			}
 			
+			@Override
 			public String toString() {
 				return "Scenario 6";
 			}
 		};
-		sixScenarios[2].setParameter(SCENARIO_PARAMETER_K2, 0.01);
-		sixScenarios[2].setParameter(SCENARIO_PARAMETER_KM, 10.0);
-		sixScenarios[2].setParameter(SCENARIO_PARAMETER_STOT, 15.0);
+		//sixScenarios[2].setParameter(SCENARIO_PARAMETER_K2, 0.01);
+		//sixScenarios[2].setParameter(SCENARIO_PARAMETER_KM, 10.0);
+		//sixScenarios[2].setParameter(SCENARIO_PARAMETER_STOT, 15.0);
+		sixScenarios[2].setDefaultParameterValue(SCENARIO_PARAMETER_K2, 0.01);
+		sixScenarios[2].setDefaultParameterValue(SCENARIO_PARAMETER_KM, 10.0);
+		sixScenarios[2].setDefaultParameterValue(SCENARIO_PARAMETER_STOT, 15.0);
 	}
 	
-	public Scenario() {
-	}
 	
 	@SuppressWarnings("unchecked")
 	public Scenario(Scenario source) {
@@ -125,25 +130,43 @@ public class Scenario {
 		return (HashMap<String, Double>)parameters.clone();
 	}
 	
-	//If you want, you can extend Scenario modifying computeFormula in any way you like.
-	//We advise to call super.computeFormula at the end of the extended method, as this
-	//is the "official" complete formula.
-	protected int computeFormula(int r1Level, int r2Level, boolean activatingReaction) {
+	public void setDefaultParameterValue(String name, Double value) {
+		defaultParameterValues.put(name, value);
+		parameters.put(name, value);
+	}
+	
+	public Double getDefaultParameterValue(String name) {
+		return defaultParameterValues.get(name);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public HashMap<String, Double> getDefaultParameterValues() {
+		return (HashMap<String, Double>)defaultParameterValues.clone();
+	}
+	
+	public double computeRate(int r1Level, int r2Level, boolean activatingReaction) {
 		double k2 = parameters.get(SCENARIO_PARAMETER_K2),
-			   E = r1Level,
-			   km = parameters.get(SCENARIO_PARAMETER_KM),
-			   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
-			   S;
+		   E = r1Level,
+		   km = parameters.get(SCENARIO_PARAMETER_KM),
+		   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
+		   S;
 		if (activatingReaction) { //The quantity of unreacted substrate is different depending on the point of view of the reaction: if we are activating, the unreacted substrate is inactive. But if we are inhibiting the unreacted substrate is ACTIVE.
 			S = Stot - r2Level;
 		} else {
 			S = r2Level;
 		}
 		double rate = k2 * E * S / (km + S);
+		return rate;
+	}
+	
+	public Double computeFormula(int r1Level, int r2Level, boolean activatingReaction) {
+		double rate = computeRate(r1Level, r2Level, activatingReaction);
 		if (rate > 1e-8) {
-			return Math.max(1, (int)Math.round(1 / rate)); //We need to put at least 1 because otherwise the reaction will keep happening forever (it is not very nice not to let time pass..)
+			//return Math.max(1, (int)Math.round(1 / rate)); //We need to put at least 1 because otherwise the reaction will keep happening forever (it is not very nice not to let time pass..)
+			return 1.0 / rate;
 		} else {
-			return INFINITE_TIME;
+			//return INFINITE_TIME;
+			return Double.POSITIVE_INFINITY;
 		}
 	}
 
@@ -158,11 +181,11 @@ public class Scenario {
 	 * interface. We now compute the tables on the fly and output them directly as
 	 * reference constants in the UPPPAAL models, saving also memory.
 	 */
-	public List<Integer> generateTimes(int nLevelsReactant1, int nLevelsReactant2, boolean activatingReaction) {
-		List<Integer> times = new LinkedList<Integer>();
+	public List<Double> generateTimes(int nLevelsReactant1, int nLevelsReactant2, boolean activatingReaction) {
+		List<Double> times = new LinkedList<Double>();
 		if (!activatingReaction) {
 			for (int j=0;j<nLevelsReactant1;j++) {
-				times.add(INFINITE_TIME); //all reactant2 already reacted (inactive) = no reaction
+				times.add(Double.POSITIVE_INFINITY); //all reactant2 already reacted (inactive) = no reaction
 			}
 		}
 		int i, limit;
@@ -174,14 +197,14 @@ public class Scenario {
 			limit = nLevelsReactant2;
 		}
 		for (;i<limit;i++) {
-			times.add(INFINITE_TIME); //no reactant1 = no reaction
+			times.add(Double.POSITIVE_INFINITY); //no reactant1 = no reaction
 			for (int j=1;j<nLevelsReactant1;j++) {
 				times.add(computeFormula(j, i, activatingReaction));
 			}
 		}
 		if (activatingReaction) {
 			for (int j=0;j<nLevelsReactant1;j++) {
-				times.add(INFINITE_TIME); //all reactant2 already reacted (active) = no reaction
+				times.add(Double.POSITIVE_INFINITY); //all reactant2 already reacted (active) = no reaction
 			}
 		}
 		return times;
