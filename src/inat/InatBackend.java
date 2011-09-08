@@ -85,65 +85,66 @@ public class InatBackend {
 					
 					
 					if (attributeName.equals(NUMBER_OF_LEVELS)) { //we are here to listen for #levels changes in order to update the parameters of reactions in which the affected reactant is involved
+
+						if (oldAttributeValue != null) {
 						
-						if (oldAttributeValue == null) return; //If there was no old value, we can do very little
-						
-						double newLevel = 0, oldLevel = 0, factor = 0;
-						newLevel = Double.parseDouble(newAttributeValue.toString());
-						oldLevel = Double.parseDouble(oldAttributeValue.toString());
-						factor = newLevel / oldLevel;
-						
-						CyNetwork network = Cytoscape.getCurrentNetwork();
-						CyAttributes edgeAttributes = Cytoscape.getEdgeAttributes();
-						final Iterator<Edge> edges = (Iterator<Edge>) network.edgesIterator();
-						for (int i = 0; edges.hasNext(); i++) {
-							Edge edge = edges.next();
+							double newLevel = 0, oldLevel = 0, factor = 0;
+							newLevel = Double.parseDouble(newAttributeValue.toString());
+							oldLevel = Double.parseDouble(oldAttributeValue.toString());
+							factor = newLevel / oldLevel;
 							
-							if (edge.getSource().getIdentifier().equals(objectKey) || edge.getTarget().getIdentifier().equals(objectKey)) {
-								//update the parameters for the reaction
-								if (edge.getSource().equals(edge.getTarget())) {
-									//Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "parameter");
-									//parameter /= factor;
-									//edgeAttributes.setAttribute(edge.getIdentifier(), "parameter", parameter);
-								} else {
-									Integer scenarioIdx = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), SCENARIO);
-									if (scenarioIdx == 0) { //Scenario 1-2-3-4
-										Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER);
-										if (edge.getSource().getIdentifier().equals(objectKey)) { //We do something only if the changed reactant was the upstream one
-											parameter /= factor;
-										} else {
-											parameter *= factor;
+							CyNetwork network = Cytoscape.getCurrentNetwork();
+							CyAttributes edgeAttributes = Cytoscape.getEdgeAttributes();
+							final Iterator<Edge> edges = (Iterator<Edge>) network.edgesIterator();
+							for (int i = 0; edges.hasNext(); i++) {
+								Edge edge = edges.next();
+								
+								if (edge.getSource().getIdentifier().equals(objectKey) || edge.getTarget().getIdentifier().equals(objectKey)) {
+									//update the parameters for the reaction
+									if (edge.getSource().equals(edge.getTarget())) {
+										//Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "parameter");
+										//parameter /= factor;
+										//edgeAttributes.setAttribute(edge.getIdentifier(), "parameter", parameter);
+									} else {
+										Integer scenarioIdx = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), SCENARIO);
+										if (scenarioIdx == 0) { //Scenario 1-2-3-4
+											Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER);
+											if (edge.getSource().getIdentifier().equals(objectKey)) { //We do something only if the changed reactant was the upstream one
+												parameter /= factor;
+											} else {
+												parameter *= factor;
+											}
+											edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER, parameter);
+										} else if (scenarioIdx == 1) { //Scenario 5
+											Double stot = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT),
+												   k2km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2_KM);
+											if (edge.getSource().getIdentifier().equals(objectKey)) { //If the changed reactant is the upstream one, we change only k2/km
+												k2km /= factor;
+											} else { //If the changed reactant is the downstream one, we change only Stot
+												stot *= factor;
+											}
+											edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT, stot);
+											edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2_KM, k2km);
+										} else if (scenarioIdx == 2) { //Scenario 6
+											Double stot = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT),
+													 km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_KM),
+													 k2 = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2);
+											if (edge.getSource().getIdentifier().equals(objectKey)) { //If the changed reactant is the upstream one, we change only k2
+												k2 /= factor;
+											} else { //If the changed reactant is the downstream one, we change all three
+												stot *= factor;
+												km *= factor;
+												k2 *= factor;
+											}
+											edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT, stot);
+											edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_KM, km);
+											edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2, k2);
 										}
-										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER, parameter);
-									} else if (scenarioIdx == 1) { //Scenario 5
-										Double stot = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT),
-											   k2km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2_KM);
-										if (edge.getSource().getIdentifier().equals(objectKey)) { //If the changed reactant is the upstream one, we change only k2/km
-											k2km /= factor;
-										} else { //If the changed reactant is the downstream one, we change only Stot
-											stot *= factor;
-										}
-										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT, stot);
-										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2_KM, k2km);
-									} else if (scenarioIdx == 2) { //Scenario 6
-										Double stot = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT),
-												 km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_KM),
-												 k2 = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2);
-										if (edge.getSource().getIdentifier().equals(objectKey)) { //If the changed reactant is the upstream one, we change only k2
-											k2 /= factor;
-										} else { //If the changed reactant is the downstream one, we change all three
-											stot *= factor;
-											km *= factor;
-											k2 *= factor;
-										}
-										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_STOT, stot);
-										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_KM, km);
-										edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2, k2);
 									}
 								}
 							}
+							//Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null); //!!! If you don't advertise the change of property, Cytoscape will never notice it ?!?
 						}
-						//Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null); //!!! If you don't advertise the change of property, Cytoscape will never notice it ?!?
 						
 						//Update the value of "levels" in the network with the maximum of all levels
 						int maxLevels = 0;

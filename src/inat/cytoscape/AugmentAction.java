@@ -4,7 +4,6 @@ import giny.model.Edge;
 import giny.model.Node;
 import giny.view.EdgeView;
 import giny.view.NodeView;
-
 import inat.model.Model;
 
 import java.awt.Color;
@@ -21,15 +20,21 @@ import cytoscape.Cytoscape;
 import cytoscape.data.CyAttributes;
 import cytoscape.util.CytoscapeAction;
 import cytoscape.view.CyNetworkView;
+import cytoscape.visual.ArrowShape;
+import cytoscape.visual.EdgeAppearanceCalculator;
+import cytoscape.visual.GlobalAppearanceCalculator;
 import cytoscape.visual.NodeAppearanceCalculator;
 import cytoscape.visual.VisualMappingManager;
 import cytoscape.visual.VisualPropertyType;
+import cytoscape.visual.VisualStyle;
+import cytoscape.visual.calculators.BasicCalculator;
 import cytoscape.visual.calculators.Calculator;
 import cytoscape.visual.calculators.GenericNodeCustomGraphicCalculator;
 import cytoscape.visual.mappings.BoundaryRangeValues;
 import cytoscape.visual.mappings.ContinuousMapping;
 import cytoscape.visual.mappings.DiscreteMapping;
 import cytoscape.visual.mappings.LinearNumberToColorInterpolator;
+import cytoscape.visual.mappings.PassThroughMapping;
 import ding.view.EdgeContextMenuListener;
 import ding.view.NodeContextMenuListener;
 
@@ -65,12 +70,42 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		Cytoscape.getCurrentNetworkView().addEdgeContextMenuListener(this);
 		
 		VisualMappingManager vizMap = Cytoscape.getVisualMappingManager();
-		NodeAppearanceCalculator nac = vizMap.getVisualStyle().getNodeAppearanceCalculator();
+		VisualStyle visualStyle = vizMap.getVisualStyle();
+		NodeAppearanceCalculator nac = visualStyle.getNodeAppearanceCalculator();
+		EdgeAppearanceCalculator eac = visualStyle.getEdgeAppearanceCalculator();
+		GlobalAppearanceCalculator gac = visualStyle.getGlobalAppearanceCalculator();
+		
+		gac.setDefaultBackgroundColor(Color.WHITE);
 
 		DiscreteMapping mapping = new DiscreteMapping(Color.class, Model.Properties.ENABLED);
 		mapping.putMapValue(false, Color.BLACK);
 		mapping.putMapValue(true, Color.WHITE);
-		Calculator calco = new GenericNodeCustomGraphicCalculator("Mapping for enabled and disabled nodes", mapping, VisualPropertyType.NODE_LABEL_COLOR);
+		Calculator calco = new GenericNodeCustomGraphicCalculator("Mapping for enabled and disabled nodes (label color)", mapping, VisualPropertyType.NODE_LABEL_COLOR);
+		nac.setCalculator(calco);
+		
+		mapping = new DiscreteMapping(Float.class, Model.Properties.ENABLED);
+		mapping.putMapValue(false, 100.0f);
+		mapping.putMapValue(true, 255.0f);
+		calco = new GenericNodeCustomGraphicCalculator("Mapping for enabled and disabled nodes (node opacity)", mapping, VisualPropertyType.NODE_OPACITY);
+		nac.setCalculator(calco);
+		
+		calco = new GenericNodeCustomGraphicCalculator("Mapping for enabled and disabled nodes (node border opacity)", mapping, VisualPropertyType.NODE_BORDER_OPACITY);
+		nac.setCalculator(calco);
+		
+		calco = new BasicCalculator("Mapping for enabled and disabled edges (edge opacity)", mapping, VisualPropertyType.EDGE_OPACITY);
+		eac.setCalculator(calco);
+		
+		calco = new BasicCalculator("Mapping for enabled and disabled edges (edge target arrow opacity)", mapping, VisualPropertyType.EDGE_TGTARROW_OPACITY);
+		eac.setCalculator(calco);
+		
+		mapping = new DiscreteMapping(ArrowShape.class, Model.Properties.INCREMENT);
+		mapping.putMapValue(-1, ArrowShape.T);
+		mapping.putMapValue(1, ArrowShape.ARROW);
+		calco = new BasicCalculator("Mapping for arrow target shape", mapping, VisualPropertyType.EDGE_TGTARROW_SHAPE);
+		eac.setCalculator(calco);
+		
+		PassThroughMapping mp = new PassThroughMapping(String.class, Model.Properties.CANONICAL_NAME);
+		calco = new BasicCalculator("Mapping for node label", mp, VisualPropertyType.NODE_LABEL);
 		nac.setCalculator(calco);
 		
 		ContinuousMapping mc = new ContinuousMapping(Color.class, Model.Properties.SHOWN_LEVEL);
@@ -83,22 +118,34 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		mc.setInterpolator(new LinearNumberToColorInterpolator());
 		nac.setCalculator(new GenericNodeCustomGraphicCalculator("Mapping for the current activity level of nodes", mc, VisualPropertyType.NODE_FILL_COLOR));
 		
+		VisualPropertyType.NODE_BORDER_COLOR.setDefault(visualStyle, Color.DARK_GRAY);
+		VisualPropertyType.NODE_FILL_COLOR.setDefault(visualStyle, Color.RED);
+		VisualPropertyType.NODE_LABEL_COLOR.setDefault(visualStyle, Color.WHITE);
+		VisualPropertyType.NODE_LINE_WIDTH.setDefault(visualStyle, 3.0f);
+		VisualPropertyType.NODE_SIZE.setDefault(visualStyle, 55.0f);
+		VisualPropertyType.EDGE_LINE_WIDTH.setDefault(visualStyle, 5.0f);
+		VisualPropertyType.EDGE_COLOR.setDefault(visualStyle, Color.BLACK);
+		VisualPropertyType.EDGE_TGTARROW_COLOR.setDefault(visualStyle, Color.BLACK);
+		
 		//Recompute the activityRatio property for all nodes, to make sure that it exists
 		CyNetwork network = Cytoscape.getCurrentNetwork();
 		if (network != null) {
-			CyAttributes nodeAttr = Cytoscape.getNodeAttributes();
+			CyAttributes nodeAttr = Cytoscape.getNodeAttributes(),
+						 networkAttr = Cytoscape.getNetworkAttributes();
 			for (int i : network.getNodeIndicesArray()) {
 				Node n = network.getNode(i);
 				double level = 0;
 				int nLevels = 0;
-				try {
+				if (nodeAttr.hasAttribute(n.getIdentifier(), Model.Properties.INITIAL_LEVEL)) {
 					level = nodeAttr.getIntegerAttribute(n.getIdentifier(), Model.Properties.INITIAL_LEVEL);
-				} catch (Exception ex) {
+				} else {
 					level = 0;
 				}
-				try {
+				if (nodeAttr.hasAttribute(n.getIdentifier(), Model.Properties.NUMBER_OF_LEVELS)) {
 					nLevels = nodeAttr.getIntegerAttribute(n.getIdentifier(), Model.Properties.NUMBER_OF_LEVELS);
-				} catch (Exception ex) {
+				} else if (networkAttr.hasAttribute(network.getIdentifier(), Model.Properties.NUMBER_OF_LEVELS)) {
+					nLevels = networkAttr.getIntegerAttribute(network.getIdentifier(), Model.Properties.NUMBER_OF_LEVELS);
+				} else {
 					nLevels = 1;
 				}
 				nodeAttr.setAttribute(n.getIdentifier(), Model.Properties.SHOWN_LEVEL, level / nLevels);

@@ -76,6 +76,7 @@ public class RunAction extends CytoscapeAction {
 								UNCERTAINTY = Model.Properties.UNCERTAINTY, //The uncertainty about the parameters setting for an edge(=reaction)
 								ENABLED = Model.Properties.ENABLED, //Whether the node/edge is enabled. Influences the display of that node/edge thanks to the discrete Visual Mapping defined by AugmentAction
 								GROUP = Model.Properties.GROUP; //Could possibly be never used. All nodes(=reactants) belonging to the same group represent alternative (in the sense of exclusive or) phosphorylation sites of the same protein.
+	private static final int VERY_LARGE_TIME_VALUE = 1073741822;
 	private int timeTo = 1200; //The default number of UPPAAL time units until which a simulation will run
 	private double scale = 0.2; //The time scale representing the number of real-life minutes represented by a single UPPAAL time unit
 	private JRadioButton remoteUppaal, smcUppaal; //The RadioButtons telling us whether we use a local or a remote engine, and whether we use the Statistical Model Checking or the "normal" engine
@@ -661,6 +662,8 @@ public class RunAction extends CytoscapeAction {
 			//============================== FIRST PART: CHECK THAT ALL PROPERTIES ARE SET =====================================
 			//TODO: we could collect the list of all things that were set automatically and show them before continuing with the
 			//generation of the model. Alternatively, we could throw exceptions like bullets for any slight misbehavior =)
+			//Another alternative is to collect the list of what we want to change, and actually make the changes only after the
+			//user has approved them. Otherwise, interrupt the analysis by throwing exception.
 			
 			if (!networkAttributes.hasAttribute(network.getIdentifier(), NUMBER_OF_LEVELS)) {
 				//throw new InatException("Network attribute '" + NUMBER_OF_LEVELS + "' is missing.");
@@ -808,10 +811,10 @@ public class RunAction extends CytoscapeAction {
 					} else {
 						minimoLB = VariablesModel.INFINITE_TIME;
 					}
-					if (massimoUB > 1073741822) {
+					if (massimoUB > VERY_LARGE_TIME_VALUE) {
 						//System.err.println("La reazione " + nodeAttributes.getAttribute(rId, Model.Properties.CANONICAL_NAME) + " --| " + nodeAttributes.getAttribute(rId, Model.Properties.CANONICAL_NAME) + " ha un numero troppo alto in angolo alto-sx!! (1)");
 						double rate = scenario.computeRate(1);
-						double proposedSecStep = secPerStep / (1073741822 * rate / (secStepFactor * (100.0 + uncertainty) / 100.0)); //Math.ceil(secPerStep / (1073741822 * rate / ((100.0 + uncertainty) / 100.0)));
+						double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (100.0 + uncertainty) / 100.0)); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
 						if (proposedSecStep > minSecStep) {
 							minSecStep = proposedSecStep;
 						}
@@ -905,11 +908,11 @@ public class RunAction extends CytoscapeAction {
 								maxSecStep = proposedSecStep;
 							}
 						}
-						if (angoloBassoSxUB > 1073741822) {
+						if (angoloBassoSxUB > VERY_LARGE_TIME_VALUE) {
 							//System.err.println("La reazione " + nodeAttributes.getAttribute(r1Id, Model.Properties.CANONICAL_NAME) + " --> " + nodeAttributes.getAttribute(r2Id, Model.Properties.CANONICAL_NAME) + " ha un numero troppo alto in angolo basso-sx!! (" + 1 + ", " + (nLevelsR2 - 1) + ")");
 							double rate = scenario.computeRate(1, nLevelsR2 - 1, activatingReaction);
-							//In questo caso si consiglia di dividere sec/step per un fattore < (1073741822 * rate / ((100.0 + uncertainty) / 100.0))
-							double proposedSecStep = secPerStep / (1073741822 * rate / (secStepFactor * (100.0 + uncertainty) / 100.0)); //Math.ceil(secPerStep / (1073741822 * rate / ((100.0 + uncertainty) / 100.0)));
+							//In questo caso si consiglia di dividere sec/step per un fattore < (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0))
+							double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (100.0 + uncertainty) / 100.0)); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
 							if (proposedSecStep > minSecStep) {
 								minSecStep = proposedSecStep;
 							}
@@ -944,11 +947,11 @@ public class RunAction extends CytoscapeAction {
 								maxSecStep = proposedSecStep;
 							}
 						}
-						if (angoloAltoSxUB > 1073741822) {
+						if (angoloAltoSxUB > VERY_LARGE_TIME_VALUE) {
 							//System.err.println("La reazione " + nodeAttributes.getAttribute(r1Id, Model.Properties.CANONICAL_NAME) + " --| " + nodeAttributes.getAttribute(r2Id, Model.Properties.CANONICAL_NAME) + " ha un numero troppo alto in angolo alto-sx!! (1, 1)");
 							double rate = scenario.computeRate(1, 1, activatingReaction);
-							//In questo caso si consiglia di dividere sec/step per un fattore < (1073741822 * rate / ((100.0 + uncertainty) / 100.0))
-							double proposedSecStep = secPerStep / (1073741822 * rate / (secStepFactor * (100.0 + uncertainty) / 100.0)); //Math.ceil(secPerStep / (1073741822 * rate / ((100.0 + uncertainty) / 100.0)));
+							//In questo caso si consiglia di dividere sec/step per un fattore < (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0))
+							double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (100.0 + uncertainty) / 100.0)); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
 							if (proposedSecStep > minSecStep) {
 								minSecStep = proposedSecStep;
 							}
