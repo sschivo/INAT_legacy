@@ -45,6 +45,7 @@ import cytoscape.Cytoscape;
 import cytoscape.data.CyAttributes;
 import cytoscape.task.Task;
 import cytoscape.task.TaskMonitor;
+import cytoscape.task.ui.JTask;
 import cytoscape.task.ui.JTaskConfig;
 import cytoscape.task.util.TaskManager;
 import cytoscape.util.CytoscapeAction;
@@ -138,6 +139,7 @@ public class RunAction extends CytoscapeAction {
 		jTaskConfig.setAutoDispose(true);
 		jTaskConfig.displayCancelButton(true);
 		jTaskConfig.displayTimeElapsed(true);
+		jTaskConfig.setModal(true);
 		
 		long startTime = System.currentTimeMillis();
 		Date now = new Date(startTime);
@@ -668,7 +670,7 @@ public class RunAction extends CytoscapeAction {
 			if (!networkAttributes.hasAttribute(network.getIdentifier(), NUMBER_OF_LEVELS)) {
 				//throw new InatException("Network attribute '" + NUMBER_OF_LEVELS + "' is missing.");
 				int defaultNLevels = 15;
-				String inputLevels = JOptionPane.showInputDialog(Cytoscape.getDesktop(), "Missing number of levels for the network. Please insert the max number of levels", defaultNLevels);
+				String inputLevels = JOptionPane.showInputDialog((JTask)this.monitor, "Missing number of levels for the network. Please insert the max number of levels", defaultNLevels);
 				Integer nLvl;
 				if (inputLevels != null) {
 					try {
@@ -685,7 +687,7 @@ public class RunAction extends CytoscapeAction {
 			if (!networkAttributes.hasAttribute(network.getIdentifier(), SECONDS_PER_POINT)) {
 				//throw new InatException("Network attribute '" + SECONDS_PER_POINT + "' is missing.");
 				double defaultSecondsPerPoint = 12;
-				String inputSecs = JOptionPane.showInputDialog(Cytoscape.getDesktop(), "Missing number of seconds per point for the network.\nPlease insert the number of real-life seconds a simulation point will represent", defaultSecondsPerPoint);
+				String inputSecs = JOptionPane.showInputDialog((JTask)this.monitor, "Missing number of seconds per point for the network.\nPlease insert the number of real-life seconds a simulation point will represent", defaultSecondsPerPoint);
 				Double nSecPerPoint;
 				if (inputSecs != null) {
 					try {

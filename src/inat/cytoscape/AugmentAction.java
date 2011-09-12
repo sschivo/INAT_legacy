@@ -123,7 +123,7 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		VisualPropertyType.NODE_LABEL_COLOR.setDefault(visualStyle, Color.WHITE);
 		VisualPropertyType.NODE_LINE_WIDTH.setDefault(visualStyle, 3.0f);
 		VisualPropertyType.NODE_SIZE.setDefault(visualStyle, 55.0f);
-		VisualPropertyType.EDGE_LINE_WIDTH.setDefault(visualStyle, 5.0f);
+		VisualPropertyType.EDGE_LINE_WIDTH.setDefault(visualStyle, 4.0f);
 		VisualPropertyType.EDGE_COLOR.setDefault(visualStyle, Color.BLACK);
 		VisualPropertyType.EDGE_TGTARROW_COLOR.setDefault(visualStyle, Color.BLACK);
 		
