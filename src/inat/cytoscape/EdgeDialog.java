@@ -197,7 +197,10 @@ public class EdgeDialog extends JFrame {
 			
 			previouslySelectedScenario = scenarioIdx;
 			comboScenario.setSelectedIndex(scenarioIdx);
-			boxScenario.add(comboScenario);
+			Box boxComboScenario = new Box(BoxLayout.Y_AXIS);
+			boxComboScenario.add(comboScenario);
+			boxComboScenario.add(Box.createGlue());
+			boxScenario.add(boxComboScenario);
 			boxScenario.add(Box.createGlue());
 			
 			Box boxScenarioAllParameters = new Box(BoxLayout.Y_AXIS);

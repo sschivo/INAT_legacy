@@ -1,19 +1,17 @@
 package inat.cytoscape;
 
 import giny.model.Node;
-
 import inat.model.Model;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
 import javax.swing.AbstractAction;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -62,7 +60,8 @@ public class NodeDialog extends JFrame {
 		this.setLayout(new BorderLayout(2, 2));
 
 		//JPanel values = new JPanel(new GridLayout(3, 2, 2, 2));
-		JPanel values = new JPanel(new GridBagLayout()); //You REALLY don't want to know how GridBagLayout works...
+		//JPanel values = new JPanel(new GridBagLayout()); //You REALLY don't want to know how GridBagLayout works...
+		Box values = new Box(BoxLayout.Y_AXIS);
 		
 		int levels;
 		if (nodeAttributes.hasAttribute(node.getIdentifier(), Model.Properties.NUMBER_OF_LEVELS)) {
@@ -73,13 +72,14 @@ public class NodeDialog extends JFrame {
 			levels = 15;
 		}
 		
-		JLabel nameLabel = new JLabel("Reactant name:");
+		//JLabel nameLabel = new JLabel("Reactant name:");
 		final JTextField nameField = new JTextField(name);
-		values.add(nameLabel, new GridBagConstraints(0, 0, 1, 1, 0.3, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
-		values.add(nameField, new GridBagConstraints(1, 0, 1, 1, 1, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+		//values.add(nameLabel, new GridBagConstraints(0, 0, 1, 1, 0.3, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+		//values.add(nameField, new GridBagConstraints(1, 0, 1, 1, 1, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+		values.add(new LabelledField("Name", nameField));
 		
-		final JLabel totalLevelsLabel = new JLabel("Total activity levels: " + levels);
-		values.add(totalLevelsLabel, new GridBagConstraints(0, 1, 1, 1, 0.3, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+		//final JLabel totalLevelsLabel = new JLabel("Total activity levels: " + levels);
+		//values.add(totalLevelsLabel, new GridBagConstraints(0, 1, 1, 1, 0.3, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
 		final JSlider totalLevels = new JSlider(1, 100);
 		totalLevels.setValue(levels);
 		totalLevels.setMajorTickSpacing(20);
@@ -92,14 +92,17 @@ public class NodeDialog extends JFrame {
 			labelTable.put(totalLevels.getMaximum(), new JLabel("" + totalLevels.getMaximum()));
 			totalLevels.setLabelTable(labelTable);
 		}
-		values.add(totalLevels, new GridBagConstraints(1, 1, 1, 1, 1, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+		//values.add(totalLevels, new GridBagConstraints(1, 1, 1, 1, 1, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+		final LabelledField totalLevelsField = new LabelledField("Total activity levels: " + levels, totalLevels);
+		values.add(totalLevelsField);
 		
 		
 		final JSlider initialConcentration = new JSlider(0, levels);
 		initialConcentration.setValue(nodeAttributes.getIntegerAttribute(node.getIdentifier(), Model.Properties.INITIAL_LEVEL));
 		
-		final JLabel initialConcentrationLabel = new JLabel("Initial activity level: " + initialConcentration.getValue());
-		values.add(initialConcentrationLabel, new GridBagConstraints(0, 2, 1, 1, 0.3, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+		//final JLabel initialConcentrationLabel = new JLabel("Initial activity level: " + initialConcentration.getValue());
+		//values.add(initialConcentrationLabel, new GridBagConstraints(0, 2, 1, 1, 0.3, 0.0, GridBagConstraints.LINE_START, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+		final LabelledField initialLevelField = new LabelledField("Initial activity level: " + initialConcentration.getValue(), initialConcentration);
 
 
 		initialConcentration.setMajorTickSpacing(levels / 5);
@@ -108,7 +111,8 @@ public class NodeDialog extends JFrame {
 		initialConcentration.setPaintLabels(true);
 		initialConcentration.setPaintTicks(true);
 
-		values.add(initialConcentration, new GridBagConstraints(1, 2, 1, 1, 1, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+		//values.add(initialConcentration, new GridBagConstraints(1, 2, 1, 1, 1, 0.0, GridBagConstraints.LINE_END, GridBagConstraints.HORIZONTAL, new Insets(0, 0, 0, 0), 0, 0));
+		values.add(initialLevelField);
 
 		this.add(values, BorderLayout.CENTER);
 
@@ -117,7 +121,8 @@ public class NodeDialog extends JFrame {
 
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				totalLevelsLabel.setText("Total activity levels: " + totalLevels.getValue());
+				//totalLevelsLabel.setText("Total activity levels: " + totalLevels.getValue());
+				totalLevelsField.setTitle("Total activity levels: " + totalLevels.getValue());
 				if (totalLevels.getValueIsAdjusting()) return;
 				double prevMax = initialConcentration.getMaximum(),
 					   currMax = totalLevels.getValue();
@@ -133,7 +138,8 @@ public class NodeDialog extends JFrame {
 					labelTable.put(i, new JLabel("" + i));
 				}
 				initialConcentration.setLabelTable(labelTable);
-				initialConcentrationLabel.setText("Initial activity level: " + initialConcentration.getValue());
+				//initialConcentrationLabel.setText("Initial activity level: " + initialConcentration.getValue());
+				initialLevelField.setTitle("Initial activity level: " + initialConcentration.getValue());
 				initialConcentration.setValue(currValue);
 			}
 			
@@ -145,7 +151,8 @@ public class NodeDialog extends JFrame {
 			@Override
 			public void stateChanged(ChangeEvent e) {
 				//if (initialConcentration.getValueIsAdjusting()) return;
-				initialConcentrationLabel.setText("Initial activity level: " + initialConcentration.getValue());
+				//initialConcentrationLabel.setText("Initial activity level: " + initialConcentration.getValue());
+				initialLevelField.setTitle("Initial activity level: " + initialConcentration.getValue());
 			}
 			
 		});

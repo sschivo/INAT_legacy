@@ -688,6 +688,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 			}
 		}
 		customLegendPosition = false;
+		needRedraw = true;
 	}
 	
 	/*
@@ -796,6 +797,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 			}
 		}
 		customLegendPosition = false;
+		needRedraw = true;
 	}
 	
 	/*
@@ -1193,19 +1195,19 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 
 	private int oldWidth = -1, oldHeight = -1;
 	public void componentResized(ComponentEvent e) {
-		needRedraw = true;
 		if (!showLegend || !customLegendPosition) {
 			oldWidth = this.getWidth();
 			oldHeight = this.getHeight();
-			return;
+		} else {
+			if (oldWidth != -1 && oldHeight != -1) {
+				legendBounds.x = (int)((double)legendBounds.x / oldWidth * this.getWidth());
+				legendBounds.y = (int)((double)legendBounds.y / oldHeight * this.getHeight());
+			}
+			oldWidth = this.getWidth();
+			oldHeight = this.getHeight();
 		}
-		if (oldWidth != -1 && oldHeight != -1) {
-			legendBounds.x = (int)((double)legendBounds.x / oldWidth * this.getWidth());
-			legendBounds.y = (int)((double)legendBounds.y / oldHeight * this.getHeight());
-			repaint();
-		}
-		oldWidth = this.getWidth();
-		oldHeight = this.getHeight();
+		needRedraw = true;
+		repaint();
 	}
 	
 	public void componentHidden(ComponentEvent e) {

@@ -513,7 +513,7 @@ public class RunAction extends CytoscapeAction {
 						}
 					}
 					
-					int uncertainty = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
+					double uncertainty = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
 					
 					List<Double> times = scenario.generateTimes(1 + nLevels);
 					Table timesLTable = new Table(nLevels + 1, 1);
@@ -528,8 +528,10 @@ public class RunAction extends CytoscapeAction {
 							timesLTable.set(j, 0, (int)Math.round(secStepFactor * t));
 							timesUTable.set(j, 0, (int)Math.round(secStepFactor * t));
 						} else {
-							timesLTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * t * (100.0 - uncertainty) / 100.0))); //we use Math.max because we do not want to put 0 as a time
-							timesUTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * t * (100.0 + uncertainty) / 100.0)));
+							//timesLTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * t * (100.0 - uncertainty) / 100.0))); //we use Math.max because we do not want to put 0 as a time
+							//timesUTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * t * (100.0 + uncertainty) / 100.0)));
+							timesLTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * t * (1 - uncertainty / 100.0)))); //we use Math.max because we do not want to put 0 as a time
+							timesUTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * t * (1 + uncertainty / 100.0))));
 						}
 					}
 					r.let(TIMES_L).be(timesLTable);
@@ -579,7 +581,7 @@ public class RunAction extends CytoscapeAction {
 						}
 					}
 					
-					int uncertainty = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
+					double uncertainty = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
 					
 					boolean activatingReaction = true;
 					if (edgeAttributes.getIntegerAttribute(edge.getIdentifier(), INCREMENT) > 0) {
@@ -601,8 +603,8 @@ public class RunAction extends CytoscapeAction {
 								timesLTable.set(j, k, (int)Math.round(secStepFactor * t));
 								timesUTable.set(j, k, (int)Math.round(secStepFactor * t));
 							} else {
-								timesLTable.set(j, k, Math.max(1, (int)Math.round(secStepFactor * t * (100.0 - uncertainty) / 100.0)));
-								timesUTable.set(j, k, Math.max(1, (int)Math.round(secStepFactor * t * (100.0 + uncertainty) / 100.0)));
+								timesLTable.set(j, k, Math.max(1, (int)Math.round(secStepFactor * t * (1 - uncertainty / 100.0))));
+								timesUTable.set(j, k, Math.max(1, (int)Math.round(secStepFactor * t * (1 + uncertainty / 100.0))));
 							}
 						}
 					}
@@ -792,7 +794,7 @@ public class RunAction extends CytoscapeAction {
 						}
 					}
 					
-					int uncertainty;
+					double uncertainty;
 					if (edgeAttributes.hasAttribute(edge.getIdentifier(), UNCERTAINTY)) {
 						uncertainty = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
 					} else {
@@ -804,19 +806,19 @@ public class RunAction extends CytoscapeAction {
 					int massimoUB,
 						minimoLB;
 					if (!Double.isInfinite(massimo)) {
-						massimoUB = Math.max(1, (int)Math.round(secStepFactor * massimo * (100.0 + uncertainty) / 100.0));
+						massimoUB = Math.max(1, (int)Math.round(secStepFactor * massimo * (1 + uncertainty / 100.0)));
 					} else {
 						massimoUB = VariablesModel.INFINITE_TIME;
 					}
 					if (!Double.isInfinite(minimo)) {
-						minimoLB = Math.max(1, (int)Math.round(secStepFactor * minimo * (100.0 - uncertainty) / 100.0));
+						minimoLB = Math.max(1, (int)Math.round(secStepFactor * minimo * (1 - uncertainty / 100.0)));
 					} else {
 						minimoLB = VariablesModel.INFINITE_TIME;
 					}
 					if (massimoUB > VERY_LARGE_TIME_VALUE) {
 						//System.err.println("La reazione " + nodeAttributes.getAttribute(rId, Model.Properties.CANONICAL_NAME) + " --| " + nodeAttributes.getAttribute(rId, Model.Properties.CANONICAL_NAME) + " ha un numero troppo alto in angolo alto-sx!! (1)");
 						double rate = scenario.computeRate(1);
-						double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (100.0 + uncertainty) / 100.0)); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
+						double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (1 + uncertainty / 100.0))); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
 						if (proposedSecStep > minSecStep) {
 							minSecStep = proposedSecStep;
 						}
@@ -824,7 +826,7 @@ public class RunAction extends CytoscapeAction {
 					if (minimoLB == 1) {
 						//System.err.println("La reazione " + nodeAttributes.getAttribute(rId, Model.Properties.CANONICAL_NAME) + " --| " + nodeAttributes.getAttribute(rId, Model.Properties.CANONICAL_NAME) + " ha un uno in angolo basso-dx!! (" + nLevels + ")");
 						double rate = scenario.computeRate(nLevels);
-						double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * (100.0 - uncertainty) / 100.0)); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
+						double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * (1 - uncertainty / 100.0))); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
 						if (proposedSecStep < maxSecStep) {
 							maxSecStep = proposedSecStep;
 						}
@@ -866,7 +868,7 @@ public class RunAction extends CytoscapeAction {
 						}
 					}
 					
-					int uncertainty;
+					double uncertainty;
 					if (edgeAttributes.hasAttribute(edge.getIdentifier(), UNCERTAINTY)) {
 						uncertainty = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), UNCERTAINTY);
 					} else {
@@ -887,12 +889,12 @@ public class RunAction extends CytoscapeAction {
 						int angoloAltoDxLB,
 							angoloBassoSxUB;
 						if (!Double.isInfinite(angoloAltoDx)) {
-							angoloAltoDxLB = Math.max(1, (int)Math.round(secStepFactor * angoloAltoDx * (100.0 - uncertainty) / 100.0));
+							angoloAltoDxLB = Math.max(1, (int)Math.round(secStepFactor * angoloAltoDx * (1 - uncertainty / 100.0)));
 						} else {
 							angoloAltoDxLB = VariablesModel.INFINITE_TIME;
 						}
 						if (!Double.isInfinite(angoloBassoSx)) {
-							angoloBassoSxUB = Math.max(1, (int)Math.round(secStepFactor * angoloBassoSx * (100.0 + uncertainty) / 100.0));
+							angoloBassoSxUB = Math.max(1, (int)Math.round(secStepFactor * angoloBassoSx * (1 + uncertainty / 100.0)));
 						} else {
 							angoloBassoSxUB = VariablesModel.INFINITE_TIME;
 						}
@@ -905,7 +907,7 @@ public class RunAction extends CytoscapeAction {
 								System.err.println("\tIl rate (" + rate + ") però NON è > 1! Il reciproco viene " + (int)Math.round(1 / rate) + ", ma l'uno ce l'abbiamo perché facciamo -" + uncertainty + "%, che viene appunto " + ((int)((int)Math.round(1 / rate) * (100.0 - uncertainty) / 100.0)));
 							}*/
 							//System.err.println("\tQuindi consiglio di DIVIDERE sec/step almeno per " + (1.5 * rate / ((100.0 - uncertainty) / 100.0)) + ", ottenendo quindi non più di " + (secPerStep / (1.5 * rate / (secStepFactor * (100.0 - uncertainty) / 100.0))));
-							double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * (100.0 - uncertainty) / 100.0)); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
+							double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * (1 - uncertainty / 100.0))); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
 							if (proposedSecStep < maxSecStep) {
 								maxSecStep = proposedSecStep;
 							}
@@ -914,7 +916,7 @@ public class RunAction extends CytoscapeAction {
 							//System.err.println("La reazione " + nodeAttributes.getAttribute(r1Id, Model.Properties.CANONICAL_NAME) + " --> " + nodeAttributes.getAttribute(r2Id, Model.Properties.CANONICAL_NAME) + " ha un numero troppo alto in angolo basso-sx!! (" + 1 + ", " + (nLevelsR2 - 1) + ")");
 							double rate = scenario.computeRate(1, nLevelsR2 - 1, activatingReaction);
 							//In questo caso si consiglia di dividere sec/step per un fattore < (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0))
-							double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (100.0 + uncertainty) / 100.0)); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
+							double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (1 + uncertainty / 100.0))); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
 							if (proposedSecStep > minSecStep) {
 								minSecStep = proposedSecStep;
 							}
@@ -926,12 +928,12 @@ public class RunAction extends CytoscapeAction {
 						int angoloBassoDxLB,
 							angoloAltoSxUB;
 						if (!Double.isInfinite(angoloBassoDx)) {
-							angoloBassoDxLB = Math.max(1, (int)Math.round(secStepFactor * angoloBassoDx * (100.0 - uncertainty) / 100.0));
+							angoloBassoDxLB = Math.max(1, (int)Math.round(secStepFactor * angoloBassoDx * (1 - uncertainty / 100.0)));
 						} else {
 							angoloBassoDxLB = VariablesModel.INFINITE_TIME;
 						}
 						if (!Double.isInfinite(angoloAltoSx)) {
-							angoloAltoSxUB = Math.max(1, (int)Math.round(secStepFactor * angoloAltoSx * (100.0 + uncertainty) / 100.0));
+							angoloAltoSxUB = Math.max(1, (int)Math.round(secStepFactor * angoloAltoSx * (1 + uncertainty / 100.0)));
 						} else {
 							angoloAltoSxUB = VariablesModel.INFINITE_TIME;
 						}
@@ -944,7 +946,7 @@ public class RunAction extends CytoscapeAction {
 								System.err.println("\tIl rate (" + rate + ") però NON è > 1! Il reciproco viene " + (int)Math.round(1 / rate) + ", ma l'uno ce l'abbiamo perché facciamo -" + uncertainty + "%, che viene appunto " + ((int)((int)Math.round(1 / rate) * (100.0 - uncertainty) / 100.0)));
 							}*/
 							//System.err.println("\tQuindi consiglio di DIVIDERE sec/step almeno per " + (1.5 * rate / ((100.0 - uncertainty) / 100.0)) + ", ottenendo quindi non più di " + (secPerStep / (1.5 * rate / (secStepFactor * (100.0 - uncertainty) / 100.0))));
-							double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * (100.0 - uncertainty) / 100.0)); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
+							double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * (1 - uncertainty / 100.0))); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
 							if (proposedSecStep < maxSecStep) {
 								maxSecStep = proposedSecStep;
 							}
@@ -953,7 +955,7 @@ public class RunAction extends CytoscapeAction {
 							//System.err.println("La reazione " + nodeAttributes.getAttribute(r1Id, Model.Properties.CANONICAL_NAME) + " --| " + nodeAttributes.getAttribute(r2Id, Model.Properties.CANONICAL_NAME) + " ha un numero troppo alto in angolo alto-sx!! (1, 1)");
 							double rate = scenario.computeRate(1, 1, activatingReaction);
 							//In questo caso si consiglia di dividere sec/step per un fattore < (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0))
-							double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (100.0 + uncertainty) / 100.0)); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
+							double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (1 + uncertainty / 100.0))); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
 							if (proposedSecStep > minSecStep) {
 								minSecStep = proposedSecStep;
 							}
