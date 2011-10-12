@@ -5,6 +5,7 @@ package inat.analyser;
 
 import java.util.List;
 import java.util.Set;
+import java.util.Vector;
 
 /**
  * The concentrations result contains information about the analysis of the
@@ -37,4 +38,6 @@ public interface LevelResult {
 	public List<Double> getTimeIndices();
 	
 	public boolean isEmpty();
+	
+	public LevelResult filter(Vector<String> acceptedNames);
 }

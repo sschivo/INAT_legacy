@@ -125,8 +125,8 @@ public class EdgeDialog extends JFrame {
 				}
 			});
 			allParametersBox.add(incertaintyField);
-			final JRadioButton positiveIncrement = new JRadioButton("Positive"),
-							   negativeIncrement = new JRadioButton("Negative");
+			final JRadioButton positiveIncrement = new JRadioButton("Activation"),
+							   negativeIncrement = new JRadioButton("Inhibition");
 			ButtonGroup incrementGroup = new ButtonGroup();
 			incrementGroup.add(positiveIncrement);
 			incrementGroup.add(negativeIncrement);

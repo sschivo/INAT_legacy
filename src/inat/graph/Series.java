@@ -1,6 +1,12 @@
 package inat.graph;
 
-import java.awt.*;
+import inat.analyser.uppaal.ResultAverager;
+
+import java.awt.Color;
+import java.awt.GradientPaint;
+import java.awt.Graphics2D;
+import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 
 /**
@@ -19,7 +25,8 @@ public class Series {
 	private boolean enabled = true;
 	private Scale scale = null;
 	private Series master = null, slave = null; //ideally, the slave series should be used to represent confidence intervals for the corresponding master series
-	public static String SLAVE_SUFFIX = "_stddev"; //for a series to be a representation of confidence intervals of series ABC, its name should be "ABC" + SLAVE_SUFFIX (suffix can have any capitalization)
+	//TODO: also here, we assume that ResultAverager.STD_DEV is all lowercase
+	public static String SLAVE_SUFFIX = ResultAverager.STD_DEV; //for a series to be a representation of confidence intervals of series ABC, its name should be "ABC" + SLAVE_SUFFIX (suffix can have any capitalization).
 	private Color myColor = null;
 	private boolean changeColor = false;
 	private enum BarsState {NOT_SHOWN, ONLY_BARS, ONLY_SHADING, BOTH};

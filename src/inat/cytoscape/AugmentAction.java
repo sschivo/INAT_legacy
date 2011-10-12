@@ -9,6 +9,7 @@ import inat.model.Model;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JPopupMenu;
@@ -64,6 +65,7 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 	 * and disabled nodes/edges, and a continuous one to give the user a feedback
 	 * about the current activity level of a reactant (see the JSlider in InatResultPanel).
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		Cytoscape.getCurrentNetworkView().addNodeContextMenuListener(this);
@@ -97,6 +99,18 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		
 		calco = new BasicCalculator("Mapping for enabled and disabled edges (edge target arrow opacity)", mapping, VisualPropertyType.EDGE_TGTARROW_OPACITY);
 		eac.setCalculator(calco);
+
+		mapping = new DiscreteMapping(Float.class, Model.Properties.ENABLED);
+		mapping.putMapValue(false, 2.0f);
+		mapping.putMapValue(true, 6.0f);
+		calco = new GenericNodeCustomGraphicCalculator("Mapping to show thicker borders for enabled nodes", mapping, VisualPropertyType.NODE_LINE_WIDTH);
+		nac.setCalculator(calco);
+		
+		mapping = new DiscreteMapping(Color.class, Model.Properties.PLOTTED);
+		mapping.putMapValue(false, Color.DARK_GRAY);
+		mapping.putMapValue(true, Color.BLUE);
+		calco = new GenericNodeCustomGraphicCalculator("Mapping to highlighting plotted nodes with a blue border", mapping, VisualPropertyType.NODE_BORDER_COLOR);
+		nac.setCalculator(calco);
 		
 		mapping = new DiscreteMapping(ArrowShape.class, Model.Properties.INCREMENT);
 		mapping.putMapValue(-1, ArrowShape.T);
@@ -118,10 +132,10 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		mc.setInterpolator(new LinearNumberToColorInterpolator());
 		nac.setCalculator(new GenericNodeCustomGraphicCalculator("Mapping for the current activity level of nodes", mc, VisualPropertyType.NODE_FILL_COLOR));
 		
-		VisualPropertyType.NODE_BORDER_COLOR.setDefault(visualStyle, Color.DARK_GRAY);
+		VisualPropertyType.NODE_BORDER_COLOR.setDefault(visualStyle, Color.BLUE);//Color.DARK_GRAY);
 		VisualPropertyType.NODE_FILL_COLOR.setDefault(visualStyle, Color.RED);
 		VisualPropertyType.NODE_LABEL_COLOR.setDefault(visualStyle, Color.WHITE);
-		VisualPropertyType.NODE_LINE_WIDTH.setDefault(visualStyle, 3.0f);
+		VisualPropertyType.NODE_LINE_WIDTH.setDefault(visualStyle, 6.0f);
 		VisualPropertyType.NODE_SIZE.setDefault(visualStyle, 55.0f);
 		VisualPropertyType.EDGE_LINE_WIDTH.setDefault(visualStyle, 4.0f);
 		VisualPropertyType.EDGE_COLOR.setDefault(visualStyle, Color.BLACK);
@@ -150,7 +164,14 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 				}
 				nodeAttr.setAttribute(n.getIdentifier(), Model.Properties.SHOWN_LEVEL, level / nLevels);
 			}
-
+			
+			//As there can be edges with intermediate curving points, make those points curved instead of angled (they look nicer)
+			List edgeList = Cytoscape.getCurrentNetworkView().getEdgeViewsList();
+			for (Iterator i = edgeList.listIterator();i.hasNext();) {
+				EdgeView ev = (EdgeView)(i.next());
+				ev.setLineType(EdgeView.CURVED_LINES);
+			}
+			
 			Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 		}
 		
@@ -188,10 +209,10 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 				@SuppressWarnings("unchecked")
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					CyNetwork network = Cytoscape.getCurrentNetwork();
+					//CyNetwork network = Cytoscape.getCurrentNetwork();
 					CyNetworkView view = Cytoscape.getCurrentNetworkView();
-					CyAttributes nodeAttr = Cytoscape.getNodeAttributes(),
-								 edgeAttr = Cytoscape.getEdgeAttributes();
+					CyAttributes nodeAttr = Cytoscape.getNodeAttributes();
+					//CyAttributes edgeAttr = Cytoscape.getEdgeAttributes();
 					for (Iterator i = view.getSelectedNodes().iterator(); i.hasNext(); ) {
 						NodeView nView = (NodeView)i.next();
 						CyNode node = (CyNode)nView.getNode();
@@ -202,11 +223,11 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 							status = !nodeAttr.getBooleanAttribute(node.getIdentifier(), Model.Properties.ENABLED);
 						}
 						nodeAttr.setAttribute(node.getIdentifier(), Model.Properties.ENABLED, status);
-						int [] adjacentEdges = network.getAdjacentEdgeIndicesArray(node.getRootGraphIndex(), true, true, true);
+						/*int [] adjacentEdges = network.getAdjacentEdgeIndicesArray(node.getRootGraphIndex(), true, true, true);
 						for (int edgeIdx : adjacentEdges) {
 							CyEdge edge = (CyEdge)view.getEdgeView(edgeIdx).getEdge();
 							edgeAttr.setAttribute(edge.getIdentifier(), Model.Properties.ENABLED, status);
-						}
+						}*/
 					}
 					if (view.getSelectedNodes().isEmpty()) { //if the user wanted to change only one node (i.e. right click on a node without first selecting one), here we go
 						Node node = nodeView.getNode();
@@ -217,13 +238,13 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 							status = !nodeAttr.getBooleanAttribute(node.getIdentifier(), Model.Properties.ENABLED);
 						}
 						nodeAttr.setAttribute(node.getIdentifier(), Model.Properties.ENABLED, status);
-						int [] adjacentEdges = network.getAdjacentEdgeIndicesArray(node.getRootGraphIndex(), true, true, true);
+						/*int [] adjacentEdges = network.getAdjacentEdgeIndicesArray(node.getRootGraphIndex(), true, true, true);
 						for (int edgeIdx : adjacentEdges) {
 							CyEdge edge = (CyEdge)view.getEdgeView(edgeIdx).getEdge();
 							edgeAttr.setAttribute(edge.getIdentifier(), Model.Properties.ENABLED, status);
-						}
+						}*/
 					}
-					//In order to keep the model consistent, we disable all edges coming from (or going into) disabled nodes
+					/*//In order to keep the model consistent, we disable all edges coming from (or going into) disabled nodes
 					for (int i : network.getEdgeIndicesArray()) {
 						CyEdge edge = (CyEdge)view.getEdgeView(i).getEdge();
 						CyNode source = (CyNode)edge.getSource(),
@@ -232,9 +253,44 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 							|| (nodeAttr.hasAttribute(target.getIdentifier(), Model.Properties.ENABLED) && !nodeAttr.getBooleanAttribute(target.getIdentifier(), Model.Properties.ENABLED))) {
 							edgeAttr.setAttribute(edge.getIdentifier(), Model.Properties.ENABLED, false);
 						}
+					}*/
+					Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
+				}
+			});
+			
+			menu.add(new AbstractAction("Plot/hide") {
+
+				private static final long serialVersionUID = -4264583436246699628L;
+
+				@SuppressWarnings("unchecked")
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					CyNetworkView view = Cytoscape.getCurrentNetworkView();
+					CyAttributes nodeAttr = Cytoscape.getNodeAttributes();
+					for (Iterator i = view.getSelectedNodes().iterator(); i.hasNext(); ) {
+						NodeView nView = (NodeView)i.next();
+						CyNode node = (CyNode)nView.getNode();
+						boolean status;
+						if (!nodeAttr.hasAttribute(node.getIdentifier(), Model.Properties.PLOTTED)) {
+							status = false;
+						} else {
+							status = !nodeAttr.getBooleanAttribute(node.getIdentifier(), Model.Properties.PLOTTED);
+						}
+						nodeAttr.setAttribute(node.getIdentifier(), Model.Properties.PLOTTED, status);
+					}
+					if (view.getSelectedNodes().isEmpty()) { //if the user wanted to change only one node (i.e. right click on a node without first selecting one), here we go
+						Node node = nodeView.getNode();
+						boolean status;
+						if (!nodeAttr.hasAttribute(node.getIdentifier(), Model.Properties.PLOTTED)) {
+							status = false;
+						} else {
+							status = !nodeAttr.getBooleanAttribute(node.getIdentifier(), Model.Properties.PLOTTED);
+						}
+						nodeAttr.setAttribute(node.getIdentifier(), Model.Properties.PLOTTED, status);
 					}
 					Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 				}
+				
 			});
 		}
 	}

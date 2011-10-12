@@ -12,10 +12,12 @@ import java.util.Hashtable;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
@@ -157,6 +159,43 @@ public class NodeDialog extends JFrame {
 			
 		});
 		
+		
+		Box optionBoxes = new Box(BoxLayout.Y_AXIS);
+		final JRadioButton enabledNode = new JRadioButton("Enabled"),
+					 disabledNode = new JRadioButton("Disabled"),
+					 plottedNode = new JRadioButton("Plotted"),
+					 hiddenNode = new JRadioButton("Hidden");
+		ButtonGroup enabledGroup = new ButtonGroup(),
+					plottedGroup = new ButtonGroup();
+		enabledGroup.add(enabledNode);
+		enabledGroup.add(disabledNode);
+		plottedGroup.add(plottedNode);
+		plottedGroup.add(hiddenNode);
+		if (nodeAttributes.hasAttribute(node.getIdentifier(), Model.Properties.ENABLED)) {
+			enabledNode.setSelected(nodeAttributes.getBooleanAttribute(node.getIdentifier(), Model.Properties.ENABLED));
+		} else {
+			enabledNode.setSelected(true);
+		}
+		disabledNode.setSelected(!enabledNode.isSelected());
+		if (nodeAttributes.hasAttribute(node.getIdentifier(), Model.Properties.PLOTTED)) {
+			plottedNode.setSelected(nodeAttributes.getBooleanAttribute(node.getIdentifier(), Model.Properties.PLOTTED));
+		} else {
+			plottedNode.setSelected(true);
+		}
+		hiddenNode.setSelected(!plottedNode.isSelected());
+		Box enabledBox = new Box(BoxLayout.X_AXIS);
+		enabledBox.add(enabledNode);
+		enabledBox.add(Box.createGlue());
+		enabledBox.add(disabledNode);
+		optionBoxes.add(enabledBox);
+		Box plottedBox = new Box(BoxLayout.X_AXIS);
+		plottedBox.add(plottedNode);
+		plottedBox.add(Box.createGlue());
+		plottedBox.add(hiddenNode);
+		optionBoxes.add(plottedBox);
+		optionBoxes.add(Box.createGlue());
+		this.add(optionBoxes, BorderLayout.EAST);
+		
 		JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		controls.add(new JButton(new AbstractAction("Save") {
 			private static final long serialVersionUID = -6179643943409321939L;
@@ -175,6 +214,10 @@ public class NodeDialog extends JFrame {
 				if (nameField.getText() != null && nameField.getText().length() > 0) {
 					nodeAttributes.setAttribute(node.getIdentifier(), Model.Properties.CANONICAL_NAME, nameField.getText());
 				}
+				
+				nodeAttributes.setAttribute(node.getIdentifier(), Model.Properties.ENABLED, enabledNode.isSelected());
+				
+				nodeAttributes.setAttribute(node.getIdentifier(), Model.Properties.PLOTTED, plottedNode.isSelected());
 
 				Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 

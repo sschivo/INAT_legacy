@@ -23,7 +23,7 @@ public class Scenario {
 	static {
 		sixScenarios[0] = new Scenario() {
 			@Override
-			public double computeRate(int r1Level, int r2Level, boolean activatingReaction) {
+			public double computeRate(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) {
 				double par = parameters.get(SCENARIO_ONLY_PARAMETER),
 					   E = r1Level;
 				double rate = par * E;
@@ -45,11 +45,12 @@ public class Scenario {
 		
 		sixScenarios[1] = new Scenario() {
 			@Override
-			public double computeRate(int r1Level, int r2Level, boolean activatingReaction) {
+			public double computeRate(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) {
 				double par1 = parameters.get(SCENARIO_PARAMETER_K2_KM),
 					   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
 					   S,
 					   E = (double)r1Level;
+				r2Level = (int)Math.round(r2Level * Stot / nLevelsR2);
 				if (activatingReaction) {
 					S = Stot - r2Level;
 				} else {
@@ -77,12 +78,13 @@ public class Scenario {
 		
 		sixScenarios[2] = new Scenario() {
 			@Override
-			public double computeRate(int r1Level, int r2Level, boolean activatingReaction) {
+			public double computeRate(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) {
 				double k2 = parameters.get(SCENARIO_PARAMETER_K2),
 					   E = (double)r1Level,
 					   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
 					   S,
 					   km = parameters.get(SCENARIO_PARAMETER_KM);
+				r2Level = (int)Math.round(r2Level * Stot / nLevelsR2);
 				if (activatingReaction) {
 					S = Stot - r2Level;
 				} else {
@@ -144,12 +146,13 @@ public class Scenario {
 		return (HashMap<String, Double>)defaultParameterValues.clone();
 	}
 	
-	public double computeRate(int r1Level, int r2Level, boolean activatingReaction) {
+	public double computeRate(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) {
 		double k2 = parameters.get(SCENARIO_PARAMETER_K2),
 		   E = r1Level,
 		   km = parameters.get(SCENARIO_PARAMETER_KM),
 		   Stot = parameters.get(SCENARIO_PARAMETER_STOT),
 		   S;
+		r2Level = (int)Math.round(r2Level * Stot / nLevelsR2);
 		if (activatingReaction) { //The quantity of unreacted substrate is different depending on the point of view of the reaction: if we are activating, the unreacted substrate is inactive. But if we are inhibiting the unreacted substrate is ACTIVE.
 			S = Stot - r2Level;
 		} else {
@@ -159,8 +162,8 @@ public class Scenario {
 		return rate;
 	}
 	
-	public Double computeFormula(int r1Level, int r2Level, boolean activatingReaction) {
-		double rate = computeRate(r1Level, r2Level, activatingReaction);
+	public Double computeFormula(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) {
+		double rate = computeRate(r1Level, nLevelsR1, r2Level, nLevelsR2, activatingReaction);
 		if (rate > 1e-8) {
 			//return Math.max(1, (int)Math.round(1 / rate)); //We need to put at least 1 because otherwise the reaction will keep happening forever (it is not very nice not to let time pass..)
 			return 1.0 / rate;
@@ -199,7 +202,7 @@ public class Scenario {
 		for (;i<limit;i++) {
 			times.add(Double.POSITIVE_INFINITY); //no reactant1 = no reaction
 			for (int j=1;j<nLevelsReactant1;j++) {
-				times.add(computeFormula(j, i, activatingReaction));
+				times.add(computeFormula(j, nLevelsReactant1, i, nLevelsReactant2, activatingReaction));
 			}
 		}
 		if (activatingReaction) {

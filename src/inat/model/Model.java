@@ -20,10 +20,12 @@ public class Model implements Serializable {
 								   SHOWN_LEVEL = "activityRatio", //Property belonging to a node. The current activity level of a node. Expressed as a relative number representing INITIAL_LEVEL / NUMBER_OF_LEVELS, so it is a double number in [0, 1]
 								   SECONDS_PER_POINT = "seconds per point", //Property belonging to a network. The number of real-life seconds represented by a single UPPAAL time unit.
 								   SECS_POINT_SCALE_FACTOR = "time scale factor", //This value is multiplied to the time bounds as a counterbalance to any change in seconds per point. This allows us to avoid having to directly modify the parameters of scenarios.
+								   LEVELS_SCALE_FACTOR = "levels scale factor", //Also this value is multiplied to the time bounds, and it counterbalances the changes in the number of levels for the reactants. It is specific for every reaction.
 								   SCENARIO = "scenario", //Property belonging to an edge. The id of the scenario on which the reaction corresponding to the edge computes its time tables.
 								   ALIAS = "alias", //The property used to indicate the user-chosen name of a node
 								   CANONICAL_NAME = "canonicalName", //The same, but in the Cytoscape model instead of the Model
 								   ENABLED = "enabled", //Tells us whether a node/edge is enabled
+								   PLOTTED = "plotted", //Tells us whether to plot a node or not
 								   GROUP = "group", //A group of nodes identifies alternative phosphorylation sites (can be useless)
 								   TIMES_UPPER = "timesU", //Upper time bound
 								   TIMES = "times", //Time bound (no upper nor lower: it is possible that it is never be used in practice)

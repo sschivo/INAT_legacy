@@ -18,6 +18,7 @@ import cytoscape.task.TaskMonitor;
  * Standard deviation can also be produced on request.
  */
 public class ResultAverager {
+	public static final String STD_DEV = "_stddev"; //NOTICE: it needs to be lowercase, because elsewhere we assume it is so. We also assume that it starts with "_"
 	private TaskMonitor monitor = null; //If we are operating via the user interface, we can show the point at which we are with the simulations
 	private RunAction runAction = null; //If we are operating via the user interface, this will tell us if the user has requested that we cancel the simulations
 	
@@ -74,7 +75,7 @@ public class ResultAverager {
 		
 		for (String k : reactantIds) {
 			result.put(k, new TreeMap<Double, Double>());
-			if (computeStdDev) result.put(k + "_StdDev", new TreeMap<Double, Double>());
+			if (computeStdDev) result.put(k + STD_DEV, new TreeMap<Double, Double>());
 		}
 		
 		double finalTime = results.firstElement().getTimeIndices().get(results.firstElement().getTimeIndices().size()-1);
@@ -98,7 +99,7 @@ public class ResultAverager {
 				average = sum / nValues;
 				if (computeStdDev) stdDev = Math.sqrt((nValues * sumSqrs - sum * sum)/ (nValues * (nValues - 1)));
 				result.get(k).put(i, average);
-				if (computeStdDev) result.get(k + "_StdDev").put(i, stdDev);
+				if (computeStdDev) result.get(k + STD_DEV).put(i, stdDev);
 			}
 		}
 		for (String k : reactantIds) {
@@ -112,29 +113,10 @@ public class ResultAverager {
 			average = sum / nValues;
 			if (computeStdDev) stdDev = Math.sqrt((nValues * sumSqrs - sum * sum)/ (nValues * (nValues - 1)));
 			result.get(k).put(finalTime, average);
-			if (computeStdDev) result.get(k + "_StdDev").put(finalTime, stdDev);
+			if (computeStdDev) result.get(k + STD_DEV).put(finalTime, stdDev);
 		}
 		
 		return new SimpleLevelResult(result);
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 }

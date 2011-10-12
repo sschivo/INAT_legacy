@@ -65,6 +65,7 @@ public class RunAction extends CytoscapeAction {
 	private static final String NUMBER_OF_LEVELS = Model.Properties.NUMBER_OF_LEVELS, //The total number of levels for a node (=reactant), or for the whole network (the name of the property is the same)
 								SECONDS_PER_POINT = Model.Properties.SECONDS_PER_POINT, //The number of real-life seconds represented by a single UPPAAL time unit
 								SECS_POINT_SCALE_FACTOR = Model.Properties.SECS_POINT_SCALE_FACTOR, //The scale factor for the UPPAAL time settings, allowing to keep the same scenario parameters, while varying the "density" of simulation sample points
+								LEVELS_SCALE_FACTOR = Model.Properties.LEVELS_SCALE_FACTOR, //The scale factor used by each reaction to counterbalance the change in number of levels for the reactants.
 								INCREMENT = Model.Properties.INCREMENT, //The increment in activity caused by a reaction on its downstream reactant
 								BI_REACTION = Model.Properties.BI_REACTION, //Identifies a reaction having two reatants
 								MONO_REACTION = Model.Properties.MONO_REACTION, //Identifies a reaction having only one reactant
@@ -76,6 +77,7 @@ public class RunAction extends CytoscapeAction {
 								INITIAL_LEVEL = Model.Properties.INITIAL_LEVEL, //The starting activity level of a reactant
 								UNCERTAINTY = Model.Properties.UNCERTAINTY, //The uncertainty about the parameters setting for an edge(=reaction)
 								ENABLED = Model.Properties.ENABLED, //Whether the node/edge is enabled. Influences the display of that node/edge thanks to the discrete Visual Mapping defined by AugmentAction
+								PLOTTED = Model.Properties.PLOTTED, //Whether the node is plotted in the graph. Default: yes
 								GROUP = Model.Properties.GROUP; //Could possibly be never used. All nodes(=reactants) belonging to the same group represent alternative (in the sense of exclusive or) phosphorylation sites of the same protein.
 	private static final int VERY_LARGE_TIME_VALUE = 1073741822;
 	private int timeTo = 1200; //The default number of UPPAAL time units until which a simulation will run
@@ -352,62 +354,68 @@ public class RunAction extends CytoscapeAction {
 					result = new UppaalModelAnalyserFasterConcrete(monitor, meStesso).analyze(model, timeTo);
 				}
 			}
-
+			
 			/*CsvWriter csvWriter = new CsvWriter();
 			csvWriter.writeCsv("/tmp/test.csv", model, result);*/
-
-			SwingUtilities.invokeLater(new Runnable() {
-				public void run() {
-					final CytoPanel p = Cytoscape.getDesktop().getCytoPanel(SwingConstants.EAST);
-
-					// JFrame frame = new JFrame("Inat result viewer");
-					// frame.setLayout(new BorderLayout());
-					InatResultPanel resultViewer = new InatResultPanel(model, result, scale);
-					// frame.add(resultViewer, BorderLayout.CENTER);
-					// frame.setLocationRelativeTo(Cytoscape.getDesktop());
-					// frame.pack();
-					// frame.setSize(new Dimension(800, 600));
-					// frame.setVisible(true);
-
-					final JPanel container = new JPanel(new BorderLayout(2, 2));
-					container.add(resultViewer, BorderLayout.CENTER);
-					JPanel buttons = new JPanel(new GridLayout(1, 4, 2, 2));
-
-					JButton close = new JButton(new AbstractAction("Close") {
-						private static final long serialVersionUID = 4327349309742276633L;
-
-						@Override
-						public void actionPerformed(ActionEvent e) {
-							p.remove(container);
+			
+			if (result.getReactantIds().isEmpty()) {
+				throw new Exception("No reactants selected for plot, or no reactants present in the result");
+			} else {
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run() {
+						final CytoPanel p = Cytoscape.getDesktop().getCytoPanel(SwingConstants.EAST);
+	
+						// JFrame frame = new JFrame("Inat result viewer");
+						// frame.setLayout(new BorderLayout());
+						InatResultPanel resultViewer = new InatResultPanel(model, result, scale);
+						// frame.add(resultViewer, BorderLayout.CENTER);
+						// frame.setLocationRelativeTo(Cytoscape.getDesktop());
+						// frame.pack();
+						// frame.setSize(new Dimension(800, 600));
+						// frame.setVisible(true);
+	
+						final JPanel container = new JPanel(new BorderLayout(2, 2));
+						container.add(resultViewer, BorderLayout.CENTER);
+						JPanel buttons = new JPanel(new GridLayout(1, 4, 2, 2));
+	
+						JButton close = new JButton(new AbstractAction("Close") {
+							private static final long serialVersionUID = 4327349309742276633L;
+	
+							@Override
+							public void actionPerformed(ActionEvent e) {
+								p.remove(container);
+							}
+						});
+	
+						buttons.add(close);
+						container.add(buttons, BorderLayout.NORTH);
+	
+						p.add("INAT Results", container);
+	
+						if (p.getState().equals(CytoPanelState.HIDE)) {
+							CytoPanelImp p1 = (CytoPanelImp)Cytoscape.getDesktop().getCytoPanel(SwingConstants.WEST);
+							CyNetworkView p2 = Cytoscape.getCurrentNetworkView();
+							CytoPanelImp p3 = (CytoPanelImp)Cytoscape.getDesktop().getCytoPanel(SwingConstants.SOUTH);
+							Dimension d = Cytoscape.getDesktop().getSize();
+							if (!p1.getState().equals(CytoPanelState.HIDE)) {
+								d.width -= p1.getWidth();
+							}
+							if (p2 != null) {
+								d.width -= Cytoscape.getDesktop().getNetworkViewManager().getInternalFrame(p2).getWidth();
+							}
+							if (!p3.getState().equals(CytoPanelState.HIDE)) {
+								d.height -= p3.getHeight();
+							}
+							((CytoPanelImp)p).setPreferredSize(d);
+							((CytoPanelImp)p).setMaximumSize(d);
+							((CytoPanelImp)p).setSize(d);
+							p.setState(CytoPanelState.DOCK);
 						}
-					});
-
-					buttons.add(close);
-					container.add(buttons, BorderLayout.NORTH);
-
-					p.add("INAT Results", container);
-
-					if (p.getState().equals(CytoPanelState.HIDE)) {
-						CytoPanelImp p1 = (CytoPanelImp)Cytoscape.getDesktop().getCytoPanel(SwingConstants.WEST);
-						CyNetworkView p2 = Cytoscape.getCurrentNetworkView();
-						CytoPanelImp p3 = (CytoPanelImp)Cytoscape.getDesktop().getCytoPanel(SwingConstants.SOUTH);
-						Dimension d = Cytoscape.getDesktop().getSize();
-						if (!p1.getState().equals(CytoPanelState.HIDE)) {
-							d.width -= p1.getWidth();
-						}
-						if (p2 != null) {
-							d.width -= Cytoscape.getDesktop().getNetworkViewManager().getInternalFrame(p2).getWidth();
-						}
-						if (!p3.getState().equals(CytoPanelState.HIDE)) {
-							d.height -= p3.getHeight();
-						}
-						((CytoPanelImp)p).setPreferredSize(d);
-						((CytoPanelImp)p).setMaximumSize(d);
-						((CytoPanelImp)p).setSize(d);
-						p.setState(CytoPanelState.DOCK);
+						
+						p.setSelectedIndex(p.getCytoPanelComponentCount() - 1);
 					}
-				}
-			});
+				});
+			}
 		}
 
 		@Override
@@ -467,6 +475,7 @@ public class RunAction extends CytoscapeAction {
 				r.let(NUMBER_OF_LEVELS).be(nodeAttributes.getAttribute(node.getIdentifier(), NUMBER_OF_LEVELS));
 				r.let(GROUP).be(nodeAttributes.getAttribute(node.getIdentifier(), GROUP));
 				r.let(ENABLED).be(nodeAttributes.getAttribute(node.getIdentifier(), ENABLED));
+				r.let(PLOTTED).be(nodeAttributes.getAttribute(node.getIdentifier(), PLOTTED));
 				r.let(INITIAL_LEVEL).be(nodeAttributes.getIntegerAttribute(node.getIdentifier(), INITIAL_LEVEL));
 				
 				model.add(r);
@@ -479,6 +488,8 @@ public class RunAction extends CytoscapeAction {
 			for (int i = 0; edges.hasNext(); i++) {
 				this.monitor.setPercentCompleted((100 * doneWork++) / totalWork);
 				Edge edge = edges.next();
+				
+				Double levelsScaleFactor = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.LEVELS_SCALE_FACTOR);
 				
 				String reactionId = "reaction" + i;
 				Reaction r = new Reaction(reactionId);
@@ -525,13 +536,13 @@ public class RunAction extends CytoscapeAction {
 							timesLTable.set(j, 0, VariablesModel.INFINITE_TIME);
 							timesUTable.set(j, 0, VariablesModel.INFINITE_TIME);
 						} else if (uncertainty == 0) {
-							timesLTable.set(j, 0, (int)Math.round(secStepFactor * t));
-							timesUTable.set(j, 0, (int)Math.round(secStepFactor * t));
+							timesLTable.set(j, 0, (int)Math.round(secStepFactor * levelsScaleFactor * t));
+							timesUTable.set(j, 0, (int)Math.round(secStepFactor * levelsScaleFactor * t));
 						} else {
 							//timesLTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * t * (100.0 - uncertainty) / 100.0))); //we use Math.max because we do not want to put 0 as a time
 							//timesUTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * t * (100.0 + uncertainty) / 100.0)));
-							timesLTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * t * (1 - uncertainty / 100.0)))); //we use Math.max because we do not want to put 0 as a time
-							timesUTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * t * (1 + uncertainty / 100.0))));
+							timesLTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * levelsScaleFactor * t * (1 - uncertainty / 100.0)))); //we use Math.max because we do not want to put 0 as a time
+							timesUTable.set(j, 0, Math.max(1, (int)Math.round(secStepFactor * levelsScaleFactor * t * (1 + uncertainty / 100.0))));
 						}
 					}
 					r.let(TIMES_L).be(timesLTable);
@@ -600,11 +611,11 @@ public class RunAction extends CytoscapeAction {
 								timesLTable.set(j, k, VariablesModel.INFINITE_TIME);
 								timesUTable.set(j, k, VariablesModel.INFINITE_TIME);
 							} else if (uncertainty == 0) {
-								timesLTable.set(j, k, (int)Math.round(secStepFactor * t));
-								timesUTable.set(j, k, (int)Math.round(secStepFactor * t));
+								timesLTable.set(j, k, (int)Math.round(secStepFactor * levelsScaleFactor * t));
+								timesUTable.set(j, k, (int)Math.round(secStepFactor * levelsScaleFactor * t));
 							} else {
-								timesLTable.set(j, k, Math.max(1, (int)Math.round(secStepFactor * t * (1 - uncertainty / 100.0))));
-								timesUTable.set(j, k, Math.max(1, (int)Math.round(secStepFactor * t * (1 + uncertainty / 100.0))));
+								timesLTable.set(j, k, Math.max(1, (int)Math.round(secStepFactor * levelsScaleFactor * t * (1 - uncertainty / 100.0))));
+								timesUTable.set(j, k, Math.max(1, (int)Math.round(secStepFactor * levelsScaleFactor * t * (1 + uncertainty / 100.0))));
 							}
 						}
 					}
@@ -711,11 +722,25 @@ public class RunAction extends CytoscapeAction {
 				networkAttributes.setAttribute(network.getIdentifier(), SECS_POINT_SCALE_FACTOR, secStepFactor);
 			}
 			
+			boolean noReactantsPlotted = true;
 			Iterator<Node> nodes = (Iterator<Node>) network.nodesIterator();
 			for (int i = 0; nodes.hasNext(); i++) {
 				Node node = nodes.next();
+				boolean enabled = false;
 				if (!nodeAttributes.hasAttribute(node.getIdentifier(), ENABLED)) {
 					nodeAttributes.setAttribute(node.getIdentifier(), ENABLED, true);
+					enabled = true;
+				} else {
+					enabled = nodeAttributes.getBooleanAttribute(node.getIdentifier(), ENABLED);
+				}
+				
+				if (!nodeAttributes.hasAttribute(node.getIdentifier(), PLOTTED)) {
+					nodeAttributes.setAttribute(node.getIdentifier(), PLOTTED, true);
+					if (enabled) {
+						noReactantsPlotted = false;
+					}
+				} else if (enabled && nodeAttributes.getBooleanAttribute(node.getIdentifier(), PLOTTED)) {
+					noReactantsPlotted = false;
 				}
 				
 				if (!nodeAttributes.hasAttribute(node.getIdentifier(), NUMBER_OF_LEVELS)) {
@@ -726,6 +751,11 @@ public class RunAction extends CytoscapeAction {
 					//throw new InatException("Node attribute 'initialConcentration' is missing on '" + node.getIdentifier() + "'");
 					nodeAttributes.setAttribute(node.getIdentifier(), INITIAL_LEVEL, 0);
 				}
+			}
+			
+			if (noReactantsPlotted && !smcUppaal.isSelected()) {
+				JOptionPane.showMessageDialog((JTask)this.monitor, "No reactants selected for plot: select at least one reactant to be plotted in the graph.", "Error", JOptionPane.ERROR_MESSAGE); 
+				throw new InatException("No reactants selected for plot: select at least one reactant to be plotted in the graph.");
 			}
 			
 			Iterator<Edge> edges = (Iterator<Edge>) network.edgesIterator();
@@ -761,6 +791,10 @@ public class RunAction extends CytoscapeAction {
 				if (!edgeAttributes.hasAttribute(edge.getIdentifier(), INCREMENT)) {
 					edgeAttributes.setAttribute(edge.getIdentifier(), INCREMENT, 1);
 				}
+				
+				if (!edgeAttributes.hasAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR)) {
+					edgeAttributes.setAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR, 1.0);
+				}
 			}
 			
 			
@@ -773,6 +807,7 @@ public class RunAction extends CytoscapeAction {
 			edges = (Iterator<Edge>) network.edgesIterator();
 			for (int i = 0; edges.hasNext(); i++) {
 				Edge edge = edges.next();
+				double levelsScaleFactor = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR);
 				if (edge.getSource() == edge.getTarget()) {
 					String rId = edge.getSource().getIdentifier();
 					
@@ -806,19 +841,19 @@ public class RunAction extends CytoscapeAction {
 					int massimoUB,
 						minimoLB;
 					if (!Double.isInfinite(massimo)) {
-						massimoUB = Math.max(1, (int)Math.round(secStepFactor * massimo * (1 + uncertainty / 100.0)));
+						massimoUB = Math.max(1, (int)Math.round(secStepFactor * levelsScaleFactor * massimo * (1 + uncertainty / 100.0)));
 					} else {
 						massimoUB = VariablesModel.INFINITE_TIME;
 					}
 					if (!Double.isInfinite(minimo)) {
-						minimoLB = Math.max(1, (int)Math.round(secStepFactor * minimo * (1 - uncertainty / 100.0)));
+						minimoLB = Math.max(1, (int)Math.round(secStepFactor * levelsScaleFactor * minimo * (1 - uncertainty / 100.0)));
 					} else {
 						minimoLB = VariablesModel.INFINITE_TIME;
 					}
 					if (massimoUB > VERY_LARGE_TIME_VALUE) {
 						//System.err.println("La reazione " + nodeAttributes.getAttribute(rId, Model.Properties.CANONICAL_NAME) + " --| " + nodeAttributes.getAttribute(rId, Model.Properties.CANONICAL_NAME) + " ha un numero troppo alto in angolo alto-sx!! (1)");
 						double rate = scenario.computeRate(1);
-						double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (1 + uncertainty / 100.0))); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
+						double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * levelsScaleFactor * (1 + uncertainty / 100.0))); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
 						if (proposedSecStep > minSecStep) {
 							minSecStep = proposedSecStep;
 						}
@@ -826,7 +861,7 @@ public class RunAction extends CytoscapeAction {
 					if (minimoLB == 1) {
 						//System.err.println("La reazione " + nodeAttributes.getAttribute(rId, Model.Properties.CANONICAL_NAME) + " --| " + nodeAttributes.getAttribute(rId, Model.Properties.CANONICAL_NAME) + " ha un uno in angolo basso-dx!! (" + nLevels + ")");
 						double rate = scenario.computeRate(nLevels);
-						double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * (1 - uncertainty / 100.0))); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
+						double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * levelsScaleFactor * (1 - uncertainty / 100.0))); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
 						if (proposedSecStep < maxSecStep) {
 							maxSecStep = proposedSecStep;
 						}
@@ -884,78 +919,78 @@ public class RunAction extends CytoscapeAction {
 					
 					if (activatingReaction) {
 						//System.err.println("Controllo la reazione " + nodeAttributes.getAttribute(r1Id, Model.Properties.CANONICAL_NAME) + " --> " + nodeAttributes.getAttribute(r2Id, Model.Properties.CANONICAL_NAME) + "..."); 
-						Double angoloAltoDx = scenario.computeFormula(nLevelsR1, 0, activatingReaction),
-							angoloBassoSx = scenario.computeFormula(1, nLevelsR2 - 1, activatingReaction);
+						Double angoloAltoDx = scenario.computeFormula(nLevelsR1, nLevelsR1, 0, nLevelsR2, activatingReaction),
+							angoloBassoSx = scenario.computeFormula(1, nLevelsR1, nLevelsR2 - 1, nLevelsR2, activatingReaction);
 						int angoloAltoDxLB,
 							angoloBassoSxUB;
 						if (!Double.isInfinite(angoloAltoDx)) {
-							angoloAltoDxLB = Math.max(1, (int)Math.round(secStepFactor * angoloAltoDx * (1 - uncertainty / 100.0)));
+							angoloAltoDxLB = Math.max(1, (int)Math.round(secStepFactor * levelsScaleFactor * angoloAltoDx * (1 - uncertainty / 100.0)));
 						} else {
 							angoloAltoDxLB = VariablesModel.INFINITE_TIME;
 						}
 						if (!Double.isInfinite(angoloBassoSx)) {
-							angoloBassoSxUB = Math.max(1, (int)Math.round(secStepFactor * angoloBassoSx * (1 + uncertainty / 100.0)));
+							angoloBassoSxUB = Math.max(1, (int)Math.round(secStepFactor * levelsScaleFactor * angoloBassoSx * (1 + uncertainty / 100.0)));
 						} else {
 							angoloBassoSxUB = VariablesModel.INFINITE_TIME;
 						}
 						if (angoloAltoDxLB == 1) {
 							//System.err.println("La reazione " + nodeAttributes.getAttribute(r1Id, Model.Properties.CANONICAL_NAME) + " --> " + nodeAttributes.getAttribute(r2Id, Model.Properties.CANONICAL_NAME) + " ha un uno in angolo alto-dx!! (" + (nLevelsR1) + ", " + 0 + ")");
-							double rate = scenario.computeRate(nLevelsR1, 0, activatingReaction);
+							double rate = scenario.computeRate(nLevelsR1, nLevelsR1, 0, nLevelsR2,  activatingReaction);
 							/*if (rate > 1) {
 								System.err.println("\tIl rate (" + rate + ") è infatti > 1");
 							} else {
 								System.err.println("\tIl rate (" + rate + ") però NON è > 1! Il reciproco viene " + (int)Math.round(1 / rate) + ", ma l'uno ce l'abbiamo perché facciamo -" + uncertainty + "%, che viene appunto " + ((int)((int)Math.round(1 / rate) * (100.0 - uncertainty) / 100.0)));
 							}*/
 							//System.err.println("\tQuindi consiglio di DIVIDERE sec/step almeno per " + (1.5 * rate / ((100.0 - uncertainty) / 100.0)) + ", ottenendo quindi non più di " + (secPerStep / (1.5 * rate / (secStepFactor * (100.0 - uncertainty) / 100.0))));
-							double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * (1 - uncertainty / 100.0))); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
+							double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * levelsScaleFactor * (1 - uncertainty / 100.0))); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
 							if (proposedSecStep < maxSecStep) {
 								maxSecStep = proposedSecStep;
 							}
 						}
 						if (angoloBassoSxUB > VERY_LARGE_TIME_VALUE) {
 							//System.err.println("La reazione " + nodeAttributes.getAttribute(r1Id, Model.Properties.CANONICAL_NAME) + " --> " + nodeAttributes.getAttribute(r2Id, Model.Properties.CANONICAL_NAME) + " ha un numero troppo alto in angolo basso-sx!! (" + 1 + ", " + (nLevelsR2 - 1) + ")");
-							double rate = scenario.computeRate(1, nLevelsR2 - 1, activatingReaction);
+							double rate = scenario.computeRate(1, nLevelsR1, nLevelsR2 - 1, nLevelsR2, activatingReaction);
 							//In questo caso si consiglia di dividere sec/step per un fattore < (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0))
-							double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (1 + uncertainty / 100.0))); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
+							double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * levelsScaleFactor * (1 + uncertainty / 100.0))); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
 							if (proposedSecStep > minSecStep) {
 								minSecStep = proposedSecStep;
 							}
 						}
 					} else {
 						//System.err.println("Controllo la reazione " + nodeAttributes.getAttribute(r1Id, Model.Properties.CANONICAL_NAME) + " --| " + nodeAttributes.getAttribute(r2Id, Model.Properties.CANONICAL_NAME) + "...");
-						Double angoloBassoDx = scenario.computeFormula(nLevelsR1, nLevelsR2, activatingReaction),
-							angoloAltoSx = scenario.computeFormula(1, 1, activatingReaction);
+						Double angoloBassoDx = scenario.computeFormula(nLevelsR1, nLevelsR1, nLevelsR2, nLevelsR2, activatingReaction),
+							angoloAltoSx = scenario.computeFormula(1, nLevelsR1, 1, nLevelsR2, activatingReaction);
 						int angoloBassoDxLB,
 							angoloAltoSxUB;
 						if (!Double.isInfinite(angoloBassoDx)) {
-							angoloBassoDxLB = Math.max(1, (int)Math.round(secStepFactor * angoloBassoDx * (1 - uncertainty / 100.0)));
+							angoloBassoDxLB = Math.max(1, (int)Math.round(secStepFactor * levelsScaleFactor * angoloBassoDx * (1 - uncertainty / 100.0)));
 						} else {
 							angoloBassoDxLB = VariablesModel.INFINITE_TIME;
 						}
 						if (!Double.isInfinite(angoloAltoSx)) {
-							angoloAltoSxUB = Math.max(1, (int)Math.round(secStepFactor * angoloAltoSx * (1 + uncertainty / 100.0)));
+							angoloAltoSxUB = Math.max(1, (int)Math.round(secStepFactor * levelsScaleFactor * angoloAltoSx * (1 + uncertainty / 100.0)));
 						} else {
 							angoloAltoSxUB = VariablesModel.INFINITE_TIME;
 						}
 						if (angoloBassoDxLB == 1) {
 							//System.err.println("La reazione " + nodeAttributes.getAttribute(r1Id, Model.Properties.CANONICAL_NAME) + " --| " + nodeAttributes.getAttribute(r2Id, Model.Properties.CANONICAL_NAME) + " ha un uno in angolo basso-dx!! (" + (nLevelsR1) + ", " + (nLevelsR2) + ")");
-							double rate = scenario.computeRate(nLevelsR1, nLevelsR2, activatingReaction);
+							double rate = scenario.computeRate(nLevelsR1, nLevelsR1, nLevelsR2, nLevelsR2, activatingReaction);
 							/*if (rate > 1) {
 								System.err.println("\tIl rate (" + rate + ") è infatti > 1");
 							} else {
 								System.err.println("\tIl rate (" + rate + ") però NON è > 1! Il reciproco viene " + (int)Math.round(1 / rate) + ", ma l'uno ce l'abbiamo perché facciamo -" + uncertainty + "%, che viene appunto " + ((int)((int)Math.round(1 / rate) * (100.0 - uncertainty) / 100.0)));
 							}*/
 							//System.err.println("\tQuindi consiglio di DIVIDERE sec/step almeno per " + (1.5 * rate / ((100.0 - uncertainty) / 100.0)) + ", ottenendo quindi non più di " + (secPerStep / (1.5 * rate / (secStepFactor * (100.0 - uncertainty) / 100.0))));
-							double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * (1 - uncertainty / 100.0))); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
+							double proposedSecStep = secPerStep / (1.5 * rate / (secStepFactor * levelsScaleFactor * (1 - uncertainty / 100.0))); //Math.floor(secPerStep / (1.5 * rate / ((100.0 - uncertainty) / 100.0)));
 							if (proposedSecStep < maxSecStep) {
 								maxSecStep = proposedSecStep;
 							}
 						}
 						if (angoloAltoSxUB > VERY_LARGE_TIME_VALUE) {
 							//System.err.println("La reazione " + nodeAttributes.getAttribute(r1Id, Model.Properties.CANONICAL_NAME) + " --| " + nodeAttributes.getAttribute(r2Id, Model.Properties.CANONICAL_NAME) + " ha un numero troppo alto in angolo alto-sx!! (1, 1)");
-							double rate = scenario.computeRate(1, 1, activatingReaction);
+							double rate = scenario.computeRate(1, nLevelsR1, 1, nLevelsR2, activatingReaction);
 							//In questo caso si consiglia di dividere sec/step per un fattore < (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0))
-							double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * (1 + uncertainty / 100.0))); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
+							double proposedSecStep = secPerStep / (VERY_LARGE_TIME_VALUE * rate / (secStepFactor * levelsScaleFactor * (1 + uncertainty / 100.0))); //Math.ceil(secPerStep / (VERY_LARGE_TIME_VALUE * rate / ((100.0 + uncertainty) / 100.0)));
 							if (proposedSecStep > minSecStep) {
 								minSecStep = proposedSecStep;
 							}

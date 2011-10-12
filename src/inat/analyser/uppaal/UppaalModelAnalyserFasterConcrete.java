@@ -319,6 +319,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 				}
 				if (taskStatus == 2) {
 					System.err.println("was interrupted by the user");
+					proc.destroy();
 					throw new AnalysisException("User interrupted");
 				}
 				while (resultVector.isEmpty()) { //if the verifyta process is completed, we may still need to wait for the analysis thread to complete
@@ -394,6 +395,11 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 		 */
 		public SMCResult analyseSMC(Model m, InputStream smcOutput) throws Exception {
 			BufferedReader br = new BufferedReader(new InputStreamReader(smcOutput));
+			
+			if (br.markSupported()) {
+				br.mark(800000);
+			}
+			
 			String line = null;
 			String objective = "-- Property is";
 			
@@ -421,14 +427,22 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 							} catch (Exception ex) {
 								throw new Exception("Unable to understand probability bounds for the result \"" + line + "\"");
 							}
-							return new SMCResult(lowerBound, upperBound, findConfidence(line, br));
+							
+							SMCResult res = new SMCResult(lowerBound, upperBound, findConfidence(line, br));
+							
+							if (br.markSupported()) {
+								br.reset();
+								System.err.println("All the result obtained from UPPAAL:\n" + readTheRest("", br));
+							}
+							
+							return res;
 						}
 					}
 				}
 			} catch (Exception ex) {
 				throw new Exception("Unable to understand UPPAAL SMC output: " + readTheRest(line, br), ex);
 			}
-
+			
 			throw new Exception("Unable to understand UPPAAL SMC output: " + readTheRest(line, br));
 		}
 		
@@ -658,13 +672,14 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 					throw new AnalysisException("New state without globalTime. Offending line: \"" + line + "\"");
 				}
 			}
-			if (time < timeTo) { //if the state of the system remains unchanged from a certain time on (and so UPPAAL terminates on that point), but we asked for a later time, we add a final point where all data remain unchanged, so that the user can see the "evolution" up to the requested point
+			//if (time < timeTo) { //if the state of the system remains unchanged from a certain time on (and so UPPAAL terminates on that point), but we asked for a later time, we add a final point where all data remain unchanged, so that the user can see the "evolution" up to the requested point
+			//we do it always, because there can be some situations in which reactants are not read while time increases, and thus we can reach the end of time without having an updated value for each reactant
 				for (String reactantName : levels.keySet()) {
 					SortedMap<Double, Double> values = levels.get(reactantName);
 					double lastValue = values.get(values.lastKey());
 					values.put((double)timeTo, lastValue);
 				}
-			}
+			//}
 			
 			endTime = System.currentTimeMillis();
 			System.err.println("\tParsing the result produced by UPPAAL took " + RunAction.timeDifferenceFormat(startTime, endTime));

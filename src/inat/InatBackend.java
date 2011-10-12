@@ -4,6 +4,8 @@
 package inat;
 
 import giny.model.Edge;
+import giny.model.Node;
+import giny.view.EdgeView;
 import inat.exceptions.InatException;
 import inat.model.Model;
 import inat.util.XmlConfiguration;
@@ -15,10 +17,13 @@ import java.util.Iterator;
 
 import org.xml.sax.SAXException;
 
+import cytoscape.CyEdge;
 import cytoscape.CyNetwork;
+import cytoscape.CyNode;
 import cytoscape.Cytoscape;
 import cytoscape.data.CyAttributes;
 import cytoscape.data.attr.MultiHashMapListener;
+import cytoscape.view.CyNetworkView;
 
 /**
  * The INAT backend singleton is used to initialise the INAT backend, and to
@@ -41,7 +46,8 @@ public class InatBackend {
 								INITIAL_LEVEL = Model.Properties.INITIAL_LEVEL, //Property belonging to a node. The initial activity level for a node. Expressed as an integer number in [0, NUMBER_OF_LEVELS for that node]
 								SHOWN_LEVEL = Model.Properties.SHOWN_LEVEL, //Property belonging to a node. The current activity level of a node. Expressed as a relative number representing INITIAL_LEVEL / NUMBER_OF_LEVELS, so it is a double number in [0, 1]
 								SECONDS_PER_POINT = Model.Properties.SECONDS_PER_POINT, //Property belonging to a network. The number of real-life seconds represented by a single UPPAAL time unit.
-								SCENARIO = Model.Properties.SCENARIO; //Property belonging to an edge. The id of the scenario on which the reaction corresponding to the edge computes its time tables.
+								ENABLED = Model.Properties.ENABLED; //Whether the node is enabled (included in the exported UPPAAL model)
+								//SCENARIO = Model.Properties.SCENARIO; //Property belonging to an edge. The id of the scenario on which the reaction corresponding to the edge computes its time tables.
 		
 	/**
 	 * Constructor.
@@ -98,15 +104,32 @@ public class InatBackend {
 							final Iterator<Edge> edges = (Iterator<Edge>) network.edgesIterator();
 							for (int i = 0; edges.hasNext(); i++) {
 								Edge edge = edges.next();
+								Double scale;
+								if (edgeAttributes.hasAttribute(edge.getIdentifier(), Model.Properties.LEVELS_SCALE_FACTOR)) {
+									scale = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.LEVELS_SCALE_FACTOR);
+								} else {
+									scale = 1.0;
+								}
 								
-								if (edge.getSource().getIdentifier().equals(objectKey) || edge.getTarget().getIdentifier().equals(objectKey)) {
+								if (!edge.getSource().equals(edge.getTarget())) {
+									if (edge.getSource().getIdentifier().equals(objectKey)) {
+										scale *= factor;
+									} else if (edge.getTarget().getIdentifier().equals(objectKey)) {
+										scale /= factor;
+									}
+								}
+								edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.LEVELS_SCALE_FACTOR, scale);
+								
+								//The following is not required anymore because it was substituted by the change in Model.Properties.LEVELS_SCALE_FACTOR here above.
+								/*if (edge.getSource().getIdentifier().equals(objectKey) || edge.getTarget().getIdentifier().equals(objectKey)) {
 									//update the parameters for the reaction
 									if (edge.getSource().equals(edge.getTarget())) {
+										//We don't need to change the parameter for mono reactions.
 										//Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), "parameter");
 										//parameter /= factor;
 										//edgeAttributes.setAttribute(edge.getIdentifier(), "parameter", parameter);
 									} else {
-										Integer scenarioIdx = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), SCENARIO);
+										Integer scenarioIdx = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), Model.Properties.SCENARIO);
 										if (scenarioIdx == 0) { //Scenario 1-2-3-4
 											Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER);
 											if (edge.getSource().getIdentifier().equals(objectKey)) { //We do something only if the changed reactant was the upstream one
@@ -141,7 +164,7 @@ public class InatBackend {
 											edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2, k2);
 										}
 									}
-								}
+								}*/
 							}
 							//Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null); //!!! If you don't advertise the change of property, Cytoscape will never notice it ?!?
 						}
@@ -176,6 +199,48 @@ public class InatBackend {
 						double activityRatio = (double)currentLevel / totalLevels;
 						nodeAttr.setAttribute(objectKey, SHOWN_LEVEL, activityRatio);
 						Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
+					} else if (attributeName.equals(ENABLED)) {
+						if (oldAttributeValue == null) return;
+						CyAttributes nodeAttr = Cytoscape.getNodeAttributes(),
+									 edgeAttr = Cytoscape.getEdgeAttributes();
+						CyNetwork network = Cytoscape.getCurrentNetwork();
+						CyNetworkView view = Cytoscape.getCurrentNetworkView();
+						if (view == null) return;
+						String nodeId = objectKey;
+						boolean status = nodeAttr.getBooleanAttribute(nodeId, Model.Properties.ENABLED);
+						//nodeAttr.setAttribute(nodeId, Model.Properties.ENABLED, status);
+						Node node = null;
+						Iterator nodeIter = network.nodesIterator();
+						while (nodeIter.hasNext()) {
+							Node n = (Node)(nodeIter.next());
+							if (n == null) continue;
+							if (n.getIdentifier().equals(nodeId)) {
+								node = n;
+								break;
+							}
+						}
+						if (node != null) {
+							int [] adjacentEdges = network.getAdjacentEdgeIndicesArray(node.getRootGraphIndex(), true, true, true);
+							for (int edgeIdx : adjacentEdges) {
+								//TODO: questo è giusto per ricordarsi quanto schifo faccia sta roba.
+								//non è possibile che non si possa distinguere il caso in cui si sta caricando la rete (e quindi la visualizzazione non esiste)
+								//dal caso normale
+								EdgeView ziocane = view.getEdgeView(edgeIdx);
+								if (ziocane == null) return;
+								CyEdge edge = (CyEdge)ziocane.getEdge();
+								edgeAttr.setAttribute(edge.getIdentifier(), Model.Properties.ENABLED, status);
+							}
+							for (int i : network.getEdgeIndicesArray()) {
+								CyEdge edge = (CyEdge)view.getEdgeView(i).getEdge();
+								CyNode source = (CyNode)edge.getSource(),
+									   target = (CyNode)edge.getTarget();
+								if ((nodeAttr.hasAttribute(source.getIdentifier(), Model.Properties.ENABLED) && !nodeAttr.getBooleanAttribute(source.getIdentifier(), Model.Properties.ENABLED))
+									|| (nodeAttr.hasAttribute(target.getIdentifier(), Model.Properties.ENABLED) && !nodeAttr.getBooleanAttribute(target.getIdentifier(), Model.Properties.ENABLED))) {
+									edgeAttr.setAttribute(edge.getIdentifier(), Model.Properties.ENABLED, false);
+								}
+							}
+							Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
+						}
 					}
 				}
 

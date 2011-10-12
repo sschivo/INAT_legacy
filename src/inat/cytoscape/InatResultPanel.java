@@ -1,12 +1,14 @@
 package inat.cytoscape;
 
 import inat.analyser.LevelResult;
+import inat.analyser.uppaal.ResultAverager;
 import inat.graph.Graph;
 import inat.model.Model;
 
 import java.awt.BorderLayout;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 
 import javax.swing.JPanel;
 import javax.swing.JSlider;
@@ -55,6 +57,7 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 		//We map reactant IDs to their corresponding aliases (canonical names, i.e., the names displayed to the user in the network window), so that
 		//we will be able to use graph series names consistent with what the user has chosen.
 		Map<String, String> seriesNameMapping = new HashMap<String, String>();
+		Vector<String> filteredSeriesNames = new Vector<String>(); //profit from the cycle for the series mapping to create a filter for the series to be actually plotted
 		for (String r : result.getReactantIds()) {
 			String name = null;
 			if (model.getReactant(r) != null) { //we can also refer to a name not present in the reactant collection
@@ -62,16 +65,21 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 				if (name == null) {
 					name = model.getReactant(r).get(Model.Properties.REACTANT_NAME).as(String.class);
 				}
-			} else if (r.contains("_StdDev")) {
-				if (model.getReactant(r.substring(0, r.indexOf("_"))).get(Model.Properties.ALIAS).as(String.class) != null) {
-					name = model.getReactant(r.substring(0, r.indexOf("_"))).get(Model.Properties.ALIAS).as(String.class) + "_StdDev";
+			} else if (r.toLowerCase().contains(ResultAverager.STD_DEV)) {
+				//TODO: the problem here is that we assume that ResultAverager.STD_DEV starts with a "_". If it does not, we are not able to work correctly here.
+				//We also assume that ResultAverager.STD_DEV is a lowercase string.
+				if (model.getReactant(r.substring(0, r.lastIndexOf("_"))).get(Model.Properties.ALIAS).as(String.class) != null) {
+					name = model.getReactant(r.substring(0, r.lastIndexOf("_"))).get(Model.Properties.ALIAS).as(String.class) + ResultAverager.STD_DEV;
 				} else {
 					name = r; //in this case, I simply don't know what we are talking about =)
 				}
 			}
+			if (!r.toLowerCase().contains(ResultAverager.STD_DEV) && model.getReactant(r).get(Model.Properties.PLOTTED).as(Boolean.class)) {
+				filteredSeriesNames.add(r);
+			}
 			seriesNameMapping.put(r, name);
 		}
-		g.parseLevelResult(result, seriesNameMapping, scale); //Add all series to the graph, using the mapping we built here to "translate" the names into the user-defined ones.
+		g.parseLevelResult(result.filter(filteredSeriesNames), seriesNameMapping, scale); //Add all series to the graph, using the mapping we built here to "translate" the names into the user-defined ones.
 		g.setXSeriesName("Time (min)");
 
 		if (!model.getProperties().get(Model.Properties.NUMBER_OF_LEVELS).isNull()) { //if we find a maximum value for activity levels, we declare it to the graph, so that other added graphs (such as experimental data) will be automatically rescaled to match us

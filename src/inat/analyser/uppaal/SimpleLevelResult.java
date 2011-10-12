@@ -5,13 +5,15 @@ import inat.analyser.LevelResult;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.Vector;
+import java.util.Map.Entry;
 
 /**
  * A very simple data container for the concentration/time data.
@@ -83,5 +85,17 @@ public class SimpleLevelResult implements LevelResult, Serializable {
 	@Override
 	public boolean isEmpty() {
 		return levels.isEmpty();
+	}
+	
+	@Override
+	public LevelResult filter(Vector<String> acceptedNames) {
+		Map<String, SortedMap<Double, Double>> lev = new HashMap<String, SortedMap<Double, Double>>();
+		for (String s : levels.keySet()) {
+			if (!acceptedNames.contains(s)) continue;
+			SortedMap<Double, Double> m = levels.get(s);
+			lev.put(s, m);
+		}
+		SimpleLevelResult res = new SimpleLevelResult(lev);
+		return res;
 	}
 }
