@@ -149,7 +149,11 @@ public class RunAction extends CytoscapeAction {
 		PrintStream logStream = null;
 		PrintStream oldErr = System.err;
 		try {
-			logFile = File.createTempFile("Cytoscape run " + now.toString(), ".log");
+			if (UppaalModelAnalyserFasterConcrete.areWeUnderWindows()) {
+				logFile = File.createTempFile("run", ".log"); //windows doesn't like long file names..
+			} else {
+				logFile = File.createTempFile("Cytoscape run " + now.toString(), ".log");
+			}
 			logFile.deleteOnExit();
 			logStream = new PrintStream(new FileOutputStream(logFile));
 			System.setErr(logStream);
@@ -338,6 +342,7 @@ public class RunAction extends CytoscapeAction {
 				} else {
 					nSims = 1;
 				}
+				monitor.setStatus("Forwarding the request to the server " + serverName.getText() + ":" + serverPort.getText());
 				result = client.analyze(model, timeTo, nSims, computeStdDev.isSelected());
 			} else {
 				//ModelAnalyser<LevelResult> analyzer = new UppaalModelAnalyser(new VariablesInterpreter(), new VariablesModel());

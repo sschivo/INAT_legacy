@@ -48,7 +48,7 @@ public class InatBackend {
 								SECONDS_PER_POINT = Model.Properties.SECONDS_PER_POINT, //Property belonging to a network. The number of real-life seconds represented by a single UPPAAL time unit.
 								ENABLED = Model.Properties.ENABLED; //Whether the node is enabled (included in the exported UPPAAL model)
 								//SCENARIO = Model.Properties.SCENARIO; //Property belonging to an edge. The id of the scenario on which the reaction corresponding to the edge computes its time tables.
-		
+	
 	/**
 	 * Constructor.
 	 * 
@@ -64,6 +64,8 @@ public class InatBackend {
 
 			// read config from file
 			this.configuration = new XmlConfiguration(XmlEnvironment.parse(configuration));
+			
+			
 			
 			//register variable listener
 			Cytoscape.getNodeAttributes().getMultiHashMap().addDataListener(new MultiHashMapListener() {

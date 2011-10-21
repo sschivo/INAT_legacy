@@ -14,6 +14,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -161,6 +162,26 @@ public class NodeDialog extends JFrame {
 		
 		
 		Box optionBoxes = new Box(BoxLayout.Y_AXIS);
+		String[] moleculeTypes = new String[]{Model.Properties.TYPE_CYTOKINE, Model.Properties.TYPE_RECEPTOR, Model.Properties.TYPE_KINASE, Model.Properties.TYPE_PHOSPHATASE, Model.Properties.TYPE_TRANSCRIPTION_FACTOR, Model.Properties.TYPE_OTHER};
+		final JComboBox moleculeType = new JComboBox(moleculeTypes);
+		if (nodeAttributes.hasAttribute(node.getIdentifier(), Model.Properties.MOLECULE_TYPE)) {
+			String type = nodeAttributes.getStringAttribute(node.getIdentifier(), Model.Properties.MOLECULE_TYPE);
+			boolean notContained = true;
+			for (String s : moleculeTypes) {
+				if (s.equals(type)) {
+					notContained = false;
+				}
+			}
+			if (notContained) {
+				moleculeType.setSelectedItem(Model.Properties.TYPE_OTHER);
+			} else {
+				moleculeType.setSelectedItem(nodeAttributes.getStringAttribute(node.getIdentifier(), Model.Properties.MOLECULE_TYPE));
+			}
+		} else {
+			moleculeType.setSelectedItem(Model.Properties.TYPE_KINASE);
+		}
+		optionBoxes.add(new LabelledField("Molecule type", moleculeType));
+		
 		final JRadioButton enabledNode = new JRadioButton("Enabled"),
 					 disabledNode = new JRadioButton("Disabled"),
 					 plottedNode = new JRadioButton("Plotted"),
@@ -193,7 +214,7 @@ public class NodeDialog extends JFrame {
 		plottedBox.add(Box.createGlue());
 		plottedBox.add(hiddenNode);
 		optionBoxes.add(plottedBox);
-		optionBoxes.add(Box.createGlue());
+		optionBoxes.add(Box.createVerticalStrut(150));
 		this.add(optionBoxes, BorderLayout.EAST);
 		
 		JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -214,6 +235,8 @@ public class NodeDialog extends JFrame {
 				if (nameField.getText() != null && nameField.getText().length() > 0) {
 					nodeAttributes.setAttribute(node.getIdentifier(), Model.Properties.CANONICAL_NAME, nameField.getText());
 				}
+				
+				nodeAttributes.setAttribute(node.getIdentifier(), Model.Properties.MOLECULE_TYPE, moleculeType.getSelectedItem().toString());
 				
 				nodeAttributes.setAttribute(node.getIdentifier(), Model.Properties.ENABLED, enabledNode.isSelected());
 				

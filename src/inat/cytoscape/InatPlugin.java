@@ -6,6 +6,7 @@ import inat.exceptions.InatException;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.io.File;
+import java.text.DecimalFormat;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -62,7 +63,7 @@ public class InatPlugin extends CytoscapePlugin {
 			p.add("INAT", errorPanel);
 		}
 	}
-
+	
 	/**
 	 * Constructs the panel
 	 * 
@@ -83,7 +84,7 @@ public class InatPlugin extends CytoscapePlugin {
 		ButtonGroup uppaalGroup = new ButtonGroup();
 		uppaalGroup.add(localUppaal);
 		uppaalGroup.add(remoteUppaal);
-		final Box serverBox = new Box(BoxLayout.X_AXIS);
+		final Box serverBox = new Box(BoxLayout.Y_AXIS);
 		final JTextField serverName = new JTextField("my.server.com"),
 				   serverPort = new JFormattedTextField("1234");
 		remoteUppaal.addChangeListener(new ChangeListener() {
@@ -98,8 +99,20 @@ public class InatPlugin extends CytoscapePlugin {
 		remoteUppaal.setSelected(false);
 		serverName.setEnabled(false);
 		serverPort.setEnabled(false);
-		serverBox.add(serverName);
-		serverBox.add(serverPort);
+		//serverBox.add(serverName);
+		//serverBox.add(serverPort);
+		Box sBox = new Box(BoxLayout.X_AXIS);
+		sBox.add(new JLabel("Server"));
+		sBox.add(serverName);
+		serverBox.add(Box.createVerticalStrut(10));
+		serverBox.add(sBox);
+		Box pBox = new Box(BoxLayout.X_AXIS);
+		pBox.add(new JLabel("Port"));
+		pBox.add(serverPort);
+		serverBox.add(Box.createVerticalStrut(10));
+		serverBox.add(pBox);
+		serverBox.add(Box.createVerticalStrut(10));
+		
 		Box localUppaalBox = new Box(BoxLayout.X_AXIS);
 		localUppaalBox.add(Box.createHorizontalStrut(5));
 		localUppaalBox.add(localUppaal);
@@ -209,10 +222,17 @@ public class InatPlugin extends CytoscapePlugin {
 		modelCheckingBox.add(smcBox);
 		buttons.add(modelCheckingBox);
 		
+		Box buttonsBox = new Box(BoxLayout.Y_AXIS);
+		
 		final JButton changeSecondsPerPointbutton = new JButton();
 		changeSecondsPerPointbutton.setToolTipText("Click here to change the number of seconds to which a single simulation step corresponds");
 		new ChangeSecondsAction(plugin, changeSecondsPerPointbutton); //This manages the button for changing the number of seconds per UPPAAL time unit
-		buttons.add(changeSecondsPerPointbutton);
+		//buttons.add(changeSecondsPerPointbutton);
+		Box changeSecondsPerPointbuttonBox = new Box(BoxLayout.X_AXIS);
+		changeSecondsPerPointbuttonBox.add(Box.createGlue());
+		changeSecondsPerPointbuttonBox.add(changeSecondsPerPointbutton);
+		changeSecondsPerPointbuttonBox.add(Box.createGlue());
+		buttonsBox.add(changeSecondsPerPointbuttonBox);
 		Cytoscape.getNetworkAttributes().getMultiHashMap().addDataListener(new MultiHashMapListener() {
 
 			@Override
@@ -226,7 +246,14 @@ public class InatPlugin extends CytoscapePlugin {
 				
 				if (attributeName.equals(SECONDS_PER_POINT)) {
 					if (newAttributeValue != null) {
-						changeSecondsPerPointbutton.setText(newAttributeValue + " seconds/step");
+						double value = 10;
+						try {
+							value = Double.parseDouble(newAttributeValue.toString());
+						} catch (Exception e) {
+							value = 10;
+						}
+						DecimalFormat df = new DecimalFormat("#.########");
+						changeSecondsPerPointbutton.setText(df.format(value) + " seconds/step");
 					} else {
 						changeSecondsPerPointbutton.setText("Choose seconds/step");
 					}
@@ -242,13 +269,26 @@ public class InatPlugin extends CytoscapePlugin {
 
 		//The "Analyse network" button: perform the requested analysis on the current network with the given parameters
 		JButton runButton = new JButton(new RunAction(plugin, remoteUppaal, serverName, serverPort, smcUppaal, timeTo, nSimulationRuns, computeStdDev, smcFormula));
-		buttons.add(runButton);
+		//buttons.add(runButton);
+		Box runButtonBox = new Box(BoxLayout.X_AXIS);
+		runButtonBox.add(Box.createGlue());
+		runButtonBox.add(runButton);
+		runButtonBox.add(Box.createGlue());
+		buttonsBox.add(runButtonBox);
 		
 		JButton augmentButton = new JButton(new AugmentAction(plugin));
-		buttons.add(augmentButton);
-
+		//buttons.add(augmentButton);
+		Box augmentButtonBox = new Box(BoxLayout.X_AXIS);
+		augmentButtonBox.add(Box.createGlue());
+		augmentButtonBox.add(augmentButton);
+		augmentButtonBox.add(Box.createGlue());
+		buttonsBox.add(augmentButtonBox);
+		
+		buttons.add(buttonsBox);
+		
 		panel.add(buttons, BorderLayout.NORTH);
 
 		return panel;
 	}
+
 }

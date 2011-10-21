@@ -36,6 +36,13 @@ public class Model implements Serializable {
 								   UNCERTAINTY = "uncertainty", //The percentage of uncertainty about the reaction parameter settings
 								   REACTANT = "reactant", //The reactant for a mono-reaction or the substrate for a bi-reaction
 								   CYTOSCAPE_ID = "cytoscape id", //The ID assigned to the node/edge by Cytoscape
+								   MOLECULE_TYPE = "moleculeType", //The type of the reactant (kinase, phosphatase, receptor, cytokine, ...)
+								   TYPE_CYTOKINE = "Cytokine", //The following TYPE_* keys are the possible values for the property MOLECULE_TYPE
+								   TYPE_RECEPTOR = "Receptor",
+								   TYPE_KINASE = "Kinase",
+								   TYPE_PHOSPHATASE = "Phosphatase",
+								   TYPE_TRANSCRIPTION_FACTOR = "Transcription factor",
+								   TYPE_OTHER = "Other",
 								   REACTANT_NAME = "name", //The name of the reactant (possibly outdated property name)
 								   REACTION_TYPE = "type", //Type of reaction (mono, bi)
 								   CATALYST = "catalyst", //Catalyst in a bi-reaction

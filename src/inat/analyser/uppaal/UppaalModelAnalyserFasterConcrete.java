@@ -88,7 +88,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 			File modelFile = File.createTempFile("inat", ".xml");
 			final String prefix = modelFile.getAbsolutePath().replace(".xml", "");
 			File queryFile = new File(prefix + ".q");
-
+			
 			// write out strings to file
 			FileWriter modelFileOut = new FileWriter(modelFile);
 			modelFileOut.append(uppaalModel);
@@ -103,6 +103,8 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 			String nomeFileModello = modelFile.getAbsolutePath(),
 				   nomeFileQuery = queryFile.getAbsolutePath(),
 				   nomeFileOutput = nomeFileModello.substring(0, nomeFileModello.indexOf(".")) + ".output";
+			File fileOutput = new File(nomeFileOutput);
+			fileOutput.deleteOnExit();
 						
 			//the following string is used in order to make sure that the name of .xtr output files is unique even when we are called by an application which is multi-threaded itself (it supposes of course that the input file is unique =))
 			String[] cmd = new String[3];
@@ -122,7 +124,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 				cmd[1] = "-c";
 				cmd[2] = verifytaSMCPath;				
 			}
-			cmd[2] += " \"" + nomeFileModello + "\" \"" + nomeFileQuery + "\" > \"" + nomeFileOutput + "\"";
+			cmd[2] += " \"" + nomeFileModello + "\" \"" + nomeFileQuery + "\" > \"" + nomeFileOutput + "\" 2>&1";
 			Runtime rt = Runtime.getRuntime();
 			long startTime = System.currentTimeMillis();
 			final Process proc = rt.exec(cmd);
@@ -279,6 +281,10 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 				@Override
 				public void run() {
 					try {
+						if (areWeUnderWindows()) { //If we are under windows, we need to close these unused streams, otherwise the process will mysteriously stall.
+							proc.getInputStream().close();
+							proc.getOutputStream().close();
+						}
 						resultVector.add(new UppaalModelAnalyserFasterConcrete.VariablesInterpreterConcrete(monitor).analyse(m, proc.getErrorStream(), timeTo));
 					} catch (Exception e) {
 						errors.add(e);
@@ -318,7 +324,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 					Thread.sleep(100);
 				}
 				if (taskStatus == 2) {
-					System.err.println("was interrupted by the user");
+					System.err.println(" was interrupted by the user");
 					proc.destroy();
 					throw new AnalysisException("User interrupted");
 				}
@@ -332,13 +338,16 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 					proc.destroy();
 					throw new Exception("Interrupted (1)");
 				}
+				while (resultVector.isEmpty()) { //if the verifyta process is completed, we may still need to wait for the analysis thread to complete
+					Thread.sleep(100);
+				}
 			}
 			if (!errors.isEmpty()) {
 				Exception ex = errors.firstElement();
 				throw new AnalysisException("Error during analysis", ex);
 			}
-			result = resultVector.firstElement();
-			if (proc.exitValue() != 0 && (result == null || result.isEmpty())) {
+			//result = resultVector.firstElement();
+			if (proc.exitValue() != 0 && ((result = resultVector.firstElement()) == null || result.isEmpty())) {
 				StringBuilder errorBuilder = new StringBuilder();
 				errorBuilder.append("[" + nomeFileModello + "] Verify result: " + proc.exitValue() + "\n");
 				if (result == null) {
@@ -355,6 +364,8 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 				}
 				errorBuilder.append(" (current directory: " + new File(".").getAbsolutePath() + ")\n");
 				throw new Exception(errorBuilder.toString());
+			} else {
+				result = resultVector.firstElement();
 			}
 			//N B: it is responsibility of the caller to close all streams when the process is done!!!
 			proc.getErrorStream().close();
@@ -362,7 +373,7 @@ public class UppaalModelAnalyserFasterConcrete implements ModelAnalyser<LevelRes
 			proc.getOutputStream().close();
 			
 		} catch (Exception e) {
-			throw new AnalysisException("Error during analysis", e);
+			throw new AnalysisException("Error during analysis: " + e.getMessage(), e);
 		}
 		
 		if (result == null || result.isEmpty()) {

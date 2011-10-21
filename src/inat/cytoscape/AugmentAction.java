@@ -25,9 +25,11 @@ import cytoscape.visual.ArrowShape;
 import cytoscape.visual.EdgeAppearanceCalculator;
 import cytoscape.visual.GlobalAppearanceCalculator;
 import cytoscape.visual.NodeAppearanceCalculator;
+import cytoscape.visual.NodeShape;
 import cytoscape.visual.VisualMappingManager;
 import cytoscape.visual.VisualPropertyType;
 import cytoscape.visual.VisualStyle;
+import cytoscape.visual.VisualPropertyDependency.Definition;
 import cytoscape.visual.calculators.BasicCalculator;
 import cytoscape.visual.calculators.Calculator;
 import cytoscape.visual.calculators.GenericNodeCustomGraphicCalculator;
@@ -76,19 +78,20 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		NodeAppearanceCalculator nac = visualStyle.getNodeAppearanceCalculator();
 		EdgeAppearanceCalculator eac = visualStyle.getEdgeAppearanceCalculator();
 		GlobalAppearanceCalculator gac = visualStyle.getGlobalAppearanceCalculator();
+		visualStyle.getDependency().set(Definition.NODE_SIZE_LOCKED, false);
 		
 		gac.setDefaultBackgroundColor(Color.WHITE);
 
-		DiscreteMapping mapping = new DiscreteMapping(Color.class, Model.Properties.ENABLED);
+		/*DiscreteMapping mapping = new DiscreteMapping(Color.class, Model.Properties.ENABLED);
 		mapping.putMapValue(false, Color.BLACK);
 		mapping.putMapValue(true, Color.WHITE);
 		Calculator calco = new GenericNodeCustomGraphicCalculator("Mapping for enabled and disabled nodes (label color)", mapping, VisualPropertyType.NODE_LABEL_COLOR);
-		nac.setCalculator(calco);
+		nac.setCalculator(calco);*/
 		
-		mapping = new DiscreteMapping(Float.class, Model.Properties.ENABLED);
+		DiscreteMapping mapping = new DiscreteMapping(Float.class, Model.Properties.ENABLED);
 		mapping.putMapValue(false, 100.0f);
 		mapping.putMapValue(true, 255.0f);
-		calco = new GenericNodeCustomGraphicCalculator("Mapping for enabled and disabled nodes (node opacity)", mapping, VisualPropertyType.NODE_OPACITY);
+		Calculator calco = new GenericNodeCustomGraphicCalculator("Mapping for enabled and disabled nodes (node opacity)", mapping, VisualPropertyType.NODE_OPACITY);
 		nac.setCalculator(calco);
 		
 		calco = new GenericNodeCustomGraphicCalculator("Mapping for enabled and disabled nodes (node border opacity)", mapping, VisualPropertyType.NODE_BORDER_OPACITY);
@@ -118,6 +121,48 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		calco = new BasicCalculator("Mapping for arrow target shape", mapping, VisualPropertyType.EDGE_TGTARROW_SHAPE);
 		eac.setCalculator(calco);
 		
+		mapping = new DiscreteMapping(NodeShape.class, Model.Properties.MOLECULE_TYPE);
+		mapping.putMapValue(Model.Properties.TYPE_CYTOKINE, NodeShape.RECT);
+		mapping.putMapValue(Model.Properties.TYPE_RECEPTOR, NodeShape.ELLIPSE);
+		mapping.putMapValue(Model.Properties.TYPE_KINASE, NodeShape.ELLIPSE);
+		mapping.putMapValue(Model.Properties.TYPE_PHOSPHATASE, NodeShape.DIAMOND);
+		mapping.putMapValue(Model.Properties.TYPE_TRANSCRIPTION_FACTOR, NodeShape.ELLIPSE);
+		//I purposedly omit TYPE_OTHER, because I want it to stay on the default setting
+		calco = new BasicCalculator("Mapping node shape from molecule type", mapping, VisualPropertyType.NODE_SHAPE);
+		nac.setCalculator(calco);
+		
+		/*mapping = new DiscreteMapping(Float.class, Model.Properties.MOLECULE_TYPE);
+		mapping.putMapValue(Model.Properties.TYPE_CYTOKINE, 60.0f);
+		mapping.putMapValue(Model.Properties.TYPE_RECEPTOR, 50.0f);
+		mapping.putMapValue(Model.Properties.TYPE_KINASE, 55.0f);
+		mapping.putMapValue(Model.Properties.TYPE_PHOSPHATASE, 55.0f);
+		mapping.putMapValue(Model.Properties.TYPE_TRANSCRIPTION_FACTOR, 50.0f);
+		calco = new BasicCalculator("Mapping node shape size from molecule type", mapping, VisualPropertyType.NODE_SIZE);
+		nac.setCalculator(calco);*/
+		
+		mapping = new DiscreteMapping(Float.class, Model.Properties.MOLECULE_TYPE);
+		mapping.putMapValue(Model.Properties.TYPE_CYTOKINE, 50.0f);
+		mapping.putMapValue(Model.Properties.TYPE_RECEPTOR, 45.0f);
+		mapping.putMapValue(Model.Properties.TYPE_KINASE, 55.0f);
+		mapping.putMapValue(Model.Properties.TYPE_PHOSPHATASE, 55.0f);
+		mapping.putMapValue(Model.Properties.TYPE_TRANSCRIPTION_FACTOR, 60.0f);
+		calco = new BasicCalculator("Mapping node shape width from molecule type", mapping, VisualPropertyType.NODE_WIDTH);
+		nac.setCalculator(calco);
+		
+		mapping = new DiscreteMapping(Float.class, Model.Properties.MOLECULE_TYPE);
+		mapping.putMapValue(Model.Properties.TYPE_CYTOKINE, 50.0f);
+		mapping.putMapValue(Model.Properties.TYPE_RECEPTOR, 65.0f);
+		mapping.putMapValue(Model.Properties.TYPE_KINASE, 55.0f);
+		mapping.putMapValue(Model.Properties.TYPE_PHOSPHATASE, 55.0f);
+		mapping.putMapValue(Model.Properties.TYPE_TRANSCRIPTION_FACTOR, 40.0f);
+		calco = new BasicCalculator("Mapping node shape height from molecule type", mapping, VisualPropertyType.NODE_HEIGHT);
+		nac.setCalculator(calco);
+		
+		/*mapping = new DiscreteMapping(Color.class, Model.Properties.MOLECULE_TYPE);
+		mapping.putMapValue(Model.Properties.TYPE_RECEPTOR, Color.BLACK);
+		calco = new BasicCalculator("Mapping node label color from molecule type", mapping, VisualPropertyType.NODE_LABEL_COLOR);
+		nac.setCalculator(calco);*/
+		
 		PassThroughMapping mp = new PassThroughMapping(String.class, Model.Properties.CANONICAL_NAME);
 		calco = new BasicCalculator("Mapping for node label", mp, VisualPropertyType.NODE_LABEL);
 		nac.setCalculator(calco);
@@ -136,7 +181,10 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 		VisualPropertyType.NODE_FILL_COLOR.setDefault(visualStyle, Color.RED);
 		VisualPropertyType.NODE_LABEL_COLOR.setDefault(visualStyle, Color.WHITE);
 		VisualPropertyType.NODE_LINE_WIDTH.setDefault(visualStyle, 6.0f);
-		VisualPropertyType.NODE_SIZE.setDefault(visualStyle, 55.0f);
+		VisualPropertyType.NODE_SHAPE.setDefault(visualStyle, NodeShape.RECT);
+		VisualPropertyType.NODE_SIZE.setDefault(visualStyle, 50.0f);
+		VisualPropertyType.NODE_WIDTH.setDefault(visualStyle, 60.0f);
+		VisualPropertyType.NODE_HEIGHT.setDefault(visualStyle, 35.0f);
 		VisualPropertyType.EDGE_LINE_WIDTH.setDefault(visualStyle, 4.0f);
 		VisualPropertyType.EDGE_COLOR.setDefault(visualStyle, Color.BLACK);
 		VisualPropertyType.EDGE_TGTARROW_COLOR.setDefault(visualStyle, Color.BLACK);
@@ -203,7 +251,7 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 				}
 			});
 			
-			menu.add(new AbstractAction("Enable/disable") {
+			menu.add(new AbstractAction("[INAT] Enable/disable") {
 				private static final long serialVersionUID = 2579035100338148305L;
 
 				@SuppressWarnings("unchecked")
@@ -258,7 +306,7 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 				}
 			});
 			
-			menu.add(new AbstractAction("Plot/hide") {
+			menu.add(new AbstractAction("[INAT] Plot/hide") {
 
 				private static final long serialVersionUID = -4264583436246699628L;
 
@@ -318,7 +366,7 @@ public class AugmentAction extends CytoscapeAction implements NodeContextMenuLis
 				}
 			});
 			
-			menu.add(new AbstractAction("Enable/disable") {
+			menu.add(new AbstractAction("[INAT] Enable/disable") {
 
 				private static final long serialVersionUID = -1078261166495178010L;
 
