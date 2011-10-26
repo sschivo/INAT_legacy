@@ -494,7 +494,8 @@ public class RunAction extends CytoscapeAction {
 				this.monitor.setPercentCompleted((100 * doneWork++) / totalWork);
 				Edge edge = edges.next();
 				
-				Double levelsScaleFactor = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.LEVELS_SCALE_FACTOR);
+				Double levelsScaleFactor = nodeAttributes.getDoubleAttribute(edge.getSource().getIdentifier(), LEVELS_SCALE_FACTOR) / nodeAttributes.getDoubleAttribute(edge.getTarget().getIdentifier(), LEVELS_SCALE_FACTOR);
+										//edgeAttributes.getDoubleAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR); //The scale factor due to the nodes' number of levels is now a property of the nodes themselves, not of the reactions (we take care of retrocompatibility by transferring and deleting attributes found in reactions to their nodes instead in the checkParameters method)
 				
 				String reactionId = "reaction" + i;
 				Reaction r = new Reaction(reactionId);
@@ -756,6 +757,10 @@ public class RunAction extends CytoscapeAction {
 					//throw new InatException("Node attribute 'initialConcentration' is missing on '" + node.getIdentifier() + "'");
 					nodeAttributes.setAttribute(node.getIdentifier(), INITIAL_LEVEL, 0);
 				}
+				
+				if (!nodeAttributes.hasAttribute(node.getIdentifier(), LEVELS_SCALE_FACTOR)) {
+					nodeAttributes.setAttribute(node.getIdentifier(), LEVELS_SCALE_FACTOR, 1.0);
+				}
 			}
 			
 			if (noReactantsPlotted && !smcUppaal.isSelected()) {
@@ -797,9 +802,43 @@ public class RunAction extends CytoscapeAction {
 					edgeAttributes.setAttribute(edge.getIdentifier(), INCREMENT, 1);
 				}
 				
-				if (!edgeAttributes.hasAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR)) {
-					edgeAttributes.setAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR, 1.0);
+
+				if (edgeAttributes.hasAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR)) { //Some old models have this property set as a property of the reaction instead of a property of the reactants: we collect it all in the upstream reactant, leaving 1.0 as scale for the downstream, and (important!) remove the property from the reaction
+					Double scale = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR);
+					//nodeAttributes.setAttribute(edge.getSource().getIdentifier(), LEVELS_SCALE_FACTOR, scale / nodeAttributes.getDoubleAttribute(edge.getSource().getIdentifier(), LEVELS_SCALE_FACTOR));
+					Double scaleUpstream = nodeAttributes.getIntegerAttribute(edge.getSource().getIdentifier(), NUMBER_OF_LEVELS) / 15.0,
+						   scaleDownstream = nodeAttributes.getIntegerAttribute(edge.getTarget().getIdentifier(), NUMBER_OF_LEVELS) / 15.0;
+					//String nomeReazione = nodeAttributes.getStringAttribute(edge.getSource().getIdentifier(), CANONICAL_NAME) + " (" + nodeAttributes.getIntegerAttribute(edge.getSource().getIdentifier(), NUMBER_OF_LEVELS) + ") " + ((edgeAttributes.getIntegerAttribute(edge.getIdentifier(), INCREMENT) > 0) ? " --> " : " --| ") + nodeAttributes.getStringAttribute(edge.getTarget().getIdentifier(), CANONICAL_NAME) + " (" + nodeAttributes.getIntegerAttribute(edge.getTarget().getIdentifier(), NUMBER_OF_LEVELS) + ")";
+					if (Math.abs(scaleUpstream / scaleDownstream - scale) > 1e-6) { //If the components were scaled before the reaction was introduced, then we need to modify the parameters of the reaction in order to keep things working
+						//JOptionPane.showMessageDialog(null, "Errore, la scala upstream è " + scaleUpstream + ", la scala downstream è " + scaleDownstream + ",\nil / viene " + (scaleUpstream / scaleDownstream) + ",\nil * viene " + (scaleUpstream * scaleDownstream) + ",\nma la scala attuale della reazione è " + scale, nomeReazione, JOptionPane.WARNING_MESSAGE);
+						
+						//Counterbalance the scale introduced by the two scales
+						double factor = scale * scaleDownstream / scaleUpstream;
+						Integer scenarioIdx = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), Model.Properties.SCENARIO);
+						if (scenarioIdx == 0) { //Scenario 1-2-3-4
+							Double parameter = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER);
+							parameter /= factor;
+							edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_ONLY_PARAMETER, parameter);
+						} else if (scenarioIdx == 1) { //Scenario 5
+							Double k2km = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2_KM);
+							k2km /= factor;
+							edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2_KM, k2km);
+						} else if (scenarioIdx == 2) { //Scenario 6
+							Double k2 = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2);
+							k2 /= factor;
+							edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.SCENARIO_PARAMETER_K2, k2);
+						}
+					}
+					/*} else {
+						JOptionPane.showMessageDialog(null, "Tutto ok! La scala upstream è " + scaleUpstream + ", la scala downstream è " + scaleDownstream + ",\nil / viene " + (scaleUpstream / scaleDownstream) + ",\nil * viene " + (scaleUpstream * scaleDownstream) + ",\nma la scala attuale della reazione è " + scale, nomeReazione, JOptionPane.INFORMATION_MESSAGE);
+					}*/
+					nodeAttributes.setAttribute(edge.getSource().getIdentifier(), LEVELS_SCALE_FACTOR, scaleUpstream);
+					nodeAttributes.setAttribute(edge.getTarget().getIdentifier(), LEVELS_SCALE_FACTOR, scaleDownstream);
+					edgeAttributes.deleteAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR);
 				}
+				/*if (!edgeAttributes.hasAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR)) {  //This is commented because edges should not have this property anymore
+					edgeAttributes.setAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR, 1.0);
+				}*/
 			}
 			
 			
@@ -812,7 +851,8 @@ public class RunAction extends CytoscapeAction {
 			edges = (Iterator<Edge>) network.edgesIterator();
 			for (int i = 0; edges.hasNext(); i++) {
 				Edge edge = edges.next();
-				double levelsScaleFactor = edgeAttributes.getDoubleAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR);
+				double levelsScaleFactor = nodeAttributes.getDoubleAttribute(edge.getSource().getIdentifier(), LEVELS_SCALE_FACTOR) / nodeAttributes.getDoubleAttribute(edge.getTarget().getIdentifier(), LEVELS_SCALE_FACTOR);
+											//edgeAttributes.getDoubleAttribute(edge.getIdentifier(), LEVELS_SCALE_FACTOR); //Now the scale factor due to the nodes' scale is a property of each node
 				if (edge.getSource() == edge.getTarget()) {
 					String rId = edge.getSource().getIdentifier();
 					

@@ -3,7 +3,6 @@
  */
 package inat;
 
-import giny.model.Edge;
 import giny.model.Node;
 import giny.view.EdgeView;
 import inat.exceptions.InatException;
@@ -101,8 +100,17 @@ public class InatBackend {
 							oldLevel = Double.parseDouble(oldAttributeValue.toString());
 							factor = newLevel / oldLevel;
 							
-							CyNetwork network = Cytoscape.getCurrentNetwork();
-							CyAttributes edgeAttributes = Cytoscape.getEdgeAttributes();
+							//CyNetwork network = Cytoscape.getCurrentNetwork();
+							CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
+							Double scale;
+							if (nodeAttributes.hasAttribute(objectKey, Model.Properties.LEVELS_SCALE_FACTOR)) {
+								scale = nodeAttributes.getDoubleAttribute(objectKey, Model.Properties.LEVELS_SCALE_FACTOR);
+							} else {
+								scale = 1.0;
+							}
+							scale *= factor;
+							nodeAttributes.setAttribute(objectKey, Model.Properties.LEVELS_SCALE_FACTOR, scale);
+							/*CyAttributes edgeAttributes = Cytoscape.getEdgeAttributes();
 							final Iterator<Edge> edges = (Iterator<Edge>) network.edgesIterator();
 							for (int i = 0; edges.hasNext(); i++) {
 								Edge edge = edges.next();
@@ -120,7 +128,7 @@ public class InatBackend {
 										scale /= factor;
 									}
 								}
-								edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.LEVELS_SCALE_FACTOR, scale);
+								edgeAttributes.setAttribute(edge.getIdentifier(), Model.Properties.LEVELS_SCALE_FACTOR, scale);*/
 								
 								//The following is not required anymore because it was substituted by the change in Model.Properties.LEVELS_SCALE_FACTOR here above.
 								/*if (edge.getSource().getIdentifier().equals(objectKey) || edge.getTarget().getIdentifier().equals(objectKey)) {
@@ -167,7 +175,7 @@ public class InatBackend {
 										}
 									}
 								}*/
-							}
+							/*}*/
 							//Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null); //!!! If you don't advertise the change of property, Cytoscape will never notice it ?!?
 						}
 						
