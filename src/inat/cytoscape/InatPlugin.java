@@ -64,6 +64,7 @@ public class InatPlugin extends CytoscapePlugin {
 		}
 	}
 	
+	
 	/**
 	 * Constructs the panel
 	 * 

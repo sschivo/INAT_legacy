@@ -41,13 +41,6 @@ public class UppaalModelAnalyserFasterSymbolic implements ModelAnalyser<LevelRes
 	
 	public static double TIME_SCALE = 0.2; //the factor by which time values are mutiplied before being output on the .csv file (it answers the question "how many real-life minutes does a time unit of the model represent?")
 
-	/**
-	 * The configuration key for the verifyta path property.
-	 */
-	private static final String VERIFY_KEY = "/Inat/UppaalInvoker/verifyta";
-	
-	private static final String VERIFY_SMC_KEY = "/Inat/UppaalInvoker/verifytaSMC";
-	
 	private String verifytaPath, verifytaSMCPath; //The paths to the tools used in the analysis
 	private TaskMonitor monitor; //The reference to the Monitor in which to show the progress of the task
 	private RunAction runAction; //We can ask this one whether the user has asked us to cancel the computation
@@ -58,8 +51,8 @@ public class UppaalModelAnalyserFasterSymbolic implements ModelAnalyser<LevelRes
 
 		this.monitor = monitor;
 		this.runAction = runAction;
-		this.verifytaPath = configuration.get(VERIFY_KEY);
-		this.verifytaSMCPath = configuration.get(VERIFY_SMC_KEY);
+		this.verifytaPath = configuration.get(XmlConfiguration.VERIFY_KEY);
+		this.verifytaSMCPath = configuration.get(XmlConfiguration.VERIFY_SMC_KEY);
 	}
 	
 	public static boolean areWeUnderWindows() {

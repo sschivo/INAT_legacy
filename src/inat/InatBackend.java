@@ -14,6 +14,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+
 import org.xml.sax.SAXException;
 
 import cytoscape.CyEdge;
@@ -39,7 +43,7 @@ public class InatBackend {
 	/**
 	 * The configuration properties.
 	 */
-	private XmlConfiguration configuration;
+	private XmlConfiguration configuration = null;
 
 	private static final String NUMBER_OF_LEVELS = Model.Properties.NUMBER_OF_LEVELS, //Property that can belong to a node or to a network. If related to a single node, it represents the maximum number of levels for that single reactant. If related to a complete network, it is the maximum value of the NUMBER_OF_LEVELS property among all nodes in the network. Expressed as integer number in [0, 100] (chosen by the user).
 								INITIAL_LEVEL = Model.Properties.INITIAL_LEVEL, //Property belonging to a node. The initial activity level for a node. Expressed as an integer number in [0, NUMBER_OF_LEVELS for that node]
@@ -61,8 +65,13 @@ public class InatBackend {
 			// initialise the XML environment
 			XmlEnvironment.getInstance();
 
-			// read config from file
-			this.configuration = new XmlConfiguration(XmlEnvironment.parse(configuration));
+			try {
+				// read config from file
+				this.configuration = new XmlConfiguration(XmlEnvironment.parse(configuration));
+			} catch (SAXException ex) {
+				// create default configuration
+				this.configuration = new XmlConfiguration(configuration);
+			}
 			
 			
 			
@@ -337,10 +346,16 @@ public class InatBackend {
 				}
 			});
 			
-		} catch (SAXException e) {
-			throw new InatException("Could not parse configuration file '" + configuration + "'", e);
+		//} catch (SAXException e) {
+		//	throw new InatException("Could not parse configuration file '" + configuration + "'", e);
 		} catch (IOException e) {
 			throw new InatException("Could not read configuration file '" + configuration + "'", e);
+		} catch (ParserConfigurationException e) {
+			throw new InatException("Could not write configuration file '" + configuration + "': parser configuration error", e);
+		} catch (TransformerConfigurationException e) {
+			throw new InatException("Could not write configuration file '" + configuration + "': transformer (?!?) configuration error", e);
+		} catch (TransformerException e) {
+			throw new InatException("Could not write configuration file '" + configuration + "': transformer write error", e);
 		}
 	}
 

@@ -26,18 +26,30 @@ public class FileUtils {
 	 */
 	public static String open(final String fileType, final String description, Component parent) {
 		JFileChooser chooser = new JFileChooser(currentDirectory);
-		chooser.setFileFilter(new FileFilter() {
-			public boolean accept(File pathName) {
-				if (pathName.getAbsolutePath().endsWith(fileType) || pathName.isDirectory()) {
+		if (fileType != null) {
+			chooser.setFileFilter(new FileFilter() {
+				public boolean accept(File pathName) {
+					if (pathName.getAbsolutePath().endsWith(fileType) || pathName.isDirectory()) {
+						return true;
+					}
+					return false;
+				}
+	
+				public String getDescription() {
+					return description;
+				}
+			});
+		} else {
+			chooser.setFileFilter(new FileFilter() {
+				public boolean accept(File pathName) {
 					return true;
 				}
-				return false;
-			}
-
-			public String getDescription() {
-				return description;
-			}
-		});
+	
+				public String getDescription() {
+					return description;
+				}
+			});
+		}
 		chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 		int result = chooser.showOpenDialog(parent);
 		if (result == JFileChooser.APPROVE_OPTION) {

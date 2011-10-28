@@ -3,13 +3,30 @@
  */
 package inat.util;
 
+import inat.graph.FileUtils;
+
+import java.io.File;
+
+import javax.swing.JOptionPane;
 import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import cytoscape.Cytoscape;
 
 /**
  * An XML configuration file.
@@ -17,6 +34,22 @@ import org.w3c.dom.NodeList;
  * @author B. Wanders
  */
 public class XmlConfiguration {
+	/**
+	 * The configuration key for the verifyta path property.
+	 */
+	public static final String VERIFY_KEY = "/Inat/UppaalInvoker/verifyta";
+
+	/**
+	 * The configuration key for the verifyta path property (SMC version).
+	 */
+	public static final String VERIFY_SMC_KEY = "/Inat/UppaalInvoker/verifytaSMC";
+
+	/**
+	 * The configuration key for the tracer path property.
+	 */
+	public static final String TRACER_KEY = "/Inat/UppaalInvoker/tracer";
+	
+	
 	/**
 	 * The document that backs this configuration.
 	 */
@@ -29,6 +62,58 @@ public class XmlConfiguration {
 	 */
 	public XmlConfiguration(Document doc) {
 		this.document = doc;
+	}
+	
+	/**
+	 * Empty constructor: create the configuration file 
+	 * @throws ParserConfigurationException 
+	 * @throws TransformerException
+	 */
+	public XmlConfiguration(File configuration) throws ParserConfigurationException, TransformerException {
+		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder docBuilder;
+		docBuilder = docFactory.newDocumentBuilder();
+		document = docBuilder.newDocument();
+
+		Element rootElement = document.createElement("Inat");
+		document.appendChild(rootElement);
+		 
+		Element uppaalInvoker = document.createElement("UppaalInvoker");
+		rootElement.appendChild(uppaalInvoker);
+		 
+		Element tracerLocation = document.createElement("tracer");
+		JOptionPane.showMessageDialog(Cytoscape.getDesktop(), "Please, find and select the \"tracer\" tool.", "Tracer", JOptionPane.QUESTION_MESSAGE);
+		File tracerLocationFile = new File(FileUtils.open(null, "Tracer Executable", Cytoscape.getDesktop()));
+		if (tracerLocationFile != null) {
+			tracerLocation.appendChild(document.createTextNode(tracerLocationFile.getAbsolutePath()));
+		} else {
+			tracerLocation.appendChild(document.createTextNode("\\uppaal-4.1.4\\bin-Win32\\tracer.exe"));
+		}
+		uppaalInvoker.appendChild(tracerLocation);
+		
+		Element verifytaLocation = document.createElement("verifyta");
+		Element verifytaSMCLocation = document.createElement("verifytaSMC");
+		JOptionPane.showMessageDialog(Cytoscape.getDesktop(), "Please, find and select the \"verifyta\" tool.\nIt is usually located in the \"bin\" directory of UPPAAL.", "Verifyta", JOptionPane.QUESTION_MESSAGE);
+		File verifytaLocationFile = new File(FileUtils.open(null, "Verifyta Executable", Cytoscape.getDesktop()));
+		if (verifytaLocationFile != null) {
+			verifytaLocation.appendChild(document.createTextNode(verifytaLocationFile.getAbsolutePath()));
+			verifytaSMCLocation.appendChild(document.createTextNode(verifytaLocationFile.getAbsolutePath()));
+		} else {
+			verifytaLocation.appendChild(document.createTextNode("\\uppaal-4.1.4\\bin-Win32\\verifyta.exe"));
+			verifytaSMCLocation.appendChild(document.createTextNode("\\uppaal-4.1.4\\bin-Win32\\verifyta.exe"));
+			
+		}
+		uppaalInvoker.appendChild(verifytaLocation);
+		uppaalInvoker.appendChild(verifytaSMCLocation);
+		
+		TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		Transformer transformer = transformerFactory.newTransformer();
+		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+		DOMSource source = new DOMSource(document);
+		StreamResult result = new StreamResult(configuration);
+		
+		transformer.transform(source, result);
 	}
 
 	/**

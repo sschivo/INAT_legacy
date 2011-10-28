@@ -39,17 +39,6 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 	
 	public static double TIME_SCALE = 0.2; //the factor by which time values are mutiplied before being output on the .csv file (it answers the question "how many real-life minutes does a time unit of the model represent?")
 	
-	/**
-	 * The configuration key for the tracer path property.
-	 */
-	private static final String TRACER_KEY = "/Inat/UppaalInvoker/tracer";
-
-	/**
-	 * The configuration key for the verifyta path property.
-	 */
-	private static final String VERIFY_KEY = "/Inat/UppaalInvoker/verifyta";
-	
-	private static final String VERIFY_SMC_KEY = "/Inat/UppaalInvoker/verifytaSMC";
 	
 	private String verifytaPath, verifytaSMCPath, tracerPath; //The paths to the tools used in the analysis
 	private TaskMonitor monitor; //The reference to the Monitor in which to show the progress of the task
@@ -58,9 +47,9 @@ public class UppaalModelAnalyserFaster implements ModelAnalyser<LevelResult> {
 		XmlConfiguration configuration = InatBackend.get().configuration();
 
 		this.monitor = monitor;
-		this.verifytaPath = configuration.get(VERIFY_KEY);
-		this.verifytaSMCPath = configuration.get(VERIFY_SMC_KEY);
-		this.tracerPath = configuration.get(TRACER_KEY);
+		this.verifytaPath = configuration.get(XmlConfiguration.VERIFY_KEY);
+		this.verifytaSMCPath = configuration.get(XmlConfiguration.VERIFY_SMC_KEY);
+		this.tracerPath = configuration.get(XmlConfiguration.TRACER_KEY);
 	}
 	
 	public static boolean areWeUnderWindows() {
