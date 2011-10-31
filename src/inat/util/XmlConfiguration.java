@@ -81,7 +81,7 @@ public class XmlConfiguration {
 		Element uppaalInvoker = document.createElement("UppaalInvoker");
 		rootElement.appendChild(uppaalInvoker);
 		 
-		Element tracerLocation = document.createElement("tracer");
+		/*Element tracerLocation = document.createElement("tracer");
 		JOptionPane.showMessageDialog(Cytoscape.getDesktop(), "Please, find and select the \"tracer\" tool.", "Tracer", JOptionPane.QUESTION_MESSAGE);
 		File tracerLocationFile = new File(FileUtils.open(null, "Tracer Executable", Cytoscape.getDesktop()));
 		if (tracerLocationFile != null) {
@@ -89,7 +89,7 @@ public class XmlConfiguration {
 		} else {
 			tracerLocation.appendChild(document.createTextNode("\\uppaal-4.1.4\\bin-Win32\\tracer.exe"));
 		}
-		uppaalInvoker.appendChild(tracerLocation);
+		uppaalInvoker.appendChild(tracerLocation);*/
 		
 		Element verifytaLocation = document.createElement("verifyta");
 		Element verifytaSMCLocation = document.createElement("verifytaSMC");

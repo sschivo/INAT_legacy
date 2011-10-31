@@ -5,6 +5,7 @@ import inat.exceptions.InatException;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.text.DecimalFormat;
 
@@ -29,6 +30,7 @@ import cytoscape.Cytoscape;
 import cytoscape.CytoscapeInit;
 import cytoscape.data.attr.MultiHashMapListener;
 import cytoscape.plugin.CytoscapePlugin;
+import cytoscape.view.CytoscapeDesktop;
 import cytoscape.view.cytopanels.CytoPanel;
 
 /**
@@ -52,6 +54,12 @@ public class InatPlugin extends CytoscapePlugin {
 
 			CytoPanel p = Cytoscape.getDesktop().getCytoPanel(SwingConstants.WEST);
 			p.add("INAT", this.setupPanel(this));
+			
+			PropertyChangeListener pcl = new INATPropertyChangeListener();
+			Cytoscape.getPropertyChangeSupport().addPropertyChangeListener(Cytoscape.NETWORK_CREATED, pcl); //Add all visual mappings
+			Cytoscape.getPropertyChangeSupport().addPropertyChangeListener(Cytoscape.NETWORK_LOADED, pcl); //Make arrows "smooth"
+			Cytoscape.getPropertyChangeSupport().addPropertyChangeListener(CytoscapeDesktop.NETWORK_VIEW_CREATED, pcl); //Add right-click menus
+			
 		} catch (InatException e) {
 			// show error panel
 			CytoPanel p = Cytoscape.getDesktop().getCytoPanel(SwingConstants.WEST);
@@ -277,13 +285,13 @@ public class InatPlugin extends CytoscapePlugin {
 		runButtonBox.add(Box.createGlue());
 		buttonsBox.add(runButtonBox);
 		
-		JButton augmentButton = new JButton(new AugmentAction(plugin));
+		/*JButton augmentButton = new JButton(new AugmentAction(plugin));
 		//buttons.add(augmentButton);
 		Box augmentButtonBox = new Box(BoxLayout.X_AXIS);
 		augmentButtonBox.add(Box.createGlue());
 		augmentButtonBox.add(augmentButton);
 		augmentButtonBox.add(Box.createGlue());
-		buttonsBox.add(augmentButtonBox);
+		buttonsBox.add(augmentButtonBox);*/
 		
 		buttons.add(buttonsBox);
 		
