@@ -12,6 +12,8 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.Vector;
 
 import javax.swing.AbstractAction;
 import javax.swing.JPopupMenu;
@@ -44,6 +46,9 @@ import ding.view.EdgeContextMenuListener;
 import ding.view.NodeContextMenuListener;
 
 public class INATPropertyChangeListener implements PropertyChangeListener {
+	
+	private int currentEdgeNumber = -1, currentNodeNumber = -1;
+	private Object[] edgesArray = null;
 
 	public INATPropertyChangeListener() {
 		
@@ -373,7 +378,12 @@ public class INATPropertyChangeListener implements PropertyChangeListener {
 	@Override
 	public void propertyChange(PropertyChangeEvent evt) {
 		if (evt.getPropertyName().equalsIgnoreCase(CytoscapeDesktop.NETWORK_VIEW_CREATED)) {
+			addVisualMappings();
 			addMenus();
+			CyNetwork network = Cytoscape.getCurrentNetwork();
+			currentEdgeNumber = network.getEdgeCount();
+			currentNodeNumber = network.getNodeCount();
+			edgesArray = network.nodesList().toArray();
 		}
 		if (evt.getPropertyName().equalsIgnoreCase(Cytoscape.NETWORK_LOADED)) {
 			//As there can be edges with intermediate curving points, make those points curved instead of angled (they look nicer)
@@ -384,7 +394,57 @@ public class INATPropertyChangeListener implements PropertyChangeListener {
 			}
 		}
 		if (evt.getPropertyName().equalsIgnoreCase(Cytoscape.NETWORK_CREATED)) {
-			addVisualMappings();
+			//addVisualMappings();
+		}
+		if (evt.getPropertyName().equalsIgnoreCase(Cytoscape.NETWORK_MODIFIED)) {
+			if (currentEdgeNumber != -1 && currentNodeNumber != -1) {
+				CyNetwork network = Cytoscape.getCurrentNetwork();
+				int newEdgeNumber = network.getEdgeCount(),
+					newNodeNumber = network.getNodeCount();
+				if (newEdgeNumber > currentEdgeNumber) {
+					//JOptionPane.showMessageDialog(null, "Nuovo arco inserito");
+					List oldEdges = new Vector(),
+						 newEdges;
+					for (Object o : edgesArray) {
+						oldEdges.add(o);
+					}
+					newEdges = network.edgesList();
+					CyEdge edge = null;
+					for (Object o : newEdges) {
+						if (!oldEdges.contains(o)) {
+							edge = (CyEdge)o;
+							break;
+						}
+					}
+					if (edge != null) {
+						Cytoscape.getCurrentNetworkView().getEdgeView(edge).setLineType(EdgeView.CURVED_LINES);
+						EdgeDialog dialog = new EdgeDialog(edge);
+						dialog.pack();
+						dialog.setLocationRelativeTo(Cytoscape.getDesktop());
+						dialog.setVisible(true);
+					}
+					edgesArray = newEdges.toArray();
+				} else if (newEdgeNumber < currentEdgeNumber) {
+					//JOptionPane.showMessageDialog(null, "Arco rimosso");
+				}
+				if (newNodeNumber > currentNodeNumber) {
+					network.getSelectedNodes();
+					//JOptionPane.showMessageDialog(null, "Nuovo nodo inserito");
+					Set nodes = network.getSelectedNodes();
+					Object[] nodesArray = nodes.toArray();
+					for (Object o : nodesArray) {
+						CyNode node = (CyNode)o;
+						NodeDialog dialog = new NodeDialog(node);
+						dialog.pack();
+						dialog.setLocationRelativeTo(Cytoscape.getDesktop());
+						dialog.setVisible(true);
+					}
+				} else if(newNodeNumber < currentNodeNumber) {
+					//JOptionPane.showMessageDialog(null, "Nodo rimosso");
+				}
+				currentEdgeNumber = newEdgeNumber;
+				currentNodeNumber = newNodeNumber;
+			}
 		}
 	}
 

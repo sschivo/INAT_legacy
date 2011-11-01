@@ -116,6 +116,7 @@ public class ResultAverager {
 			if (computeStdDev) result.get(k + STD_DEV).put(finalTime, stdDev);
 		}
 		
+		
 		return new SimpleLevelResult(result);
 	}
 	

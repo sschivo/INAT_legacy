@@ -644,7 +644,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 				P[] grafico = new P[1];
 				grafico = grafici.elementAt(i).toArray(grafico);
 				if (grafico != null && grafico.length > 1) {
-					addSeries(grafico, seriesNameMapping.get(graphNames[i]));
+					addSeries(grafico, graphNames[i]);
 				} else if (graphNames[i].equals(MAX_Y_STRING)) {
 					//the y value is the value under this column, the x value is ALWAYS FOR EVERY GRAPH the value of the first column on the same line
 					maxYValue = grafico[0].y;
@@ -668,7 +668,7 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 					for (P p : grafico) { //before adding the graph data, we update it by rescaling the y values
 						p.y *= scaleFactor;
 					}
-					addSeries(grafico, seriesNameMapping.get(graphNames[i]));
+					addSeries(grafico, graphNames[i]);
 				}
 			}
 		}
@@ -685,6 +685,19 @@ public class Graph extends JPanel implements MouseListener, MouseMotionListener,
 				s.setEnabled(false);
 			} else {
 				s.setEnabled(true);
+			}
+		}
+		
+		//Set the names for all masters only
+		for (Series s : data) {
+			if (!s.isSlave()) {
+				s.setName(seriesNameMapping.get(s.getName()));
+			}
+		}
+		//Set the names for the remaining slaves (we don't see them printed, but they are exported in csv)
+		for (Series s : data) {
+			if (s.isSlave()) {
+				s.setName(s.getMaster().getName() + Series.SLAVE_SUFFIX);
 			}
 		}
 		customLegendPosition = false;

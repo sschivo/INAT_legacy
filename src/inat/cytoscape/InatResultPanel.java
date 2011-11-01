@@ -74,7 +74,8 @@ public class InatResultPanel extends JPanel implements ChangeListener {
 					name = r; //in this case, I simply don't know what we are talking about =)
 				}
 			}
-			if (!r.toLowerCase().contains(ResultAverager.STD_DEV) && model.getReactant(r).get(Model.Properties.PLOTTED).as(Boolean.class)) {
+			if ((!r.toLowerCase().contains(ResultAverager.STD_DEV) && model.getReactant(r).get(Model.Properties.PLOTTED).as(Boolean.class))
+					|| r.toLowerCase().contains(ResultAverager.STD_DEV)) {
 				filteredSeriesNames.add(r);
 			}
 			seriesNameMapping.put(r, name);

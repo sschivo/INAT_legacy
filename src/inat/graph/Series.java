@@ -70,6 +70,10 @@ public class Series {
 		return this.name;
 	}
 	
+	public void setName(String name) {
+		this.name = name;
+	}
+	
 	public P[] getData() {
 		return this.data;
 	}

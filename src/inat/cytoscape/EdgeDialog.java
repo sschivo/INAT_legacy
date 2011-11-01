@@ -7,9 +7,11 @@ import inat.model.ScenarioMono;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -23,8 +25,8 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFormattedTextField;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -41,7 +43,7 @@ import cytoscape.data.CyAttributes;
  * @author Brend Wanders
  * 
  */
-public class EdgeDialog extends JFrame {
+public class EdgeDialog extends JDialog {
 	private static final long serialVersionUID = 6630154220142970079L;
 	private static final String DECIMAL_FORMAT_STRING = "##.####",
 								SAVE = "Save",
@@ -53,14 +55,18 @@ public class EdgeDialog extends JFrame {
 	
 	private Scenario[] scenarios = Scenario.sixScenarios;
 	private int previouslySelectedScenario = 0;
+	
+	public EdgeDialog(final Edge edge) {
+		this(Cytoscape.getDesktop(), edge);
+	}
 
 	/**
 	 * Constructor.
 	 * 
 	 * @param edge the edge to display for.
 	 */
-	public EdgeDialog(final Edge edge) {
-		super("Reaction '" + edge.getIdentifier() + "'");
+	public EdgeDialog(final Window owner, final Edge edge) {
+		super(owner, "Reaction '" + edge.getIdentifier() + "'", Dialog.ModalityType.APPLICATION_MODAL);
 		//super("Reaction " + Cytoscape.getNodeAttributes().getAttribute(edge.getSource().getIdentifier(), "canonicalName") + ((Integer.parseInt(Cytoscape.getEdgeAttributes().getAttribute(edge.getIdentifier(), "increment").toString()) >= 0)?" --> ":" --| ") + Cytoscape.getNodeAttributes().getAttribute(edge.getTarget().getIdentifier(), "canonicalName"));
 		StringBuilder title = new StringBuilder();
 		title.append("Reaction ");

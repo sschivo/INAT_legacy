@@ -4,7 +4,9 @@ import giny.model.Node;
 import inat.model.Model;
 
 import java.awt.BorderLayout;
+import java.awt.Dialog;
 import java.awt.FlowLayout;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -15,7 +17,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JFrame;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -33,9 +35,13 @@ import cytoscape.data.CyAttributes;
  * @author Brend Wanders
  * 
  */
-public class NodeDialog extends JFrame {
+public class NodeDialog extends JDialog {
 	
 	private static final long serialVersionUID = 1498730989498413815L;
+	
+	public NodeDialog(final Node node) {
+		this(Cytoscape.getDesktop(), node);
+	}
 
 	/**
 	 * Constructor.
@@ -43,8 +49,8 @@ public class NodeDialog extends JFrame {
 	 * @param node the node to display for.
 	 */
 	@SuppressWarnings("unchecked")
-	public NodeDialog(final Node node) {
-		super("Reactant '" + node.getIdentifier() + "'");
+	public NodeDialog(final Window owner, final Node node) {
+		super(owner, "Reactant '" + node.getIdentifier() + "'", Dialog.ModalityType.APPLICATION_MODAL);
 		CyAttributes networkAttributes = Cytoscape.getNetworkAttributes(),
 					 nodeAttributes = Cytoscape.getNodeAttributes();
 		this.setTitle("Edit reactant");

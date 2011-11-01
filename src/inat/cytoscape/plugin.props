@@ -6,17 +6,17 @@
 # -- The following properties are REQUIRED -- #
 
 # The plugin name that will be displayed to users, white space within name is not allowed
-pluginName=InatPlugin
+pluginName=INAT
 
 # Description used to give users information about the plugin such as what it does.
 # Html tags are encouraged for formatting purposes.
-pluginDescription=Some description about the plugin goes here.
+pluginDescription=Modeling biological pathway dynamics with Timed Automata
 
 # Plugin version number, this must be two numbers separated by a decimlal.  Ex. 0.2, 14.03
-pluginVersion=0.1
+pluginVersion=1.00
 
 # Compatible Cytoscape version. If there are more than one version, seperate by ",".
-cytoscapeVersion=2.6,2.7,2.8
+cytoscapeVersion=2.6,2.7,2.8,2.8.1
 
 # Category, use one of the categories listed on the http://cytoscape.org/plugins2.php site
 pluginCategory=Analysis
