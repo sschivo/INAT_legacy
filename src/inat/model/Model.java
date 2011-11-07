@@ -51,7 +51,8 @@ public class Model implements Serializable {
 								   SCENARIO_PARAMETER_K2 = "k2",
 								   SCENARIO_PARAMETER_STOT = "Stot",
 								   SCENARIO_PARAMETER_K2_KM = "k2/km",
-								   SCENARIO_ONLY_PARAMETER = "parameter";
+								   SCENARIO_ONLY_PARAMETER = "parameter",
+								   USER_DEFINED_FORMULAE = "User-defined formulae";
 	}
 
 	

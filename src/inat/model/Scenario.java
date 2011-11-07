@@ -1,5 +1,13 @@
 package inat.model;
-import java.util.*;
+import inat.exceptions.InatException;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+
+import cytoscape.CyNetwork;
+import cytoscape.Cytoscape;
+import cytoscape.data.CyAttributes;
 
 /**
  * Represents a scenario for a reaction in the model.
@@ -15,13 +23,116 @@ public class Scenario {
 	protected HashMap<String, Double> defaultParameterValues = new HashMap<String, Double>(); //The defaul values of parameters
 	public static final int INFINITE_TIME = -1; //The constant to mean that the reaction will not happen
 	
-	public static final Scenario[] sixScenarios = new Scenario[3]; //The default predefined scenarios
+	private static Scenario[] defaultScenarios = new Scenario[3]; //The default predefined scenarios
+	public static Scenario[] availableScenarios = defaultScenarios; 
 	
 	public Scenario() {
 	}
 	
+	/**
+	 * Add the model-specific scenarios to the bottom of the list of available scenarios
+	 */
+	@SuppressWarnings("unchecked")
+	public static void loadScenarios() {
+		//TODO: First step: load local scenarios from the configuration file
+		Scenario[] currentlyAvailableScenarios = defaultScenarios;
+		//TODO: l'importante è che currentlyAvailableScenarios contenga poi gli scenari di default + quelli locali.
+		
+		//Next step: load scenarios from the current network properties
+		CyNetwork network = Cytoscape.getCurrentNetwork();
+		CyAttributes networkAttributes = Cytoscape.getNetworkAttributes(); 
+		if (networkAttributes.hasAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE)) {
+			List<String> formulaList = networkAttributes.getListAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE);
+			if (formulaList.isEmpty() || !formulaList.get(formulaList.size() - 1).equals(".")) {
+				availableScenarios = currentlyAvailableScenarios;
+			} else {
+				Scenario[] userDefinedScenarios = UserFormula.readFormulae(formulaList),
+						   newAvailableScenarios = new Scenario[currentlyAvailableScenarios.length + userDefinedScenarios.length];
+				int i = 0;
+				for (Scenario s : currentlyAvailableScenarios) {
+					newAvailableScenarios[i++] = s;
+				}
+				for (Scenario s : userDefinedScenarios) {
+					newAvailableScenarios[i++] = s;
+				}
+				availableScenarios = newAvailableScenarios;
+			}
+		} else {
+			availableScenarios = currentlyAvailableScenarios;
+		}
+	}
+	
+	/**
+	 * Add a new formula to the list of formulae.
+	 * The list can be empty (or non-existent, if the property was never set): in that case, we create a new list
+	 * @param formula The formula to be added
+	 */
+	@SuppressWarnings("unchecked")
+	public static void addNewUserFormula(UserFormula formula) {
+		CyNetwork network = Cytoscape.getCurrentNetwork();
+		CyAttributes networkAttributes = Cytoscape.getNetworkAttributes();
+		List<String> formulaList;
+		if (networkAttributes.hasAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE)) {
+			formulaList = networkAttributes.getListAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE);
+		} else {
+			formulaList = null;
+		}
+		formulaList = UserFormula.addNewUserFormula(formulaList, formula);
+		networkAttributes.setListAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE, formulaList);
+		Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
+	}
+	
+	/**
+	 * Update the data of the given formula in the list. The formula needs to exist in the list,
+	 * otherwise InatException is thrown.
+	 * @param formula The formula to be updated in the list
+	 * @throws InatException Thrown when the given formula was not in the list
+	 */
+	@SuppressWarnings("unchecked")
+	public static void updateUserFormula(UserFormula oldFormula, UserFormula editedFormula) throws InatException {
+		CyNetwork network = Cytoscape.getCurrentNetwork();
+		CyAttributes networkAttributes = Cytoscape.getNetworkAttributes();
+		List<String> formulaList;
+		if (networkAttributes.hasAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE)) {
+			formulaList = networkAttributes.getListAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE);
+		} else {
+			throw new InatException("There are no formulae in the current network: how could you ask me to update one?");
+		}
+		formulaList = UserFormula.updateUserFormula(formulaList, oldFormula, editedFormula);
+		if (formulaList == null) {
+			throw new InatException("There was no formula called \"" + oldFormula.getName() + "\": where did you find it?");
+		} else {
+			networkAttributes.setListAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE, formulaList);
+			Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
+		}
+	}
+	
+	/**
+	 * Delete a formula from the list of user-defined formulae
+	 * @param condemnedFormula The formula to delete
+	 * @throws InatException If the formula was not found
+	 */
+	@SuppressWarnings("unchecked")
+	public static void deleteUserFormula(UserFormula condemnedFormula) throws InatException {
+		CyNetwork network = Cytoscape.getCurrentNetwork();
+		CyAttributes networkAttributes = Cytoscape.getNetworkAttributes();
+		List<String> formulaList;
+		if (networkAttributes.hasAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE)) {
+			formulaList = networkAttributes.getListAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE);
+		} else {
+			throw new InatException("There are no user-defined formulae in the current network: how could you ask me to delete one?");
+		}
+		formulaList = UserFormula.deleteUserFormula(formulaList, condemnedFormula);
+		if (formulaList == null) {
+			throw new InatException("There was no formula called \"" + condemnedFormula.getName() + "\": where did you find it?");
+		} else {
+			networkAttributes.setListAttribute(network.getIdentifier(), Model.Properties.USER_DEFINED_FORMULAE, formulaList);
+			Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
+		}
+	}
+	
 	static {
-		sixScenarios[0] = new Scenario() {
+		defaultScenarios[0] = new Scenario() {
 			@Override
 			public double computeRate(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) {
 				double par = parameters.get(SCENARIO_ONLY_PARAMETER),
@@ -40,10 +151,10 @@ public class Scenario {
 				return "Scenario 1-2-3-4";
 			}
 		};
-		//sixScenarios[0].setParameter(SCENARIO_ONLY_PARAMETER, 0.01);
-		sixScenarios[0].setDefaultParameterValue(SCENARIO_ONLY_PARAMETER, 0.01);
+		//defaultScenarios[0].setParameter(SCENARIO_ONLY_PARAMETER, 0.01);
+		defaultScenarios[0].setDefaultParameterValue(SCENARIO_ONLY_PARAMETER, 0.01);
 		
-		sixScenarios[1] = new Scenario() {
+		defaultScenarios[1] = new Scenario() {
 			@Override
 			public double computeRate(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) {
 				double par1 = parameters.get(SCENARIO_PARAMETER_K2_KM),
@@ -71,12 +182,12 @@ public class Scenario {
 				return "Scenario 5";
 			}
 		};
-		//sixScenarios[1].setParameter(SCENARIO_PARAMETER_K2_KM, 0.001);
-		//sixScenarios[1].setParameter(SCENARIO_PARAMETER_STOT, 15.0);
-		sixScenarios[1].setDefaultParameterValue(SCENARIO_PARAMETER_K2_KM, 0.001);
-		sixScenarios[1].setDefaultParameterValue(SCENARIO_PARAMETER_STOT, 15.0);
+		//defaultScenarios[1].setParameter(SCENARIO_PARAMETER_K2_KM, 0.001);
+		//defaultScenarios[1].setParameter(SCENARIO_PARAMETER_STOT, 15.0);
+		defaultScenarios[1].setDefaultParameterValue(SCENARIO_PARAMETER_K2_KM, 0.001);
+		defaultScenarios[1].setDefaultParameterValue(SCENARIO_PARAMETER_STOT, 15.0);
 		
-		sixScenarios[2] = new Scenario() {
+		defaultScenarios[2] = new Scenario() {
 			@Override
 			public double computeRate(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) {
 				double k2 = parameters.get(SCENARIO_PARAMETER_K2),
@@ -105,12 +216,12 @@ public class Scenario {
 				return "Scenario 6";
 			}
 		};
-		//sixScenarios[2].setParameter(SCENARIO_PARAMETER_K2, 0.01);
-		//sixScenarios[2].setParameter(SCENARIO_PARAMETER_KM, 10.0);
-		//sixScenarios[2].setParameter(SCENARIO_PARAMETER_STOT, 15.0);
-		sixScenarios[2].setDefaultParameterValue(SCENARIO_PARAMETER_K2, 0.01);
-		sixScenarios[2].setDefaultParameterValue(SCENARIO_PARAMETER_KM, 10.0);
-		sixScenarios[2].setDefaultParameterValue(SCENARIO_PARAMETER_STOT, 15.0);
+		//defaultScenarios[2].setParameter(SCENARIO_PARAMETER_K2, 0.01);
+		//defaultScenarios[2].setParameter(SCENARIO_PARAMETER_KM, 10.0);
+		//defaultScenarios[2].setParameter(SCENARIO_PARAMETER_STOT, 15.0);
+		defaultScenarios[2].setDefaultParameterValue(SCENARIO_PARAMETER_K2, 0.01);
+		defaultScenarios[2].setDefaultParameterValue(SCENARIO_PARAMETER_KM, 10.0);
+		defaultScenarios[2].setDefaultParameterValue(SCENARIO_PARAMETER_STOT, 15.0);
 	}
 	
 	
@@ -146,7 +257,7 @@ public class Scenario {
 		return (HashMap<String, Double>)defaultParameterValues.clone();
 	}
 	
-	public double computeRate(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) {
+	public double computeRate(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) throws InatException {
 		double k2 = parameters.get(SCENARIO_PARAMETER_K2),
 		   E = r1Level,
 		   km = parameters.get(SCENARIO_PARAMETER_KM),
@@ -162,7 +273,7 @@ public class Scenario {
 		return rate;
 	}
 	
-	public Double computeFormula(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) {
+	public Double computeFormula(int r1Level, int nLevelsR1, int r2Level, int nLevelsR2, boolean activatingReaction) throws InatException {
 		double rate = computeRate(r1Level, nLevelsR1, r2Level, nLevelsR2, activatingReaction);
 		if (rate > 1e-8) {
 			//return Math.max(1, (int)Math.round(1 / rate)); //We need to put at least 1 because otherwise the reaction will keep happening forever (it is not very nice not to let time pass..)
@@ -184,7 +295,7 @@ public class Scenario {
 	 * interface. We now compute the tables on the fly and output them directly as
 	 * reference constants in the UPPPAAL models, saving also memory.
 	 */
-	public List<Double> generateTimes(int nLevelsReactant1, int nLevelsReactant2, boolean activatingReaction) {
+	public List<Double> generateTimes(int nLevelsReactant1, int nLevelsReactant2, boolean activatingReaction) throws InatException {
 		List<Double> times = new LinkedList<Double>();
 		if (!activatingReaction) {
 			for (int j=0;j<nLevelsReactant1;j++) {

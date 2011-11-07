@@ -5,6 +5,7 @@ import giny.model.Node;
 import giny.view.EdgeView;
 import giny.view.NodeView;
 import inat.model.Model;
+import inat.model.Scenario;
 
 import java.awt.Color;
 import java.awt.event.ActionEvent;
@@ -53,7 +54,7 @@ public class INATPropertyChangeListener implements PropertyChangeListener {
 	public INATPropertyChangeListener() {
 		
 	}
-
+	
 	/**
 	 * Add the right-click menus for nodes (reactants) and edges (reactions)
 	 * Menus are: Edit, Enable/disable and Plotted/hidden (last one only for nodes)
@@ -380,6 +381,7 @@ public class INATPropertyChangeListener implements PropertyChangeListener {
 		if (evt.getPropertyName().equalsIgnoreCase(CytoscapeDesktop.NETWORK_VIEW_CREATED)) {
 			addVisualMappings();
 			addMenus();
+			Scenario.loadScenarios();
 			CyNetwork network = Cytoscape.getCurrentNetwork();
 			currentEdgeNumber = network.getEdgeCount();
 			currentNodeNumber = network.getNodeCount();

@@ -293,6 +293,54 @@ public class InatPlugin extends CytoscapePlugin {
 		augmentButtonBox.add(augmentButton);
 		augmentButtonBox.add(Box.createGlue());
 		buttonsBox.add(augmentButtonBox);*/
+		/*JButton loadScenariosButton = new JButton(new Action() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Scenario.loadScenarios();
+			}
+			
+			@Override
+			public void setEnabled(boolean b) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void removePropertyChangeListener(PropertyChangeListener listener) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void putValue(String key, Object value) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public boolean isEnabled() {
+				return true;
+			}
+			
+			@Override
+			public Object getValue(String key) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public void addPropertyChangeListener(PropertyChangeListener listener) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+		loadScenariosButton.setText("Load scenarios");
+		Box loadScenariosButtonBox = new Box(BoxLayout.X_AXIS);
+		loadScenariosButtonBox.add(Box.createGlue());
+		loadScenariosButtonBox.add(loadScenariosButton);
+		loadScenariosButtonBox.add(Box.createGlue());
+		buttonsBox.add(loadScenariosButtonBox);*/
 		
 		buttons.add(buttonsBox);
 		

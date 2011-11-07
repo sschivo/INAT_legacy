@@ -4,6 +4,7 @@ import giny.model.Edge;
 import inat.model.Model;
 import inat.model.Scenario;
 import inat.model.ScenarioMono;
+import inat.model.UserFormula;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -16,6 +17,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.util.Hashtable;
 
@@ -28,6 +31,7 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JSlider;
@@ -53,8 +57,9 @@ public class EdgeDialog extends JDialog {
 								INCREMENT = Model.Properties.INCREMENT,
 								UNCERTAINTY = Model.Properties.UNCERTAINTY;
 	
-	private Scenario[] scenarios = Scenario.sixScenarios;
+	private Scenario[] scenarios = Scenario.availableScenarios;
 	private int previouslySelectedScenario = 0;
+	private boolean weAreEditingTheComboBoxShutUp = false;
 	
 	public EdgeDialog(final Edge edge) {
 		this(Cytoscape.getDesktop(), edge);
@@ -183,14 +188,24 @@ public class EdgeDialog extends JDialog {
 				}
 			}));
 		} else {
+			final JButton buttonNewScenario = new JButton("New..."),
+						  buttonEditScenario = new JButton("Edit..."),
+						  buttonDeleteScenario = new JButton("Delete");
 			final Box boxScenarioParameters = new Box(BoxLayout.X_AXIS);
 			final JComboBox comboScenario = new JComboBox(scenarios);
 			comboScenario.setMaximumSize(new Dimension(200, 20));
 			comboScenario.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					updateParametersBox(edge, boxScenarioParameters, (Scenario)comboScenario.getSelectedItem());
-					EdgeDialog.this.validate();
-					EdgeDialog.this.pack();
+					if (!weAreEditingTheComboBoxShutUp) {
+						selectedNewScenario(edge, boxScenarioParameters, comboScenario);
+						if (comboScenario.getSelectedItem() instanceof UserFormula) {
+							buttonEditScenario.setEnabled(true);
+							buttonDeleteScenario.setEnabled(true);
+						} else {
+							buttonEditScenario.setEnabled(false);
+							buttonDeleteScenario.setEnabled(false);
+						}
+					}
 				}
 			});
 			
@@ -205,8 +220,93 @@ public class EdgeDialog extends JDialog {
 			comboScenario.setSelectedIndex(scenarioIdx);
 			Box boxComboScenario = new Box(BoxLayout.Y_AXIS);
 			boxComboScenario.add(comboScenario);
-			boxComboScenario.add(Box.createGlue());
-			boxScenario.add(boxComboScenario);
+			Box boxButtonsScenario = new Box(BoxLayout.X_AXIS);
+			boxButtonsScenario.add(buttonNewScenario);
+			boxButtonsScenario.add(Box.createGlue());
+			boxButtonsScenario.add(buttonEditScenario);
+			boxButtonsScenario.add(Box.createGlue());
+			boxButtonsScenario.add(buttonDeleteScenario);
+			boxComboScenario.add(boxButtonsScenario);
+			buttonNewScenario.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					final UserFormula formula = new UserFormula();
+					FormulaDialog dialog = new FormulaDialog(formula, true);
+					dialog.addSaveListener(new ActionListener() {
+						public void actionPerformed(ActionEvent e) {
+							weAreEditingTheComboBoxShutUp = true;
+							Scenario.loadScenarios();
+							comboScenario.removeAllItems();
+							for (int i=0;i<Scenario.availableScenarios.length;i++) {
+								comboScenario.addItem(Scenario.availableScenarios[i]);
+							}
+							EdgeDialog.this.pack();
+							weAreEditingTheComboBoxShutUp = false;
+							comboScenario.setSelectedIndex(comboScenario.getItemCount() - 1); //The added formula was inserted at the last position in the list
+						}
+					});
+					dialog.pack();
+					dialog.setLocationRelativeTo(Cytoscape.getDesktop());
+					dialog.setVisible(true);
+				}
+			});
+			buttonEditScenario.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					FormulaDialog dialog;
+					final Scenario editingItem = (Scenario)comboScenario.getSelectedItem();
+					if (editingItem instanceof UserFormula) {
+						dialog = new FormulaDialog((UserFormula)comboScenario.getSelectedItem(), false);
+					} else {
+						return;
+					}
+					dialog.addSaveListener(new ActionListener() {
+						public void actionPerformed(ActionEvent e) {
+							//If we have modified a formula, we just need to "pretend" that the user has selected it, so that the list of parameters is updated
+							//selectedNewScenario(edge, boxScenarioParameters, comboScenario);
+							Scenario selectedItem = null;
+							weAreEditingTheComboBoxShutUp = true;
+							Scenario.loadScenarios();
+							for (int i=0;i<comboScenario.getItemCount();i++) {
+								if (comboScenario.getItemAt(i) == editingItem) {
+									selectedItem = Scenario.availableScenarios[i];
+								}
+							}
+							comboScenario.removeAllItems();
+							for (int i=0;i<Scenario.availableScenarios.length;i++) {
+								comboScenario.addItem(Scenario.availableScenarios[i]);
+							}
+							EdgeDialog.this.pack();
+							weAreEditingTheComboBoxShutUp = false;
+							comboScenario.setSelectedItem(selectedItem);
+						}
+					});
+					dialog.pack();
+					dialog.setLocationRelativeTo(Cytoscape.getDesktop());
+					dialog.setVisible(true);
+				}
+			});
+			buttonDeleteScenario.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if (JOptionPane.showConfirmDialog(Cytoscape.getDesktop(), "Do you really want to delete the formula \"" + comboScenario.getSelectedItem() + "\"?", "Confirmation required", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+						weAreEditingTheComboBoxShutUp = true;
+						UserFormula condemned = (UserFormula)comboScenario.getSelectedItem();
+						try {
+							Scenario.deleteUserFormula(condemned);
+						} catch (Exception ex) {
+							StringWriter wr = new StringWriter();
+							ex.printStackTrace(new PrintWriter(wr));
+							JOptionPane.showMessageDialog(Cytoscape.getDesktop(), ex.getMessage() + ": " + ex + wr.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+						}
+						comboScenario.removeItem(condemned);
+						weAreEditingTheComboBoxShutUp = false;
+						comboScenario.setSelectedIndex(0);
+					}
+				}
+			});
+			//boxComboScenario.add(Box.createGlue());
+			boxScenario.add(new LabelledField("Scenario/formula", boxComboScenario));
 			boxScenario.add(Box.createGlue());
 			
 			Box boxScenarioAllParameters = new Box(BoxLayout.Y_AXIS);
@@ -237,11 +337,11 @@ public class EdgeDialog extends JDialog {
 			incrementGroup.add(positiveIncrement);
 			incrementGroup.add(negativeIncrement);
 			if (increment >= 0) {
-			positiveIncrement.setSelected(true);
-			negativeIncrement.setSelected(false);
+				positiveIncrement.setSelected(true);
+				negativeIncrement.setSelected(false);
 			} else {
-			positiveIncrement.setSelected(false);
-			negativeIncrement.setSelected(true);
+				positiveIncrement.setSelected(false);
+				negativeIncrement.setSelected(true);
 			}
 			Box incrementBox = new Box(BoxLayout.X_AXIS);
 			incrementBox.add(positiveIncrement);
@@ -305,6 +405,18 @@ public class EdgeDialog extends JDialog {
 
 		this.add(values, BorderLayout.CENTER);
 		this.add(controls, BorderLayout.SOUTH);
+	}
+	
+	/**
+	 * Used to update the list of parameters when a new scenario/user-defined formula is selected from the combo box
+	 * @param edge The edge representing the reaction on which we are working now
+	 * @param boxScenarioParameters The box containing the controls for the parameters: it needs to be updated
+	 * @param comboScenario The combo box containing the list of all available scenarios/formulae
+	 */
+	private void selectedNewScenario(Edge edge, Box boxScenarioParameters, JComboBox comboScenario) {
+		updateParametersBox(edge, boxScenarioParameters, (Scenario)comboScenario.getSelectedItem());
+		EdgeDialog.this.validate();
+		EdgeDialog.this.pack();
 	}
 	
 	/**
@@ -425,7 +537,13 @@ public class EdgeDialog extends JDialog {
 				param.setValue(value);
 				scenarios[currentlySelectedScenario].setParameter(parameters[i], value);
 			} else {
-				param.setValue(selectedScenario.getParameter(parameters[i]));
+				//param.setValue(selectedScenario.getParameter(parameters[i]));
+				Double defaultValue = scenarios[currentlySelectedScenario].getDefaultParameterValue(parameters[i]);
+				if (defaultValue == null) {
+					param.setValue(1.0);
+				} else {
+					param.setValue(defaultValue);
+				}
 			}
 			Dimension prefSize = param.getPreferredSize();
 			prefSize.width *= 1.5;

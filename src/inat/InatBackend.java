@@ -7,6 +7,7 @@ import giny.model.Node;
 import giny.view.EdgeView;
 import inat.exceptions.InatException;
 import inat.model.Model;
+import inat.model.Scenario;
 import inat.util.XmlConfiguration;
 import inat.util.XmlEnvironment;
 
@@ -220,7 +221,9 @@ public class InatBackend {
 						nodeAttr.setAttribute(objectKey, SHOWN_LEVEL, activityRatio);
 						Cytoscape.firePropertyChange(Cytoscape.ATTRIBUTES_CHANGED, null, null);
 					} else if (attributeName.equals(ENABLED)) {
-						if (oldAttributeValue == null) return;
+						if (oldAttributeValue == null) {
+							oldAttributeValue = true;
+						}
 						CyAttributes nodeAttr = Cytoscape.getNodeAttributes(),
 									 edgeAttr = Cytoscape.getEdgeAttributes();
 						CyNetwork network = Cytoscape.getCurrentNetwork();
@@ -290,9 +293,10 @@ public class InatBackend {
 				public void attributeValueAssigned(String objectKey, String attributeName,
 						Object[] keyIntoValue, Object oldAttributeValue, Object newAttributeValue) {
 					
-					if (oldAttributeValue == null) return; //If there was no old value, we can do very little
 					
 					if (attributeName.equals(SECONDS_PER_POINT)) {
+						if (oldAttributeValue == null) return; //If there was no old value, we can do very little
+						
 						double newSecondsPerPoint = 0, oldSecondsPerPoint = 0, factor = 0;
 						newSecondsPerPoint = Double.parseDouble(newAttributeValue.toString());
 						oldSecondsPerPoint = Double.parseDouble(oldAttributeValue.toString());
@@ -337,6 +341,9 @@ public class InatBackend {
 								}
 							}
 						}*/
+					} else if (attributeName.equals(Model.Properties.USER_DEFINED_FORMULAE)) {
+						//if (oldAttributeValue == null) return; //If there was no old value, we can do very little
+						Scenario.loadScenarios();
 					}
 				}
 

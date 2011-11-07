@@ -577,7 +577,7 @@ public class RunAction extends CytoscapeAction {
 						nLevelsR2 = model.getProperties().get(NUMBER_OF_LEVELS).as(Integer.class);
 					}
 
-					Scenario[] scenarios = Scenario.sixScenarios;
+					Scenario[] scenarios = Scenario.availableScenarios;
 					Integer scenarioIdx;
 					/*if (edgeAttributes.hasAttribute(edge.getIdentifier(), SCENARIO)) {
 						scenarioIdx = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), SCENARIO);
@@ -785,7 +785,7 @@ public class RunAction extends CytoscapeAction {
 				if (edge.getSource().equals(edge.getTarget())) {
 					scenario = new ScenarioMono();
 				} else {
-					scenario = Scenario.sixScenarios[edgeAttributes.getIntegerAttribute(edge.getIdentifier(), SCENARIO)];
+					scenario = Scenario.availableScenarios[edgeAttributes.getIntegerAttribute(edge.getIdentifier(), SCENARIO)];
 				}
 				String[] paramNames = scenario.listVariableParameters();
 				for (String param : paramNames) {
@@ -930,7 +930,7 @@ public class RunAction extends CytoscapeAction {
 						nLevelsR2 = networkAttributes.getIntegerAttribute(network.getIdentifier(), NUMBER_OF_LEVELS);
 					}
 					
-					Scenario[] scenarios = Scenario.sixScenarios;
+					Scenario[] scenarios = Scenario.availableScenarios;
 					Integer scenarioIdx = edgeAttributes.getIntegerAttribute(edge.getIdentifier(), SCENARIO);
 					if (scenarioIdx == null) {
 						//TODO: show the editing window
